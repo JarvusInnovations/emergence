@@ -6,38 +6,40 @@ Emergence is a NodeJS-powered server that provides a web interface for configuri
 
 Features
 ---------
- * Rich web interface provides for all setup and management
- * Plugin-based support for system services to be configured and run
-    * Plugins included for nginx and mysql
- * Versioned storage containers
-    * Inherit remote containers over http
-    * Copy-on-write
-    * Accessible remotely via WebDAV and locally via API
- * PHP development framework
-    * Classes automatically loaded from storage container
-    * Lightweight MVC classes optimized for serial inheritence across sites
-    * Extendable templating system powered by Dwoo
+* Rich web interface provides for all setup and management
+* Plugin-based support for system services to be configured and run
+	* Plugins included for nginx and mysql
+* Versioned storage containers
+	* Inherit remote containers over http
+	* Copy-on-write
+	* Accessible remotely via WebDAV and locally via API
+* PHP development framework
+	* Classes automatically loaded from storage container
+	* Lightweight MVC classes optimized for serial inheritence across sites
+	* Extendable templating system powered by Dwoo
 
 
 Requirements
 -------------
- * NodeJS
- * npm
+* NodeJS
+* npm
+	* underscore
+	* node-static
 
 
 Installation
 --------------
-mkdir /emergence
-cd /emergence
-git clone git@github.com:JarvusInnovations/Emergence.git
-cd kernel
-npm link underscore node-static
+	mkdir /emergence
+	cd /emergence
+	git clone git@github.com:JarvusInnovations/Emergence.git
+	cd kernel
+	npm link underscore node-static
 
 
 Getting Started
 ------------------
-cd /emergence/kernel
-sudo node kernel
+	cd /emergence/kernel
+	sudo node kernel
 
 
 Visit http://serverhost:1337 in your browser
