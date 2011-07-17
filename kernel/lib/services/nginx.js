@@ -22,7 +22,6 @@ exports.nginx = function(name, controller, options) {
 	me.options.bindPort = me.options.bindPort || 80;
 	me.options.runDir = me.options.runDir || controller.options.runDir + '/nginx';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
-	me.options.sitesDir = me.options.sitesDir || controller.sites.options.sitesDir;
 	
 	// create required directories
 	if(!path.existsSync(me.options.runDir))
@@ -192,7 +191,7 @@ exports.nginx.prototype.makeConfig = function() {
 			hostnames.unshift(site.primary_hostname);
 			
 		// process directories
-		var siteDir = me.options.sitesDir+'/'+handle
+		var siteDir = me.controller.sites.options.sitesDir+'/'+handle
 			,logsDir = siteDir+'/logs';
 			
 		if(!path.existsSync(logsDir))
@@ -215,7 +214,8 @@ exports.nginx.prototype.makeConfig = function() {
 		c += '			include /etc/nginx/fastcgi_params;\n';
 		c += '			fastcgi_pass 127.0.0.1:9000;\n';
 		c += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
-		c += '			fastcgi_param SCRIPT_FILENAME  '+me.options.bootstrapDir+'/root$fastcgi_script_name;\n';
+		c += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
+		c += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/root$fastcgi_script_name;\n';
 		c += '			fastcgi_param PHP_VALUE	"auto_prepend_file='+me.options.bootstrapDir+'/bootstrap.php\n';
 		c += '						 include_path='+me.options.bootstrapDir+'/lib:'+siteDir+'";\n';
 		c += '			fastcgi_index index.php;\n';

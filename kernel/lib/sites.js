@@ -5,6 +5,11 @@ var _ = require('underscore')
 	,util = require('util')
 	,events = require('events');
 	
+
+exports.createSites = function(options) {
+	return new exports.sites(options);
+};
+
 exports.sites = function(options) {
 	var me = this;
 	
@@ -57,53 +62,73 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 		if(request.path[1] && me.sites[request.path[1]])
 			_.defaults(siteData, me.sites[request.path[1]]);
 		
-		// validate mandatory fields
-		if(!siteData.primary_hostname)
+		try
+		{
+			siteData = me.writeSiteConfig(siteData);
+			
+			if(siteData.isNew)
+			{
+				me.emit('siteCreated', siteData);
+				response.writeHead(201, {'Content-Type':'application/json','Location': '/'+request.path[0]+'/'+siteData.handle});
+			}
+			else
+				response.writeHead(200, {'Content-Type':'application/json'});
+	
+			response.end(JSON.stringify({success: true, data: siteData}));
+		}
+		catch(error)
 		{
 			response.writeHead(400, {'Content-Type':'application/json'});
-			response.end(JSON.stringify({error: 'primary_hostname required'}));
+			response.end(JSON.stringify({success: false, error: error}));
 		}
 		
-		// apply defaults
-		if(!siteData.handle)
-			siteData.handle = request.path[1] || siteData.primary_hostname;
-		
-		if(!siteData.label)
-			siteData.label = false;
-			
-		if(!siteData.parent_hostname)
-			siteData.parent_hostname = false;
-
-		if(siteData.hostnames && _.isString(siteData.hostnames))
-			siteData.hostnames = siteData.hostnames.split(/\s*[\s,;]\s*/);
-			
-		if(!_.isArray(siteData.hostnames))
-			siteData.hostnames = [];
-		
-		// create site directory
-		var siteDir = me.options.sitesDir+'/'+siteData.handle;
-		if(!path.existsSync(siteDir))
-			fs.mkdirSync(siteDir, 0775);
-		
-		// write to file
-		this.sites[siteData.handle] = siteData;
-		var filename = siteDir+'/site.json'
-			,isNew = !path.existsSync(filename);
-			
-		fs.writeFileSync(filename, JSON.stringify(siteData));
-		
-		if(isNew)
-			response.writeHead(201, {'Content-Type':'application/json','Location': '/'+request.path[0]+'/'+siteData.handle});
-		else
-			response.writeHead(200, {'Content-Type':'application/json'});
-
-		response.end(JSON.stringify({data: siteData}));
 		return true;
 	}
 
 	return false;
 };
 
-exports.createSites = function(options) {
-	return new exports.sites(options);
+
+exports.sites.prototype.writeSiteConfig = function(siteData) {
+	var me = this;
+
+	// validate mandatory fields
+	if(!siteData.primary_hostname)
+	{
+		throw 'primary_hostname required';
+	}
+	
+	// apply defaults
+	if(!siteData.handle)
+		siteData.handle = request.path[1] || siteData.primary_hostname;
+	
+	if(!siteData.label)
+		siteData.label = false;
+		
+	if(!siteData.parent_hostname)
+		siteData.parent_hostname = false;
+
+	if(siteData.hostnames && _.isString(siteData.hostnames))
+		siteData.hostnames = siteData.hostnames.split(/\s*[\s,;]\s*/);
+		
+	if(!_.isArray(siteData.hostnames))
+		siteData.hostnames = [];
+	
+	// create site directory
+	var siteDir = me.options.sitesDir+'/'+siteData.handle;
+	if(!path.existsSync(siteDir))
+	{
+		console.log('sites: creating site directory '+siteDir);
+		fs.mkdirSync(siteDir, 0775);
+	}
+	
+	// write site config to file
+	this.sites[siteData.handle] = siteData;
+	var filename = siteDir+'/site.json';
+	
+	siteData.isNew = !path.existsSync(filename);
+		
+	fs.writeFileSync(filename, JSON.stringify(siteData));
+		
+	return siteData;
 };

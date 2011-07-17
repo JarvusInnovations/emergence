@@ -7,7 +7,9 @@ class Site
 	static public $defaultPage = 'home.php';
 	static public $controlKey = '86b153e60c0e801';
 
-	static public $databaseHost;
+	static public $databaseSocket = false;
+	static public $databaseHost = 'localhost';
+	static public $databasePort = 3306;
 	static public $databaseName;
 	static public $databaseUsername;
 	static public $databasePassword;

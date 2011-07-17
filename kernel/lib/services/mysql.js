@@ -37,6 +37,7 @@ exports.mysql = function(name, controller, options) {
 	
 	// instantiate MySQL client
 	me.client = new MysqlClient();
+	//me.client.database = 'information_schema';
 	me.client.user = me.options.managerUser;
 	me.client.password = me.options.managerPassword;
 	me.client.port = me.options.socketPath;
@@ -51,6 +52,8 @@ exports.mysql = function(name, controller, options) {
 		this.connectClient();
 	}
 	
+	// listen for site creation
+	controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
 };
 util.inherits(exports.mysql, require('./abstract.js').AbstractService);
 
@@ -225,5 +228,106 @@ exports.mysql.prototype.connectClient = function() {
 			return;
 		}
 		console.log(me.name+': mysql client connected');
+	});
+};
+
+exports.mysql.prototype.onSiteCreated = function(siteData) {
+	var me = this
+		,sql = ''
+		,password = me.generatePassword();
+	
+	console.log(me.name+': creating database `'+siteData.handle+'`');
+	
+	sql += 'CREATE DATABASE IF NOT EXISTS `'+siteData.handle+'`;';
+	sql += 'CREATE USER \''+siteData.handle+'\'@\'localhost\' IDENTIFIED BY \''+password+'\';';
+	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
+	sql += 'FLUSH PRIVILEGES;';
+	
+	me.client.query(sql, function(error, results) {
+		if(error)
+		{
+			console.log(me.name+': failed to setup database `'+siteData.handle+'`: '+error);
+			return;
+		}
+		
+		console.log(me.name+': database setup complete');
+		
+		// generate Site.config.php
+		var siteDir = me.controller.sites.options.sitesDir+'/'+siteData.handle
+			,configFilename = siteDir+'/Site.config.php'
+			,configCode = '';
+			
+		configCode += '<?php\n\n';
+		configCode += 'Site::$databaseSocket = \''+me.options.socketPath+'\';\n';
+		configCode += 'Site::$databaseName = \''+siteData.handle+'\';\n';
+		configCode += 'Site::$databaseUsername = \''+siteData.handle+'\';\n';
+		configCode += 'Site::$databasePassword = \''+password+'\';\n';
+			
+		fs.writeFileSync(configFilename, configCode);
+	});
+};
+
+
+exports.mysql.prototype.generatePassword = function(length) {
+	length = length || 16;
+	
+	var pass = ''
+		,chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+
+	for(var x = 0; x < length; x++)
+	{
+		pass += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	
+	return pass;
+}
+
+exports.mysql.prototype.createSkeletonTables = function(databaseName) {
+	var me = this
+		,sql = '';
+
+	sql += 'USE `'+databaseName+'`;';
+	
+	// Table: _e_file_collections
+	sql += 'CREATE TABLE `_e_file_collections` (';
+	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
+	sql += ',`SiteID` int(10) unsigned NOT NULL';
+	sql += ',`Handle` varchar(255) NOT NULL';
+	sql += ',`Status` enum(\'Normal\',\'Deleted\') NOT NULL DEFAULT \'Normal\'';
+	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
+	sql += ',`CreatorID` int(10) unsigned DEFAULT NULL';
+	sql += ',`ParentID` int(10) unsigned DEFAULT NULL';
+	sql += ',`PosLeft` int(10) unsigned DEFAULT NULL';
+	sql += ',`PosRight` int(10) unsigned DEFAULT NULL';
+	sql += ',PRIMARY KEY (`ID`)';
+	sql += ',UNIQUE KEY `PosLeft` (`PosLeft`)';
+	sql += ',UNIQUE KEY `SiteCollection` (`SiteID`,`ParentID`,`Handle`)';
+	sql += ',) ENGINE=MyISAM AUTO_INCREMENT=719 DEFAULT CHARSET=utf8;';
+	
+	// Table: _e_files
+	sql += 'CREATE TABLE `_e_files` (';
+	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
+	sql += ',`CollectionID` int(10) unsigned NOT NULL';
+	sql += ',`Handle` varchar(255) NOT NULL';
+	sql += ',`Status` enum(\'Phantom\',\'Normal\',\'Deleted\') NOT NULL DEFAULT \'Phantom\'';
+	sql += ',`SHA1` char(40) DEFAULT NULL';
+	sql += ',`Size` int(10) unsigned DEFAULT NULL';
+	sql += ',`Type` varchar(255) DEFAULT NULL';
+	sql += ',`Timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
+	sql += ',`AuthorID` int(10) unsigned DEFAULT NULL';
+	sql += ',`AncestorID` int(10) unsigned DEFAULT NULL';
+	sql += ',PRIMARY KEY (`ID`)';
+	sql += ',KEY `CollectionID` (`CollectionID`)';
+	sql += ',) ENGINE=MyISAM AUTO_INCREMENT=17820 DEFAULT CHARSET=utf8;';
+
+
+	me.client.query(sql, function(error, results) {
+		if(error)
+		{
+			console.log(me.name+': failed to setup skeleton tables on `'+siteData.handle+'`: '+error);
+			return;
+		}
+		
+		console.log(me.name+': skeleton table schema setup');
 	});
 };

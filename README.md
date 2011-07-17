@@ -15,7 +15,7 @@ Features
 	* Accessible remotely via WebDAV and locally via API
 * PHP development framework
 	* Classes automatically loaded from storage container
-	* Lightweight MVC classes optimized for serial inheritence across sites
+	* Lightweight MVC classes optimized for serial inheritance across sites
 	* Extendable templating system powered by Dwoo
 
 
@@ -25,6 +25,9 @@ Requirements
 * npm
 	* underscore
 	* node-static
+* mysql
+* nginx
+* php-fpm
 
 
 Installation
@@ -36,7 +39,7 @@ Installation
 	npm install underscore node-static mysql
 	cp kernel.config.json.SAMPLE kernel.config.json
 	
-Edit kernel.config.json, insert MySQL username/password and optionally set IPs for management and web servers
+Edit kernel.config.json, insert MySQL manageUser & managePassword and optionally set IPs for management and web servers. MySQL manage user must have global privileges to SELECT, INSERT, UPDATE, DELETE, CREATE, RELOAD, SHOW DATABASES, CREATE USER, and GRANT;
 
 
 Getting Started

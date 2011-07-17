@@ -449,7 +449,7 @@ class DB
 		if (!isset(self::$_mysqli))
 		{
 			// connect to mysql database
-			self::$_mysqli = @new mysqli(Site::$databaseHost, Site::$databaseUsername, Site::$databasePassword, Site::$databaseName);
+			self::$_mysqli = @new mysqli(Site::$databaseHost, Site::$databaseUsername, Site::$databasePassword, Site::$databaseName, Site::$databasePort, Site::$databaseSocket);
 	
 			// check for failure or connection error
 			if (mysqli_connect_error())
@@ -502,7 +502,7 @@ class DB
 			
 		//$report .= ErrorHandler::formatBacktrace(debug_backtrace());
 					
-		if($GLOBALS['Session']->Person)
+		if(!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person)
 		{
 			$report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->data, true));
 		}

@@ -68,6 +68,7 @@ Ext.define('eMan.controller.Services', {
 		var service = btn.parentMenu.contextRecord;
 		
 		eMan.log('Starting service '+service.get('name')+'...');
+		service.set('status', 'starting...');
 
 		Ext.Ajax.request({
 			url: '/services/'+service.get('name')+'/!start'
@@ -91,6 +92,7 @@ Ext.define('eMan.controller.Services', {
 		var service = btn.parentMenu.contextRecord;
 		
 		eMan.log('Stopping service '+service.get('name')+'...');
+		service.set('status', 'stopping...');
 
 		Ext.Ajax.request({
 			url: '/services/'+service.get('name')+'/!stop'
@@ -114,6 +116,7 @@ Ext.define('eMan.controller.Services', {
 		var service = btn.parentMenu.contextRecord;
 		
 		eMan.log('Restarting service '+service.get('name')+'...');
+		service.set('status', 'restarting...');
 
 		Ext.Ajax.request({
 			url: '/services/'+service.get('name')+'/!restart'
