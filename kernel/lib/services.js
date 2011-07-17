@@ -5,17 +5,30 @@ var _ = require('underscore')
 exports.ServicesController = function(options) {
 	var me = this;
 	
+	if(!me.options.sites)
+		throw new Error('services module requires sites');
+		
 	// call events constructor
 	events.EventEmitter.call(me);
 
 	// initialize options and apply defaults
 	me.options = options || {};
 	me.options.services = me.options.services || {};
+	me.options.logsDir = me.options.logsDir || '/emergence/logs';
 	me.options.configDir = me.options.configDir || '/emergence/kernel/etc';
+	me.options.runDir = me.options.runDir || '/emergence/kernel/run';
 	
-	if(!me.options.sites)
-		throw new Error('services module requires sites');
-		
+	// create required directories
+	if(!path.existsSync(me.options.logsDir))
+		fs.mkdirSync(me.options.logsDir, 0775);
+	
+	if(!path.existsSync(me.options.configDir))
+		fs.mkdirSync(me.options.configDir, 0775);
+	
+	if(!path.existsSync(me.options.runDir))
+		fs.mkdirSync(me.options.runDir, 0775);
+	
+	// load service plugins
 	_.each(me.options.services, function(service, name) {
 		console.log('Loading service: '+name);
 		

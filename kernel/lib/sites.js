@@ -15,6 +15,10 @@ exports.sites = function(options) {
 	me.options = options || {};
 	me.options.sitesDir = me.options.sitesDir || '/emergence/sites';
 	
+	// create required directories
+	if(!path.existsSync(me.options.sitesDir))
+		fs.mkdirSync(me.options.sitesDir, 0775);
+	
 	// load sites
 	console.log('Loading sites from '+me.options.sitesDir+'...');
 
