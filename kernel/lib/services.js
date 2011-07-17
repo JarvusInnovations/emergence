@@ -1,11 +1,13 @@
 var _ = require('underscore')
 	,util = require('util')
+	,fs = require('fs')
+	,path = require('path')
 	,events = require('events');
 	
 exports.ServicesController = function(options) {
 	var me = this;
-	
-	if(!me.options.sites)
+
+	if(!options.sites)
 		throw new Error('services module requires sites');
 		
 	// call events constructor

@@ -19,8 +19,13 @@ exports.nginx = function(name, controller, options) {
 	me.options.execPath = me.options.execPath || '/usr/sbin/nginx';
 	me.options.bindHost = me.options.bindHost || '0.0.0.0';
 	me.options.bindPort = me.options.bindPort || 80;
-	me.options.pidPath = me.options.pidPath || controller.options.runDir + '/nginx/nginx.pid';
+	me.options.runDir = me.options.runDir || controller.options.runDir + '/nginx';
+	me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
 	me.options.sitesDir = me.options.sitesDir || controller.options.sites.options.sitesdir;
+	
+	// create required directories
+	if(!path.existsSync(me.options.pidPath))
+		fs.mkdirSync(me.options.pidPath, 0775);
 	
 	// initialize state
 	if(path.existsSync(me.options.pidPath))

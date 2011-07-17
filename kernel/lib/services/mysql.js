@@ -18,10 +18,15 @@ exports.mysql = function(name, controller, options) {
 	me.options.configPath = me.options.configPath || controller.options.configDir + '/my.cnf';
 	me.options.execPath = me.options.execPath || '/usr/sbin/mysqld';
 	me.options.bindHost = me.options.bindHost || false;
-	me.options.pidPath = me.options.pidPath || controller.options.runDir + '/mysqld/mysqld.pid';
-	me.options.socketPath = me.options.socketPath || controller.options.runDir + '/mysqld/mysqld.sock';
+	me.options.runDir = me.options.runDir || controller.options.runDir + '/mysqld';
+	me.options.pidPath = me.options.pidPath || me.options.runDir + '/mysqld.pid';
+	me.options.socketPath = me.options.socketPath || me.options.runDir + '/mysqld.sock';
 	me.options.dataDir = me.options.dataDir || '/var/lib/mysql';
 	me.options.errorLogPath = me.options.errorLogPath || controller.options.logsDir + '/mysqld.err';
+	
+	// create required directories
+	if(!path.existsSync(me.options.runDir))
+		fs.mkdirSync(me.options.runDir, 0775);
 	
 	// initialize state
 	if(path.existsSync(me.options.pidPath))
