@@ -2,7 +2,8 @@ var _ = require('underscore')
 	,fs = require('fs')
 	,path = require('path')
 	,util = require('util')
-	,spawn = require('child_process').spawn;
+	,spawn = require('child_process').spawn
+	,exec = require('child_process').exec;
 	
 exports.createService = function(name, controller, options) {
 	return new exports.mysql(name, controller, options);
@@ -26,7 +27,10 @@ exports.mysql = function(name, controller, options) {
 	
 	// create required directories
 	if(!path.existsSync(me.options.runDir))
+	{
 		fs.mkdirSync(me.options.runDir, 0775);
+		exec('chown mysql:mysql '+me.options.runDir);
+	}
 	
 	// initialize state
 	if(path.existsSync(me.options.pidPath))

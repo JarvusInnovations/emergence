@@ -21,7 +21,7 @@ exports.nginx = function(name, controller, options) {
 	me.options.bindPort = me.options.bindPort || 80;
 	me.options.runDir = me.options.runDir || controller.options.runDir + '/nginx';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
-	me.options.sitesDir = me.options.sitesDir || controller.options.sites.options.sitesdir;
+	me.options.sitesDir = me.options.sitesDir || controller.options.sites.options.sitesDir;
 	
 	// create required directories
 	if(!path.existsSync(me.options.runDir))
