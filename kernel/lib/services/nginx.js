@@ -24,8 +24,8 @@ exports.nginx = function(name, controller, options) {
 	me.options.sitesDir = me.options.sitesDir || controller.options.sites.options.sitesdir;
 	
 	// create required directories
-	if(!path.existsSync(me.options.pidPath))
-		fs.mkdirSync(me.options.pidPath, 0775);
+	if(!path.existsSync(me.options.runDir))
+		fs.mkdirSync(me.options.runDir, 0775);
 	
 	// initialize state
 	if(path.existsSync(me.options.pidPath))
