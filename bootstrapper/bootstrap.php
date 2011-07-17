@@ -1,17 +1,17 @@
 <?php
 
-require('/emergence/lib/Emergence.class.php');
-require('/emergence/lib/Debug.class.php');
-require('/emergence/lib/DB.class.php');
-require('/emergence/lib/File.class.php');
-require('/emergence/lib/Site.class.php');
-require('/emergence/lib/SiteCollection.class.php');
-require('/emergence/lib/SiteFile.class.php');
+require('Emergence.class.php');
+require('Debug.class.php');
+require('DB.class.php');
+require('File.class.php');
+require('Site.class.php');
+require('SiteCollection.class.php');
+require('SiteFile.class.php');
 
 include('Site.config.php');
 
 // load MICS-compatibility layer
-require('/emergence/lib/MICS.class.php');
+require('MICS.class.php');
 MICS::initialize();
 
 

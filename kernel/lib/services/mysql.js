@@ -3,7 +3,8 @@ var _ = require('underscore')
 	,path = require('path')
 	,util = require('util')
 	,spawn = require('child_process').spawn
-	,exec = require('child_process').exec;
+	,exec = require('child_process').exec
+	,MysqlClient = require('mysql').Client;
 	
 exports.createService = function(name, controller, options) {
 	return new exports.mysql(name, controller, options);
@@ -24,6 +25,8 @@ exports.mysql = function(name, controller, options) {
 	me.options.socketPath = me.options.socketPath || me.options.runDir + '/mysqld.sock';
 	me.options.dataDir = me.options.dataDir || '/var/lib/mysql';
 	me.options.errorLogPath = me.options.errorLogPath || controller.options.logsDir + '/mysqld.err';
+	me.options.managerUser = me.options.managerUser || 'eman';
+	me.options.managerPassword = me.options.managerPassword || '';
 	
 	// create required directories
 	if(!path.existsSync(me.options.runDir))
@@ -32,13 +35,22 @@ exports.mysql = function(name, controller, options) {
 		exec('chown mysql:mysql '+me.options.runDir);
 	}
 	
-	// initialize state
+	// instantiate MySQL client
+	me.client = new MysqlClient();
+	me.client.user = me.options.managerUser;
+	me.client.password = me.options.managerPassword;
+	me.client.port = me.options.socketPath;
+
+	// check for existing mysqld process
 	if(path.existsSync(me.options.pidPath))
 	{
 		me.pid = parseInt(fs.readFileSync(me.options.pidPath));
 		me.status = 'online';
-		console.log(me.name+' found existing PID: '+me.pid);
+		console.log(me.name+': found existing PID: '+me.pid);
+		
+		this.connectClient();
 	}
+	
 };
 util.inherits(exports.mysql, require('./abstract.js').AbstractService);
 
@@ -47,42 +59,52 @@ util.inherits(exports.mysql, require('./abstract.js').AbstractService);
 exports.mysql.prototype.start = function() {
 	var me = this;
 	
-	console.log(me.name+' spawning mysql: '+me.options.execPath);
+	console.log(me.name+': spawning mysql: '+me.options.execPath);
 
 	if(me.pid)
 	{
-		console.log(me.name+' mysql already runnig with PID '+me.pid);
+		console.log(me.name+': mysql already runnig with PID '+me.pid);
 		return false;
 	}
 	
+	// write configuration file
 	this.writeConfig();
 	
+	// spawn process
 	me.proc = spawn(me.options.execPath, ['--defaults-file='+me.options.configPath]);
 	me.pid = me.proc.pid;
 	me.status = 'online';
 	
-	console.log('spawned daem with pid '+me.pid);
-
+	console.log(me.name+': spawned mysqld with pid '+me.pid);
+	
+	// add listeners to process
 	me.proc.on('exit', function (code) {
 	
 		if (code !== 0)
 		{
 			me.status = 'offline';
 			me.exitCode = code;
-			console.log(me.name+' exited with code: '+code);
+			console.log(me.name+': exited with code: '+code);
 		}
 	});
 	
 	me.proc.stdout.on('data', function (data) {
-		console.log(me.name+' stdout: ' + data);
+		console.log(me.name+': stdout:\n\t' + data.toString().replace(/\n/g,'\n\t'));
 	});
 	
 	me.proc.stderr.on('data', function (data) {
-		console.log(me.name+' stderr: ' + data);
+		console.log(me.name+': stderr:\n\t' + data.toString().replace(/\n/g,'\n\t'));
 		
-		if (/^execvp\(\)/.test(data)) {
+		if (/^execvp\(\)/.test(data))
+		{
 			console.log('Failed to start child process.');
 			me.status = 'offline';
+		}
+		
+		if(/ready for connections/.test(data))
+		{
+			// connect to server with MySQL client
+			me.connectClient();
 		}
   	});
 	
@@ -96,22 +118,50 @@ exports.mysql.prototype.stop = function() {
 	if(!me.pid)
 		return false;
 		
+	// disconnect client
+	if(me.client && me.client.connected)
+	{
+		me.client.end();
+		console.log(me.name+': mysql client disconnected');
+	}
+		
 	try
 	{
-		console.log('sending sigterm to '+me.pid);
+		console.log(me.name+': sending sigterm to '+me.pid);
 		process.kill(me.pid, 'SIGTERM');
 	}
 	catch(error)
 	{
-		console.log(me.name+' failed to stop process: '+error);
+		console.log(me.name+': failed to stop process: '+error);
 		return false;
 	}
 	
 	me.status = 'offline';
 	me.pid = null;
 	return true;
-}
+};
 
+exports.mysql.prototype.restart = function() {
+	var me = this;
+	
+	if(!me.stop())
+		return false;
+	
+	// wait for pid to disappear before attempting start
+	process.stdout.write(me.name+': waiting for shutdown');
+	while(path.existsSync(me.options.pidPath))
+	{
+		process.stdout.write('.');
+		var now = new Date().getTime();
+		while(new Date().getTime() < now + 500)
+		{
+			// do nothing
+		}
+	}
+	process.stdout.write('\n');
+	
+	return me.start();
+};
 
 exports.mysql.prototype.writeConfig = function() {
 	fs.writeFileSync(this.options.configPath, this.makeConfig());
@@ -162,4 +212,18 @@ exports.mysql.prototype.makeConfig = function() {
 	c += 'innodb_file_per_table\n'
 
 	return c;
+};
+
+exports.mysql.prototype.connectClient = function() {
+	var me = this;
+	
+	me.client.connect(function(error, results) {
+		if(error)
+		{
+			console.log(me.name+': mysql client FAILED to connect: '+error.message);
+			me.status = 'unknown';
+			return;
+		}
+		console.log(me.name+': mysql client connected');
+	});
 };

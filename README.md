@@ -33,7 +33,10 @@ Installation
 	cd /emergence
 	git clone git@github.com:JarvusInnovations/Emergence.git
 	cd kernel
-	npm link underscore node-static
+	npm install underscore node-static mysql
+	cp kernel.config.json.SAMPLE kernel.config.json
+	
+Edit kernel.config.json, insert MySQL username/password and optionally set IPs for management and web servers
 
 
 Getting Started

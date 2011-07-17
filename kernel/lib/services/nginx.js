@@ -15,23 +15,24 @@ exports.nginx = function(name, controller, options) {
 	exports.nginx.super_.apply(me, arguments);
 	
 	// default options
+	me.options.bootstrapDir = me.options.bootstrapDir || '/emergence/bootstrapper';
 	me.options.configPath = me.options.configPath || controller.options.configDir + '/nginx.conf';
 	me.options.execPath = me.options.execPath || '/usr/sbin/nginx';
 	me.options.bindHost = me.options.bindHost || '0.0.0.0';
 	me.options.bindPort = me.options.bindPort || 80;
 	me.options.runDir = me.options.runDir || controller.options.runDir + '/nginx';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
-	me.options.sitesDir = me.options.sitesDir || controller.options.sites.options.sitesDir;
+	me.options.sitesDir = me.options.sitesDir || controller.sites.options.sitesDir;
 	
 	// create required directories
 	if(!path.existsSync(me.options.runDir))
 		fs.mkdirSync(me.options.runDir, 0775);
 	
-	// initialize state
+	// check for existing master process
 	if(path.existsSync(me.options.pidPath))
 	{
 		me.pid = parseInt(fs.readFileSync(me.options.pidPath));
-		console.log(me.name+' found existing PID: '+me.pid);
+		console.log(me.name+': found existing PID: '+me.pid);
 		me.status = 'online';
 	}
 	
@@ -43,11 +44,11 @@ util.inherits(exports.nginx, require('./abstract.js').AbstractService);
 exports.nginx.prototype.start = function() {
 	var me = this;
 	
-	console.log(me.name+' spawning nginx: '+me.options.execPath);
+	console.log(me.name+': spawning nginx: '+me.options.execPath);
 
 	if(me.pid)
 	{
-		console.log(me.name+' nginx already runnig with PID '+me.pid);
+		console.log(me.name+': nginx already runnig with PID '+me.pid);
 		return false;
 	}
 	
@@ -61,30 +62,30 @@ exports.nginx.prototype.start = function() {
 		{
 			me.status = 'offline';
 			me.exitCode = code;
-			console.log(me.name+' exited with code: '+code);
+			console.log(me.name+': exited with code: '+code);
 		}
 		
 		// look for pid
 		if(path.existsSync(me.options.pidPath))
 		{
 			me.pid = parseInt(fs.readFileSync(me.options.pidPath));
-			console.log(me.name+' found new PID: '+me.pid);
+			console.log(me.name+': found new PID: '+me.pid);
 			me.status = 'online';
 		}
 		else
 		{
-			console.log(me.name+' failed to find pid after launching');
+			console.log(me.name+': failed to find pid after launching');
 			me.status = 'unknown';
 			me.pid = null;
 		}
 	});
 	
 	me.proc.stdout.on('data', function (data) {
-		console.log(me.name+' stdout: ' + data);
+		console.log(me.name+': stdout:\n\t' + data.toString().replace(/\n/g,'\n\t'));
 	});
 	
 	me.proc.stderr.on('data', function (data) {
-		console.log(me.name+' stderr: ' + data);
+		console.log(me.name+': stderr:\n\t' + data.toString().replace(/\n/g,'\n\t'));
 		
 		if (/^execvp\(\)/.test(data)) {
 			console.log('Failed to start child process.');
@@ -109,7 +110,7 @@ exports.nginx.prototype.stop = function() {
 	}
 	catch(error)
 	{
-		console.log(me.name+' failed to stop process: '+error);
+		console.log(me.name+': failed to stop process: '+error);
 		return false;
 	}
 	
@@ -183,7 +184,7 @@ exports.nginx.prototype.makeConfig = function() {
 	c += '	}\n';
 */
 
-	_.each(me.controller.options.sites.sites, function(site, handle) {
+	_.each(me.controller.sites.sites, function(site, handle) {
 	
 		// process hostnames
 		var hostnames = site.hostnames.slice();
@@ -214,9 +215,9 @@ exports.nginx.prototype.makeConfig = function() {
 		c += '			include /etc/nginx/fastcgi_params;\n';
 		c += '			fastcgi_pass 127.0.0.1:9000;\n';
 		c += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
-		c += '			fastcgi_param SCRIPT_FILENAME  /emergence/root$fastcgi_script_name;\n';
-		c += '			fastcgi_param PHP_VALUE	"auto_prepend_file=/emergence/bootstrap.php\n';
-		c += '						 include_path=/emergence/lib:'+siteDir+'";\n';
+		c += '			fastcgi_param SCRIPT_FILENAME  '+me.options.bootstrapDir+'/root$fastcgi_script_name;\n';
+		c += '			fastcgi_param PHP_VALUE	"auto_prepend_file='+me.options.bootstrapDir+'/bootstrap.php\n';
+		c += '						 include_path='+me.options.bootstrapDir+'/lib:'+siteDir+'";\n';
 		c += '			fastcgi_index index.php;\n';
 		c += '		}\n';
 		c += '	}\n';

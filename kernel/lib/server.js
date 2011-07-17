@@ -8,17 +8,17 @@ var http = require('http')
 	,static = require('node-static')
 	,events = require('events');
 	
-exports.server = function(options) {
+exports.server = function(paths, options) {
 	var me = this;
 	
 	// call events constructor
 	events.EventEmitter.call(me);
 
 	// initialize options and apply defaults
+	me.paths = paths || {};
 	me.options = options || {};
 	me.options.host = me.options.host || '0.0.0.0';
 	me.options.port = me.options.port || 1337;
-	me.options.paths = me.options.paths || {};
 	me.options.staticDir = me.options.staticDir || './www';
 	
 	// initialize state
@@ -45,9 +45,9 @@ exports.server.prototype.start = function() {
 			request.path = request.urlInfo.pathname.substr(1).split('/');
 			console.log(request.method+' '+JSON.stringify(request.urlInfo));
 			
-			if(me.options.paths.hasOwnProperty(request.path[0]))
+			if(me.paths.hasOwnProperty(request.path[0]))
 			{
-				var result = me.options.paths[request.path[0]].handleRequest(request, response, me);
+				var result = me.paths[request.path[0]].handleRequest(request, response, me);
 				if(result===false)
 				{
 					response.writeHead(404);
@@ -69,6 +69,6 @@ exports.server.prototype.start = function() {
 
 };
 
-exports.createServer = function(options) {
-	return new exports.server(options);
+exports.createServer = function(paths, options) {
+	return new exports.server(paths, options);
 };

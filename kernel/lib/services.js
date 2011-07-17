@@ -4,18 +4,17 @@ var _ = require('underscore')
 	,path = require('path')
 	,events = require('events');
 	
-exports.ServicesController = function(options) {
+exports.ServicesController = function(sites, options) {
 	var me = this;
-
-	if(!options.sites)
-		throw new Error('services module requires sites');
+	
+	me.sites = sites;
 		
 	// call events constructor
 	events.EventEmitter.call(me);
 
 	// initialize options and apply defaults
 	me.options = options || {};
-	me.options.services = me.options.services || {};
+	me.options.plugins = me.options.plugins || {};
 	me.options.logsDir = me.options.logsDir || '/emergence/logs';
 	me.options.configDir = me.options.configDir || '/emergence/kernel/etc';
 	me.options.runDir = me.options.runDir || '/emergence/kernel/run';
@@ -31,19 +30,20 @@ exports.ServicesController = function(options) {
 		fs.mkdirSync(me.options.runDir, 0775);
 	
 	// load service plugins
-	_.each(me.options.services, function(service, name) {
+	me.services = {};
+	_.each(me.options.plugins, function(plugin, name) {
 		console.log('Loading service: '+name);
 		
-		if(_.isString(service))
+		if(_.isString(plugin))
 		{
-			service = require('./services/'+service).createService(name, me);
+			plugin = require('./services/'+plugin).createService(name, me);
 		}
-		else if(!service.isService && service.type)
+		else if(!plugin.isService && plugin.type)
 		{
-			service = require('./services/'+service.type).createService(name, me, service);
+			plugin = require('./services/'+plugin.type).createService(name, me, plugin);
 		}
 		
-		me.options.services[name] = service;
+		me.services[name] = plugin;
 	});
 }
 util.inherits(exports.ServicesController, events.EventEmitter);
@@ -63,7 +63,7 @@ exports.ServicesController.prototype.handleRequest = function(request, response,
 			services: []
 		};
 		
-		_.each(me.options.services, function(service, name) {
+		_.each(me.services, function(service, name) {
 			statusData.services.push(service.getStatus());
 		});
 
@@ -75,7 +75,7 @@ exports.ServicesController.prototype.handleRequest = function(request, response,
 
 exports.ServicesController.prototype.handleServiceRequest = function(request, response, server) {
 	var me = this
-		service = me.options.services[request.path[1]];
+		service = me.services[request.path[1]];
 		
 	if(!service)
 	{
@@ -114,6 +114,6 @@ exports.ServicesController.prototype.handleServiceRequest = function(request, re
 	return false;
 };
 
-exports.createServices = function(options) {
-	return new exports.ServicesController(options);
+exports.createServices = function(sites, options) {
+	return new exports.ServicesController(sites, options);
 };
