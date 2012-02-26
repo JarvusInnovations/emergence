@@ -3,17 +3,9 @@
 class Site
 {
 	// config properties
-	static public $debug = false;
+	static public $debug = true;
 	static public $defaultPage = 'home.php';
-	static public $controlKey = '86b153e60c0e801';
-
-	static public $databaseSocket = false;
-	static public $databaseHost = 'localhost';
-	static public $databasePort = 3306;
-	static public $databaseName;
-	static public $databaseUsername;
-	static public $databasePassword;
-	
+	static public $controlKey = '86b153e60c0e801';	
 
 	// public properties
 	//static public $ID;
@@ -26,11 +18,12 @@ class Site
 	static public $requestPath;
 	static public $pathStack;
 
+	static public $config;
+
 	// protected properties
 	static protected $_rootCollections;
-	static protected $_config;
-	static protected $_hostConfig;
-	static protected $_parentHostConfig;
+	//static protected $_hostConfig;
+	//static protected $_parentHostConfig;
 
 	
 	static public function initialize()
@@ -55,15 +48,26 @@ class Site
 			else
 				throw new Exception('No Site root detected');
 		}
-
+		
+		// load config
+		if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])) || ($_GET['_recache']==static::$controlKey))
+		{
+			static::$config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
+			apc_store($_SERVER['HTTP_HOST'], static::$config);
+		}
+		
+			
 		// retrieve static configuration
+/*
 		if(!(static::$_config = apc_fetch($_SERVER['HTTP_HOST'])) || ($_GET['_recache']==static::$controlKey))
 		{
 			static::$_config = static::_compileConfiguration();
 			apc_store($_SERVER['HTTP_HOST'], static::$_config);
 		}
+*/
 
 		// get host-specific config
+/*
 		if(!static::$_hostConfig = static::$_config['hosts'][$_SERVER['HTTP_HOST']])
 		{
 			throw new Exception('Current host is unknown');
@@ -76,6 +80,7 @@ class Site
 				throw new Exception('Parent host is unknown');
 			}
 		}
+*/
 		
 		// get request URI
 		if(empty(static::$requestURI))
@@ -97,6 +102,7 @@ class Site
 		$GLOBALS['Session'] = UserSession::getFromRequest();
 	}
 	
+/*
 	static protected function _compileConfiguration()
 	{
 		$config = array();
@@ -105,6 +111,7 @@ class Site
 		
 		return $config;
 	}
+*/
 	
 	static public function handleRequest()
 	{
@@ -217,6 +224,7 @@ class Site
 		{
 			throw new Exception('Could not resolve root collection: '.$collectionHandle);
 		}
+		MICS::dump($collection, 'got collection');
 
 		// get file
 		$node = $collection->resolvePath($path);
@@ -235,7 +243,7 @@ class Site
 	
 	static public function loadClass($className)
 	{
-		//printf("loadClass(%s) -> %s<br/>\n", $className, var_export(class_exists($className, false), true));
+		printf("loadClass(%s) -> %s<br/>\n", $className, var_export(class_exists($className, false), true));
 
 		// skip if already loaded
 		if(
@@ -248,8 +256,9 @@ class Site
 		}
 		
 		// try to load class
+		print("Trying to resolve php-classes/$className.class.php<br/>");
 		$classNode = static::resolvePath("php-classes/$className.class.php");
-
+MICS::dump($classNode,'cn',true);
 		if(!$classNode)
 		{
 			die("Unable to load class '$className'");
@@ -334,27 +343,8 @@ class Site
 				
 		return static::$_rootCollections[$handle] = SiteCollection::getOrCreateRootCollection($handle);
 	}
-	
-	static public function getConfig($key = false)
-	{
-		return $key ? static::$_config[$key] : static::$_config;
-	}
-	
-	static public function getHostConfig($key = false)
-	{
-		return $key ? static::$_hostConfig[$key] : static::$_hostConfig;
-	}
-	
-	static public function getParentHostConfig($key = false)
-	{
-		return $key ? static::$_parentHostConfig[$key] : static::$_parentHostConfig;
-	}
-	
-	static public function getSiteID()
-	{
-		return static::getHostConfig('ID');
-	}
-	
+
+
 	static public function splitPath($path)
 	{
 		return explode('/', ltrim($path, '/'));

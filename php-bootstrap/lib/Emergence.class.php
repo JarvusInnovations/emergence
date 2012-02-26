@@ -36,23 +36,19 @@ class Emergence
 	
 	static public function resolveFileFromParent($collectionHandle, $path)
 	{
-		if(!$parentConfig = Site::getParentHostConfig())
-		{
-			return false;
-		}
-		
 		// get collection for parent site
-		$collection = SiteCollection::getOrCreateRootCollection($collectionHandle, $parentConfig['ID']);
+		$collection = SiteCollection::getOrCreateRootCollection($collectionHandle, 2);
 		
 		$fileNode = $collection->resolvePath($path);
 
 		// try to download from parent site
 		if(!$fileNode)
 		{
-			$remoteURL  = 'http://'.$parentConfig['Hostname'].'/emergence/';
+			$remoteURL  = 'http://'.Site::$config['parent_hostname'].'/emergence/';
 			$remoteURL .= $collectionHandle.'/';
 			$remoteURL .= join('/',$path);
-			$remoteURL .= '?accessKey='.$parentConfig['AccessKey'];
+			$remoteURL .= '?accessKey='.Site::$config['parent_key'];
+			
             $cache = apc_fetch($remoteURL);
             if($cache == '404') {
             	return false;
@@ -65,6 +61,7 @@ class Emergence
 			$fp = fopen('php://memory', 'w+');
 			
 			//print("Retrieving: <a href='$remoteURL' target='_blank'>$remoteURL</a><br>\n");
+			die("getting $remoteURL");
 			$ch = curl_init($remoteURL);
 			curl_setopt($ch, CURLOPT_FILE, $fp);
 			curl_setopt($ch, CURLOPT_HEADER, true);

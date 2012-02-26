@@ -45,13 +45,6 @@ Ext.define('eMan.view.site.CreateForm', {
             ,name: 'handle'
             ,allowBlank: false
         },{
-            fieldLabel: 'Parent Site'
-            ,xtype: 'combo'
-            ,name: 'parent_hostname'
-            ,allowBlank: true
-            ,emptyText: 'Optional'
-            ,store: ['skeleton.mics.me']
-        },{
             fieldLabel: 'Primary Hostname'
             ,name: 'primary_hostname'
             ,allowBlank: false
@@ -81,6 +74,42 @@ Ext.define('eMan.view.site.CreateForm', {
             fieldLabel: 'Alt. Hostnames'
             ,name: 'hostnames'
         },{
+            fieldLabel: 'Parent Site'
+            ,xtype: 'combo'
+            ,name: 'parent_hostname'
+            ,allowBlank: true
+            ,emptyText: 'Optional'
+            ,displayField: 'hostname'
+            ,valueField: 'hostname'
+            ,store: new Ext.data.Store({
+            	fields: ['hostname', 'key']
+            	,data: [
+            		{hostname: 'skeleton.mics.me', key: 'm6Q136L0mDsWmShJ'}
+            	]
+            })
+            ,listeners: {
+                scope: this
+                ,blur: function(hostField) {
+                    var keyField = this.getForm().findField('parent_key');
+                    
+                    if(hostField.getValue())
+                    {
+                    	keyField.show();
+                    	keyField.focus();
+                    }
+                    else
+                    {
+                    	keyField.setValue('');
+                    	keyField.hide();
+                    	this.getForm().findField('user_email').focus();
+                    }
+                }
+            }
+        },{
+            fieldLabel: 'Parent Access Key'
+            ,name: 'parent_key'
+            ,hidden: true
+        },{
             xtype: 'fieldset'
             ,title: 'First User'
             ,defaultType: 'textfield'
@@ -89,7 +118,7 @@ Ext.define('eMan.view.site.CreateForm', {
             }
             ,items: [{
                 fieldLabel: 'Email'
-                ,name: 'user_emali'
+                ,name: 'user_email'
                 ,listeners: {
                     scope: this
                     ,blur: function(emailField) {

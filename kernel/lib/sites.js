@@ -64,9 +64,10 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 		
 		try
 		{
-			siteData = me.writeSiteConfig(siteData);
+			var cfgResult = me.writeSiteConfig(siteData)
+				,siteData = cfgResult.site;
 			
-			if(siteData.isNew)
+			if(cfgResult.isNew)
 			{
 				me.emit('siteCreated', siteData);
 				response.writeHead(201, {'Content-Type':'application/json','Location': '/'+request.path[0]+'/'+siteData.handle});
@@ -105,30 +106,64 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 	if(!siteData.label)
 		siteData.label = false;
 		
+	// generate inheritence key
+	if(!siteData.inheritence_key)
+		siteData.inheritence_key = me.generatePassword(16);
+		
+	// parent hostname
 	if(!siteData.parent_hostname)
 		siteData.parent_hostname = false;
-
+		
+	// hostnames
 	if(siteData.hostnames && _.isString(siteData.hostnames))
 		siteData.hostnames = siteData.hostnames.split(/\s*[\s,;]\s*/);
 		
 	if(!_.isArray(siteData.hostnames))
 		siteData.hostnames = [];
-	
+
 	// create site directory
-	var siteDir = me.options.sitesDir+'/'+siteData.handle;
+	var siteDir = me.options.sitesDir+'/'+siteData.handle
+		,dataDir = siteDir + '/data';
+		
 	if(!path.existsSync(siteDir))
 	{
 		console.log('sites: creating site directory '+siteDir);
 		fs.mkdirSync(siteDir, 0775);
 	}
-	
+
+	if(!path.existsSync(dataDir))
+		fs.mkdirSync(dataDir, 0775);
+		
 	// write site config to file
 	this.sites[siteData.handle] = siteData;
 	var filename = siteDir+'/site.json';
-	
-	siteData.isNew = !path.existsSync(filename);
+	var isNew = !path.existsSync(filename);
 		
 	fs.writeFileSync(filename, JSON.stringify(siteData));
 		
-	return siteData;
+	return {site: siteData, isNew: isNew};
 };
+
+exports.sites.prototype.updateSiteConfig = function(handle, changes) {
+	var me = this
+		,siteDir = me.options.sitesDir+'/'+handle
+		,filename = siteDir+'/site.json';
+
+	_.extend(this.sites[handle], changes);
+	fs.writeFileSync(filename, JSON.stringify(this.sites[handle]));
+};
+
+
+exports.sites.prototype.generatePassword = function(length) {
+	length = length || 16;
+	
+	var pass = ''
+		,chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+
+	for(var x = 0; x < length; x++)
+	{
+		pass += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	
+	return pass;
+}

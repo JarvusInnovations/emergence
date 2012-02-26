@@ -41,6 +41,10 @@ Ext.define('eMan.view.site.Grid', {
 			text: 'Primary Hostname'
 			,dataIndex: 'primary_hostname'
 			,width: 150
+			,renderer: function(v, metaData) {
+				if(v)
+					return '<a href="http://'+v+'" target="_blank">'+v+'</a>';
+			}
 		},{
 			text: 'Hostnames'
 			,dataIndex: 'hostnames'

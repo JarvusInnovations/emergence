@@ -234,7 +234,7 @@ exports.mysql.prototype.connectClient = function() {
 exports.mysql.prototype.onSiteCreated = function(siteData) {
 	var me = this
 		,sql = ''
-		,password = me.generatePassword();
+		,password = me.controller.sites.generatePassword();
 	
 	console.log(me.name+': creating database `'+siteData.handle+'`');
 	
@@ -251,8 +251,17 @@ exports.mysql.prototype.onSiteCreated = function(siteData) {
 		}
 		
 		console.log(me.name+': database setup complete');
+		me.controller.sites.updateSiteConfig(siteData.handle, {
+			mysql: {
+				socket: me.options.socketPath
+				,database: siteData.handle
+				,username: siteData.handle
+				,password: password
+			}
+		});
 		
 		// generate Site.config.php
+/*
 		var siteDir = me.controller.sites.options.sitesDir+'/'+siteData.handle
 			,configFilename = siteDir+'/Site.config.php'
 			,configCode = '';
@@ -264,34 +273,25 @@ exports.mysql.prototype.onSiteCreated = function(siteData) {
 		configCode += 'Site::$databasePassword = \''+password+'\';\n';
 			
 		fs.writeFileSync(configFilename, configCode);
+*/
+		
+		// populate tables
+		me.createSkeletonTables(siteData);
 	});
 };
 
 
-exports.mysql.prototype.generatePassword = function(length) {
-	length = length || 16;
-	
-	var pass = ''
-		,chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
 
-	for(var x = 0; x < length; x++)
-	{
-		pass += chars.charAt(Math.floor(Math.random() * chars.length));
-	}
-	
-	return pass;
-}
-
-exports.mysql.prototype.createSkeletonTables = function(databaseName) {
+exports.mysql.prototype.createSkeletonTables = function(siteData) {
 	var me = this
 		,sql = '';
 
-	sql += 'USE `'+databaseName+'`;';
+	sql += 'USE `'+siteData.handle+'`;';
 	
 	// Table: _e_file_collections
 	sql += 'CREATE TABLE `_e_file_collections` (';
 	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
-	sql += ',`SiteID` int(10) unsigned NOT NULL';
+	sql += ',`Site` ENUM(\'Local\',\'Remote\') NOT NULL';
 	sql += ',`Handle` varchar(255) NOT NULL';
 	sql += ',`Status` enum(\'Normal\',\'Deleted\') NOT NULL DEFAULT \'Normal\'';
 	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
@@ -301,8 +301,8 @@ exports.mysql.prototype.createSkeletonTables = function(databaseName) {
 	sql += ',`PosRight` int(10) unsigned DEFAULT NULL';
 	sql += ',PRIMARY KEY (`ID`)';
 	sql += ',UNIQUE KEY `PosLeft` (`PosLeft`)';
-	sql += ',UNIQUE KEY `SiteCollection` (`SiteID`,`ParentID`,`Handle`)';
-	sql += ',) ENGINE=MyISAM AUTO_INCREMENT=719 DEFAULT CHARSET=utf8;';
+	sql += ',UNIQUE KEY `SiteCollection` (`Site`,`ParentID`,`Handle`)';
+	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
 	
 	// Table: _e_files
 	sql += 'CREATE TABLE `_e_files` (';
@@ -318,9 +318,97 @@ exports.mysql.prototype.createSkeletonTables = function(databaseName) {
 	sql += ',`AncestorID` int(10) unsigned DEFAULT NULL';
 	sql += ',PRIMARY KEY (`ID`)';
 	sql += ',KEY `CollectionID` (`CollectionID`)';
-	sql += ',) ENGINE=MyISAM AUTO_INCREMENT=17820 DEFAULT CHARSET=utf8;';
+	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
 
+	// Table: sessions
+	sql += 'CREATE TABLE `sessions` (';
+	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
+	sql += ',`Class` enum(\'Session\',\'UserSession\') NOT NULL DEFAULT \'Session\'';
+	sql += ',`Handle` char(32) NOT NULL';
+	sql += ',`PersonID` int(10) unsigned DEFAULT NULL';
+	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
+	sql += ',`LastRequest` timestamp NULL DEFAULT NULL';
+	sql += ',`LastIP` int(11) unsigned NOT NULL';
+	sql += ',PRIMARY KEY (`ID`)';
+	sql += ',UNIQUE KEY `Handle` (`Handle`)';
+	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
+	
+	// Table: people
+	sql += 'CREATE TABLE `people` (';
+	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
+	sql += ',`Class` enum(\'Person\',\'User\') NOT NULL DEFAULT \'Person\'';
+	sql += ',`FirstName` varchar(255) NOT NULL';
+	sql += ',`LastName` varchar(255) NOT NULL';
+	sql += ',`Username` varchar(255) DEFAULT NULL';
+	sql += ',`Password` char(40) DEFAULT NULL';
+	sql += ',`AccountLevel` enum(\'Disabled\',\'Contact\',\'User\',\'Staff\',\'Administrator\',\'Developer\') NOT NULL DEFAULT \'User\'';
+	sql += ',`Gender` enum(\'Male\',\'Female\') DEFAULT NULL';
+	sql += ',`BirthDate` date DEFAULT NULL';
+	sql += ',`Email` varchar(255) DEFAULT NULL';
+	sql += ',`PrimaryPhotoID` int(10) unsigned DEFAULT NULL';
+	sql += ',`Phone` decimal(10,0) unsigned DEFAULT NULL';
+	sql += ',`Location` varchar(255) DEFAULT NULL';
+	sql += ',`About` text';
+	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
+	sql += ',`CreatorID` int(10) DEFAULT NULL';
+	sql += ',PRIMARY KEY (`ID`)';
+	sql += ',UNIQUE KEY `Username` (`Username`)';
+	sql += ',UNIQUE KEY `Email` (`Email`)';
+	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
 
+	// Table: history_people
+	sql += 'CREATE TABLE `history_people` (';
+	sql += '`RevisionID` int(10) unsigned NOT NULL AUTO_INCREMENT';
+	sql += ',`ID` int(10) unsigned NOT NULL';
+	sql += ',`Class` enum(\'Person\',\'User\') NOT NULL DEFAULT \'Person\'';
+	sql += ',`FirstName` varchar(255) NOT NULL';
+	sql += ',`LastName` varchar(255) NOT NULL';
+	sql += ',`Username` varchar(255) DEFAULT NULL';
+	sql += ',`Password` char(40) DEFAULT NULL';
+	sql += ',`AccountLevel` enum(\'Disabled\',\'Contact\',\'User\',\'Staff\',\'Administrator\',\'Developer\') NOT NULL DEFAULT \'User\'';
+	sql += ',`Gender` enum(\'Male\',\'Female\') DEFAULT NULL';
+	sql += ',`BirthDate` date DEFAULT NULL';
+	sql += ',`Email` varchar(255) DEFAULT NULL';
+	sql += ',`PrimaryPhotoID` int(10) unsigned DEFAULT NULL';
+	sql += ',`Phone` decimal(10,0) unsigned DEFAULT NULL';
+	sql += ',`Location` varchar(255) DEFAULT NULL';
+	sql += ',`About` text';
+	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
+	sql += ',`CreatorID` int(10) DEFAULT NULL';
+	sql += ',PRIMARY KEY (`RevisionID`)';
+	sql += ',KEY `ID` (`ID`)';
+	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
+
+	// Table: tokens
+	sql += 'CREATE TABLE `tokens` (';
+	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
+	sql += ',`Class` enum(\'PasswordToken\') NOT NULL';
+	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
+	sql += ',`CreatorID` int(10) unsigned NOT NULL';
+	sql += ',`Handle` varchar(255) NOT NULL';
+	sql += ',`Expires` timestamp NULL DEFAULT NULL';
+	sql += ',`Used` timestamp NULL DEFAULT NULL';
+	sql += ',PRIMARY KEY (`ID`)';
+	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
+
+	// Table: media
+	sql += 'CREATE TABLE `media` (';
+	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
+	sql += ',`Class` enum(\'Media\',\'PhotoMedia\',\'AudioMedia\',\'VideoMedia\',\'PDFMedia\') NOT NULL';
+	sql += ',`ContextClass` enum(\'Person\',\'Album\',\'BlogPost\') DEFAULT NULL';
+	sql += ',`ContextID` int(10) unsigned DEFAULT NULL';
+	sql += ',`MIMEType` enum(\'image/gif\',\'image/jpeg\',\'image/png\',\'video/x-flv\',\'application/pdf\',\'audio/mpeg\') NOT NULL';
+	sql += ',`Width` smallint(5) unsigned NOT NULL';
+	sql += ',`Height` smallint(5) unsigned NOT NULL';
+	sql += ',`Duration` float unsigned DEFAULT NULL';
+	sql += ',`Caption` varchar(255) DEFAULT NULL';
+	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
+	sql += ',`CreatorID` mediumint(8) unsigned NOT NULL';
+	sql += ',PRIMARY KEY (`ID`)';
+	sql += ',KEY `Context` (`ContextClass`,`ContextID`)';
+	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
+console.log('running sql: '+sql);
+	// run tables
 	me.client.query(sql, function(error, results) {
 		if(error)
 		{

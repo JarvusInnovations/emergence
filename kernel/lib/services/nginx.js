@@ -15,7 +15,7 @@ exports.nginx = function(name, controller, options) {
 	exports.nginx.super_.apply(me, arguments);
 	
 	// default options
-	me.options.bootstrapDir = me.options.bootstrapDir || '/emergence/bootstrapper';
+	me.options.bootstrapDir = me.options.bootstrapDir || '/emergence/php-bootstrap';
 	me.options.configPath = me.options.configPath || controller.options.configDir + '/nginx.conf';
 	me.options.execPath = me.options.execPath || '/usr/sbin/nginx';
 	me.options.bindHost = me.options.bindHost || '0.0.0.0';
@@ -205,7 +205,7 @@ exports.nginx.prototype.makeConfig = function() {
 		c += '		error_log '+logsDir+'/error.log info;\n';
 	
 		c += '		location / {\n';
-		c += '			root /emergence/root;\n';
+		c += '			root '+me.options.bootstrapDir+'/root;\n';
 		c += '			index index.php;\n';
 		c += '			rewrite ^(.+)$ /index.php last;\n';
 		c += '		}\n';

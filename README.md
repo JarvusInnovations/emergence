@@ -28,6 +28,9 @@ Requirements
 * mysql
 * nginx
 * php-fpm
+	* php 5.3+
+	* apc
+	* mysqli
 
 
 Installation
