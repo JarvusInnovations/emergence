@@ -2,7 +2,7 @@
 
 class File
 {
-	static public $magicPath = '/usr/share/misc/magic.mgc';
+	static public $magicPath = null;// '/usr/share/misc/magic.mgc'
 
 	static public function getMIMEType($filename)
 	{
