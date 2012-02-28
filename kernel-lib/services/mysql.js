@@ -3,8 +3,7 @@ var _ = require('underscore')
 	,path = require('path')
 	,util = require('util')
 	,spawn = require('child_process').spawn
-	,exec = require('child_process').exec
-	,MysqlClient = require('mysql').Client;
+	,exec = require('child_process').exec;
 	
 exports.createService = function(name, controller, options) {
 	return new exports.mysql(name, controller, options);
@@ -36,11 +35,11 @@ exports.mysql = function(name, controller, options) {
 	}
 	
 	// instantiate MySQL client
-	me.client = new MysqlClient();
-	//me.client.database = 'information_schema';
-	me.client.user = me.options.managerUser;
-	me.client.password = me.options.managerPassword;
-	me.client.port = me.options.socketPath;
+	me.client = require('mysql').createClient({
+		port: me.options.socketPath
+		,user: me.options.managerUser
+		,password: me.options.managerPassword
+	});
 
 	// check for existing mysqld process
 	if(path.existsSync(me.options.pidPath))
@@ -228,6 +227,8 @@ exports.mysql.prototype.makeConfig = function() {
 exports.mysql.prototype.connectClient = function() {
 	var me = this;
 	
+	// new mysql client does this automatically now... this routine will probably be removed soon 
+/*
 	me.client.connect(function(error, results) {
 		if(error)
 		{
@@ -237,6 +238,7 @@ exports.mysql.prototype.connectClient = function() {
 		}
 		console.log(me.name+': mysql client connected');
 	});
+*/
 };
 
 exports.mysql.prototype.onSiteCreated = function(siteData) {

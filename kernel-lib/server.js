@@ -19,7 +19,7 @@ exports.server = function(paths, options) {
 	me.options = options || {};
 	me.options.host = me.options.host || '0.0.0.0';
 	me.options.port = me.options.port || 1337;
-	me.options.staticDir = me.options.staticDir || './www';
+	me.options.staticDir = me.options.staticDir || './kernel-www';
 	
 	// initialize state
 }

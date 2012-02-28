@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // requirements
 var _ = require('underscore')
 	,util = require('util')
@@ -8,11 +10,11 @@ var _ = require('underscore')
 var CONFIG = JSON.parse(fs.readFileSync('kernel.config.json'));
 
 // load core modules
-var eSites = require('./lib/sites.js').createSites(CONFIG.sites);
-var eServices = require('./lib/services.js').createServices(eSites, CONFIG.services);
+var eSites = require('../kernel-lib/sites.js').createSites(CONFIG.sites);
+var eServices = require('../kernel-lib/services.js').createServices(eSites, CONFIG.services);
 
 // instantiate management server
-var eManagementServer = require('./lib/server.js').createServer({
+var eManagementServer = require('../kernel-lib/server.js').createServer({
 	sites: eSites
 	,services: eServices
 }, CONFIG.server);

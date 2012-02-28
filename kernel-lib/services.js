@@ -15,11 +15,15 @@ exports.ServicesController = function(sites, options) {
 	// initialize options and apply defaults
 	me.options = options || {};
 	me.options.plugins = me.options.plugins || {};
-	me.options.logsDir = me.options.logsDir || '/emergence/logs';
-	me.options.configDir = me.options.configDir || '/emergence/kernel/etc';
-	me.options.runDir = me.options.runDir || '/emergence/kernel/run';
+	me.options.servicesDir = me.options.servicesDir || '/emergence/services';
+	me.options.logsDir = me.options.logsDir || me.options.servicesDir+'/logs';
+	me.options.configDir = me.options.configDir || me.options.servicesDir+'/etc';
+	me.options.runDir = me.options.runDir || me.options.servicesDir+'/run';
 	
 	// create required directories
+	if(!path.existsSync(me.options.servicesDir))
+		fs.mkdirSync(me.options.servicesDir, 0775);
+		
 	if(!path.existsSync(me.options.logsDir))
 		fs.mkdirSync(me.options.logsDir, 0775);
 	

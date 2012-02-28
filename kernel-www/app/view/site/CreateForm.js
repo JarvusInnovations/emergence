@@ -85,6 +85,7 @@ Ext.define('eMan.view.site.CreateForm', {
             	fields: ['hostname', 'key']
             	,data: [
             		{hostname: 'skeleton.mics.me', key: 'm6Q136L0mDsWmShJ'}
+            		,{hostname: 'skeleton.emr.ge', key: '8U6kydil36bl3vlJ'}
             	]
             })
             ,listeners: {
@@ -94,6 +95,7 @@ Ext.define('eMan.view.site.CreateForm', {
                     
                     if(hostField.getValue())
                     {
+                    	console.log('isHidden?', !keyField.isHidden());
                     	if(!keyField.isHidden())
                     	{
 	                    	keyField.show();
