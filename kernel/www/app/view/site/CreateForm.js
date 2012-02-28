@@ -94,14 +94,16 @@ Ext.define('eMan.view.site.CreateForm', {
                     
                     if(hostField.getValue())
                     {
-                    	keyField.show();
-                    	keyField.focus();
+                    	if(!keyField.isHidden())
+                    	{
+	                    	keyField.show();
+	                    	keyField.focus();
+	                    }
                     }
                     else
                     {
                     	keyField.setValue('');
                     	keyField.hide();
-                    	this.getForm().findField('user_email').focus();
                     }
                 }
             }
@@ -138,6 +140,12 @@ Ext.define('eMan.view.site.CreateForm', {
                 fieldLabel: 'Password'
                 ,inputType: 'password'
                 ,name: 'user_password'
+            },{
+                fieldLabel: 'FirstName'
+                ,name: 'user_first'
+            },{
+                fieldLabel: 'LastName'
+                ,name: 'user_last'
             }]
         }];
 
@@ -145,6 +153,10 @@ Ext.define('eMan.view.site.CreateForm', {
 	}
 	
 
-
+	,loadRecord: function(record) {
+		this.callParent(arguments);
+		
+		this.getForm().findField('parent_key').setVisible(record.get('parent_hostname'));
+	}
 
 });

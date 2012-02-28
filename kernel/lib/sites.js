@@ -19,6 +19,9 @@ exports.sites = function(options) {
 	// initialize options and apply defaults
 	me.options = options || {};
 	me.options.sitesDir = me.options.sitesDir || '/emergence/sites';
+	me.options.dataUID = me.options.dataUID || 65534;
+	me.options.dataGID = me.options.dataGID || 65534;
+	me.options.dataMode = me.options.dataMode || 0775;
 	
 	// create required directories
 	if(!path.existsSync(me.options.sitesDir))
@@ -104,15 +107,15 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 		siteData.handle = request.path[1] || siteData.primary_hostname;
 	
 	if(!siteData.label)
-		siteData.label = false;
+		siteData.label = null;
 		
-	// generate inheritence key
-	if(!siteData.inheritence_key)
-		siteData.inheritence_key = me.generatePassword(16);
+	// generate inheritance key
+	if(!siteData.inheritance_key)
+		siteData.inheritance_key = me.generatePassword(16);
 		
 	// parent hostname
 	if(!siteData.parent_hostname)
-		siteData.parent_hostname = false;
+		siteData.parent_hostname = null;
 		
 	// hostnames
 	if(siteData.hostnames && _.isString(siteData.hostnames))
@@ -132,7 +135,10 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 	}
 
 	if(!path.existsSync(dataDir))
-		fs.mkdirSync(dataDir, 0775);
+	{
+		fs.mkdirSync(dataDir, me.options.dataMode);
+		fs.chownSync(dataDir, me.options.dataUID, me.options.dataGID);
+	}
 		
 	// write site config to file
 	this.sites[siteData.handle] = siteData;

@@ -43,8 +43,8 @@ class SiteCollection
 				return $this->_record['Handle'];
 			case 'Status':
 				return $this->_record['Status'];
-			case 'Site':
-				return $this->_record['Site'];
+			case 'SiteID':
+				return $this->_record['SiteID'];
 			case 'ParentID':
 				return $this->_record['ParentID'];
 			case 'Parent':
@@ -68,14 +68,8 @@ class SiteCollection
 		return new static($record['Handle'], $record);
 	}
 	
-	static public function getRecordByHandle($handle, $parentID = null, $remote = false, $includeDeleted = false)
+	static public function getRecordByHandle($handle, $parentID = null, $siteID = null, $includeDeleted = false)
 	{
-		if(!is_bool($remote))
-		{
-			debug_print_backtrace();
-			die('SiteID must be converted to (bool)$remote');
-		}
-		
 		$where[] = sprintf('Handle = "%s"', DB::escape($handle));
 		
 		if(!$includeDeleted)
@@ -88,7 +82,7 @@ class SiteCollection
 		else
 		{
 			$where[] = 'ParentID IS NULL';
-			$where[] = sprintf('Site = "%s"', $remote ? 'Remote' : 'Local');
+			$where[] = sprintf('SiteID = %u', $siteID ? $siteID : Site::getSiteID());
 		}
 		
 		return DB::oneRecord(
@@ -125,10 +119,10 @@ class SiteCollection
     	return SiteFile::getTree($this);
     }
 
-	static public function getByHandle($handle, $parentID = null, $remote = false, $includeDeleted = false)
+	static public function getByHandle($handle, $parentID = null, $siteID = null, $includeDeleted = false)
 	{
-		$record = static::getRecordByHandle($handle, $parentID, $remote, $includeDeleted);
-
+		$record = static::getRecordByHandle($handle, $parentID, $siteID, $includeDeleted);
+		
 		return $record ? new static($record['Handle'], $record) : null;
 	}
 	
@@ -178,7 +172,7 @@ class SiteCollection
 			throw new Sabre_DAV_Exception_FileNotFound('Access denied');
 
 		// try to get collection record
-		if($collection = static::getByHandle($handle, $this->ID, $this->Site == 'Remote'))
+		if($collection = static::getByHandle($handle, $this->ID, $this->SiteID))
 		{
 			return $collection;
 		}
@@ -255,7 +249,9 @@ class SiteCollection
 	
 	public function getLocalizedCollection()
 	{
-		if($this->Site == 'Local')
+		$siteID = Site::getSiteID();
+		
+		if($this->SiteID == $siteID)
 			return $this;
 			
 		// discover parent tree
@@ -285,7 +281,7 @@ class SiteCollection
     public function createDirectory($handle)
     {
     	// check if deleted record already exists
-    	$existing = static::getByHandle($handle, $this->ID, $this->Site, true);
+    	$existing = static::getByHandle($handle, $this->ID, $this->SiteID, true);
     	if($existing)
     	{
     		if($existing->Status == 'Deleted')
@@ -317,7 +313,7 @@ class SiteCollection
 			}
 			while($curNode = $curNode->Parent);
 			
-			if($this->Site == 'Remote')
+			if($this->SiteID != Site::getSiteID())
 				array_unshift($path, '_parent');
 				
 			$this->_fullPath = $path;
@@ -326,20 +322,14 @@ class SiteCollection
 		return $this->_fullPath;
     }
     
-    static public function getAllRootCollections($remote = false)
+    static public function getAllRootCollections($siteID = null)
     {
-		if(!is_bool($remote))
-		{
-			debug_print_backtrace();
-			die('SiteID must be converted to (bool)$remote');
-		}
-
     	$collections = array();
     	$results = DB::query(
-    		'SELECT * FROM `%s` WHERE Site = "%s" AND ParentID IS NULL AND Status = "Normal" ORDER BY Handle'
+    		'SELECT * FROM `%s` WHERE SiteID = %u AND ParentID IS NULL AND Status = "Normal" ORDER BY Handle'
 			,array(
 				static::$tableName
-				,$remote ? 'Remote' : 'Local'
+				,$siteID ? $siteID : Site::getSiteID()
 			)
     	);
     	while($collectionRecord = $results->fetch_assoc())
@@ -350,53 +340,47 @@ class SiteCollection
     	return $collections;
     }
     
-    static public function getOrCreateRootCollection($handle, $remote = false)
+    static public function getOrCreateRootCollection($handle, $siteID = null)
     {
-    	return static::getOrCreateCollection($handle, null, $remote);
+    	return static::getOrCreateCollection($handle, null, $siteID);
     }
     
-    static public function getOrCreateCollection($handle, $parentCollection = null, $remote = false)
+    static public function getOrCreateCollection($handle, $parentCollection = null, $siteID = null)
     {
-		if(!is_bool($remote))
-		{
-			debug_print_backtrace();
-			die('SiteID must be converted to (bool)$remote');
-		}
-
-    	if($parentCollection)
-    		$remote = $parentCollection->Site=='Remote';
+    	if(!$siteID && $parentCollection)
+    		$siteID = $parentCollection->SiteID;
     
     	//printf("looking for %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
-    	if(!$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote))
+    	if(!$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $siteID))
     	{
     		//printf("creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
-    		static::createRecord($handle, $parentCollection, $remote);
+    		static::createRecord($handle, $parentCollection, $siteID);
     		//printf("getting after creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
-    		$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote);
+    		$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $siteID);
     	}
     
     	return $collection;
     }
     
-    static public function getCollection($handle, $parentCollection = null, $remote = false)
+    static public function getCollection($handle, $parentCollection = null, $siteID = null)
     {
     
     }
     
-    static public function create($handle, $parentCollection = null, $remote = false)
+    static public function create($handle, $parentCollection = null, $siteID = null)
     {
-    	$collectionID = static::createRecord($handle, $parentCollection, $remote);
+    	$collectionID = static::createRecord($handle, $parentCollection, $siteID);
     	return static::getByID($collectionID);
     }
     
-    static public function createRecord($handle, $parentCollection = null, $remote = false)
+    static public function createRecord($handle, $parentCollection = null, $siteID = null)
     {
     	// check for existing deleted node
     	$existingRecord = DB::oneRecord(
-    		'SELECT * FROM `%s` WHERE Site = "%s" AND ParentID = %s AND Handle = "%s"'
+    		'SELECT * FROM `%s` WHERE SiteID = %u AND ParentID = %s AND Handle = "%s"'
     		,array(
 				static::$tableName
-				,$parentCollection ? $parentCollection->Site : ($remote ? 'Remote' : 'Local')
+				,$parentCollection ? $parentCollection->SiteID : ($siteID ? $siteID : Site::getSiteID())
 				,$parentCollection ? $parentCollection->ID : 'NULL'
 				,DB::escape($handle)
     		)
@@ -441,9 +425,9 @@ class SiteCollection
 		}
 		
 		// create record
-		DB::nonQuery('INSERT INTO `%s` SET Site = "%s", Handle = "%s", CreatorID = %u, ParentID = %s, PosLeft = %u, PosRight = %u', array(
+		DB::nonQuery('INSERT INTO `%s` SET SiteID = %u, Handle = "%s", CreatorID = %u, ParentID = %s, PosLeft = %u, PosRight = %u', array(
 			static::$tableName
-			,$parentCollection ? $parentCollection->Site : ($remote ? 'Remote' : 'Local')
+			,$parentCollection ? $parentCollection->SiteID : ($siteID ? $siteID : Site::getSiteID())
 			,DB::escape($handle)
 			,$GLOBALS['Session']->PersonID
 			,$parentCollection ? $parentCollection->ID : 'NULL'

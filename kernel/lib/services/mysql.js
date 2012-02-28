@@ -24,7 +24,7 @@ exports.mysql = function(name, controller, options) {
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/mysqld.pid';
 	me.options.socketPath = me.options.socketPath || me.options.runDir + '/mysqld.sock';
 	me.options.dataDir = me.options.dataDir || '/var/lib/mysql';
-	me.options.errorLogPath = me.options.errorLogPath || controller.options.logsDir + '/mysqld.err';
+	me.options.errorLogPath = me.options.errorLogPath || controller.options.logsDir + '/mysql/mysqld.err';
 	me.options.managerUser = me.options.managerUser || 'eman';
 	me.options.managerPassword = me.options.managerPassword || '';
 	
@@ -46,10 +46,18 @@ exports.mysql = function(name, controller, options) {
 	if(path.existsSync(me.options.pidPath))
 	{
 		me.pid = parseInt(fs.readFileSync(me.options.pidPath));
-		me.status = 'online';
-		console.log(me.name+': found existing PID: '+me.pid);
+		console.log(me.name+': found existing PID: '+me.pid+', checking /proc/'+me.pid);
 		
-		this.connectClient();
+		if(path.existsSync('/proc/'+me.pid))
+		{
+			me.status = 'online';
+			this.connectClient();
+		}
+		else
+		{
+			console.log(me.name+': process '+me.pid + ' not found, deleting .pid file');
+			fs.unlinkSync(me.options.pidPath);
+		}
 	}
 	
 	// listen for site creation
@@ -240,7 +248,7 @@ exports.mysql.prototype.onSiteCreated = function(siteData) {
 	
 	sql += 'CREATE DATABASE IF NOT EXISTS `'+siteData.handle+'`;';
 	sql += 'CREATE USER \''+siteData.handle+'\'@\'localhost\' IDENTIFIED BY \''+password+'\';';
-	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
+	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, LOCK TABLES  ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
 	sql += 'FLUSH PRIVILEGES;';
 	
 	me.client.query(sql, function(error, results) {
@@ -378,7 +386,7 @@ exports.mysql.prototype.createSkeletonTables = function(siteData) {
 	sql += ',PRIMARY KEY (`RevisionID`)';
 	sql += ',KEY `ID` (`ID`)';
 	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-
+	
 	// Table: tokens
 	sql += 'CREATE TABLE `tokens` (';
 	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
@@ -407,7 +415,9 @@ exports.mysql.prototype.createSkeletonTables = function(siteData) {
 	sql += ',PRIMARY KEY (`ID`)';
 	sql += ',KEY `Context` (`ContextClass`,`ContextID`)';
 	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-console.log('running sql: '+sql);
+	
+	//console.log('running sql: '+sql);
+	
 	// run tables
 	me.client.query(sql, function(error, results) {
 		if(error)
@@ -418,4 +428,32 @@ console.log('running sql: '+sql);
 		
 		console.log(me.name+': skeleton table schema setup');
 	});
+	
+	// create first developer
+	if(siteData.create_user)
+	{
+		console.log(me.name+': creating first developer...');
+		
+		me.client.query(
+			'INSERT INTO people SET Class = "User", FirstName = ?, LastName = ?, Email = ?, Username = ?, Password = SHA1(?), AccountLevel = "Developer"'
+			,[
+				siteData.create_user.FirstName
+				,siteData.create_user.LastName
+				,siteData.create_user.Email
+				,siteData.create_user.Username
+				,siteData.create_user.Password
+			]
+			,function(error, results) {
+				if(error)
+				{
+					console.log(me.name+': failed to create user `'+siteData.create_user.Username+'`: '+error);
+					return;
+				}
+				
+				console.log(me.name+': user created');
+			}
+		);
+	}
+
+
 };

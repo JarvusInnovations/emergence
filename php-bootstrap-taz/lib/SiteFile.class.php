@@ -225,11 +225,11 @@ class SiteFile
 	
 	static public function createPhantom($collectionID, $handle, $ancestorID = null)
 	{
-		DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Phantom", AuthorID = %s, AncestorID = %s', array(
+		DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Phantom", AuthorID = %u, AncestorID = %s', array(
 			static::$tableName
 			,$collectionID
 			,DB::escape($handle)
-			,$GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
+			,$GLOBALS['Session']->PersonID
 			,$ancestorID ? $ancestorID : 'NULL'
 		));
 		
@@ -350,7 +350,8 @@ class SiteFile
 			foreach($headers AS $header)
 				header($header);
 		}
-
+		
+		
 		readfile($this->RealPath);
 		exit();
 	}

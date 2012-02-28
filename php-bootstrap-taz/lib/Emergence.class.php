@@ -7,18 +7,18 @@ class Emergence
     
 	static public function handleRequest()
 	{
-		if(empty(Site::$config['inheritance_key']))
+		if(!$accessKey = Site::getHostConfig('AccessKey'))
 		{
 			Site::respondUnauthorized('Remote emergence access is disabled');
 		}
-		elseif(empty($_REQUEST['accessKey']) || $_REQUEST['accessKey'] != Site::$config['inheritance_key'])
+		elseif(empty($_REQUEST['accessKey']) || $_REQUEST['accessKey'] != $accessKey)
 		{
 			Site::respondUnauthorized('Remote emergence access denied');
 		}
 
 		//Debug::dumpVar(Site::$requestPath, false);
 		//Debug::dumpVar(Site::$pathStack, false);
-		if($node = Site::resolvePath(Site::$pathStack))
+		if($node = Site::resolvePath(Site::$pathStack, false))
 		{
 			//Debug::dumpVar($node);
 			//header('X-Emergence-Site-ID: '.static::$ID);
@@ -29,33 +29,30 @@ class Emergence
 		}
 		else
 		{
-			header('HTTP/1.0 404 Not Found');
-			die('File not found');
+			Site::respondNotFound('File not found');
 		}
 	}
 	
 	
 	static public function resolveFileFromParent($collectionHandle, $path)
 	{
-		if(empty(Site::$config['parent_hostname']))
+		if(!$parentConfig = Site::getParentHostConfig())
+		{
 			return false;
-
+		}
+		
 		// get collection for parent site
-		$collection = SiteCollection::getOrCreateRootCollection($collectionHandle, true);
+		$collection = SiteCollection::getOrCreateRootCollection($collectionHandle, $parentConfig['ID']);
 		
 		$fileNode = $collection->resolvePath($path);
 
 		// try to download from parent site
 		if(!$fileNode)
 		{
-			$remoteURL  = 'http://'.Site::$config['parent_hostname'].'/emergence/';
+			$remoteURL  = 'http://'.$parentConfig['Hostname'].'/emergence/';
 			$remoteURL .= $collectionHandle.'/';
 			$remoteURL .= join('/',$path);
-			$remoteURL .= '?accessKey='.Site::$config['parent_key'];
-			
-//			if($_SERVER['HTTP_HOST'] == 'newsite.sites.emr.ge')
-//				print("checking cache $remoteURL<br>\n");
-				
+			$remoteURL .= '?accessKey='.$parentConfig['AccessKey'];
             $cache = apc_fetch($remoteURL);
             if($cache == '404') {
             	return false;
@@ -66,11 +63,8 @@ class Emergence
             //}
             
 			$fp = fopen('php://memory', 'w+');
-
-//			if($_SERVER['HTTP_HOST'] == 'newsite.sites.emr.ge')
-//				print("Retrieving: <a href='$remoteURL' target='_blank'>$remoteURL</a><br>\n");
-
-			//die("getting $remoteURL");
+			
+			//print("Retrieving: <a href='$remoteURL' target='_blank'>$remoteURL</a><br>\n");
 			$ch = curl_init($remoteURL);
 			curl_setopt($ch, CURLOPT_FILE, $fp);
 			curl_setopt($ch, CURLOPT_HEADER, true);
@@ -92,9 +86,7 @@ class Emergence
 			// read status
 			$statusLine = trim(fgetss($fp));
 			list($protocol,$status,$message) = explode(' ', $statusLine);
-			//die("got status $status");
-//			if($_SERVER['HTTP_HOST'] == 'newsite.sites.emr.ge')
-//				print("got status $status<br>\n");
+			
 			
 
 			if($status != '200')

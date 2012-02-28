@@ -35,6 +35,8 @@ exports.nginx = function(name, controller, options) {
 		me.status = 'online';
 	}
 	
+	// listen for site creation
+	controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
 }
 util.inherits(exports.nginx, require('./abstract.js').AbstractService);
 
@@ -115,6 +117,30 @@ exports.nginx.prototype.stop = function() {
 	
 	me.status = 'offline';
 	me.pid = null;
+	return true;
+}
+
+
+exports.nginx.prototype.restart = function() {
+	var me = this;
+
+	if(!me.pid)
+		return false;
+		
+	this.writeConfig();
+
+	try
+	{
+		process.kill(me.pid, 'SIGHUP');
+	}
+	catch(error)
+	{
+		console.log(me.name+': failed to restart process: '+error);
+		return false;
+	}
+	
+	console.log(me.name+': reloaded config for process '+me.pid);
+	
 	return true;
 }
 
@@ -226,4 +252,9 @@ exports.nginx.prototype.makeConfig = function() {
 	c += '}\n';
 
 	return c;
+};
+
+
+exports.nginx.prototype.onSiteCreated = function(siteData) {
+	this.restart();
 };

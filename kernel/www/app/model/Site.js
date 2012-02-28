@@ -1,7 +1,16 @@
 Ext.define('eMan.model.Site', {
 	extend: 'Ext.data.Model'
 
-	,fields: ['handle','primary_hostname','hostnames','label','parent_hostname','parent_key']
+	,fields: [
+		{name: 'handle', type: 'string'}
+		,{name: 'primary_hostname', type: 'string'}
+		,{name: 'hostnames'}
+		,{name: 'label', type: 'string', useNull: true}
+		,{name: 'parent_hostname', type: 'string', useNull: true}
+		,{name: 'parent_key', type: 'string', useNull: true}
+		,{name: 'inheritance_key', type: 'string'}
+		,{name: 'create_user', useNull: true}
+	]
 	,idProperty: 'handle'
 	,proxy: {
 		type: 'rest'

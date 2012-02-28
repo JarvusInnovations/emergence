@@ -63,6 +63,10 @@ Ext.define('eMan.view.site.Grid', {
 				metaData.tdCls = 'x-cell-empty';
 				return 'None';
 			}
+		},{
+			text: 'Inheritance Key'
+			,dataIndex: 'inheritance_key'
+			,width: 150
 		}];
 
 		this.callParent(arguments);

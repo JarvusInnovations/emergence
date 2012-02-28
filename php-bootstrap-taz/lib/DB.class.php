@@ -448,13 +448,8 @@ class DB
 	{
 		if (!isset(self::$_mysqli))
 		{
-			$config = array_merge(array(
-				'host' => 'localhost'
-				,'port' => 3306
-			), Site::$config['mysql']);
-
 			// connect to mysql database
-			self::$_mysqli = @new mysqli($config['host'], $config['username'], $config['password'], $config['database'], $config['port'], $config['socket']);
+			self::$_mysqli = @new mysqli(Site::$databaseHost, Site::$databaseUsername, Site::$databasePassword, Site::$databaseName);
 	
 			// check for failure or connection error
 			if (mysqli_connect_error())
@@ -507,12 +502,10 @@ class DB
 			
 		//$report .= ErrorHandler::formatBacktrace(debug_backtrace());
 					
-		if(!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person)
+		if($GLOBALS['Session']->Person)
 		{
 			$report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->data, true));
 		}
-
-		$report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
 		
 		
 		if(Site::$debug)
