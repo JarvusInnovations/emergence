@@ -445,7 +445,7 @@ class SiteCollection
 			static::$tableName
 			,$parentCollection ? $parentCollection->Site : ($remote ? 'Remote' : 'Local')
 			,DB::escape($handle)
-			,$GLOBALS['Session']->PersonID
+			,!empty($GLOBALS['Session']) ? $GLOBALS['Session']->PersonID : null
 			,$parentCollection ? $parentCollection->ID : 'NULL'
 			,$left
 			,$right

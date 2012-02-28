@@ -10,7 +10,7 @@
 			}
 			,"sql": {
 				"type": "mysql"
-				,"managerUser": "eman"
+				,"managerUser": "emergence"
 				,"managerPassword": "CHANGEME"
 			}
 		}

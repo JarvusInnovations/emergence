@@ -44,6 +44,7 @@ Ext.define('eMan.view.site.CreateForm', {
             fieldLabel: 'Handle'
             ,name: 'handle'
             ,allowBlank: false
+            ,maxLength: 16
         },{
             fieldLabel: 'Primary Hostname'
             ,name: 'primary_hostname'
@@ -95,11 +96,16 @@ Ext.define('eMan.view.site.CreateForm', {
                     
                     if(hostField.getValue())
                     {
-                    	console.log('isHidden?', !keyField.isHidden());
-                    	if(!keyField.isHidden())
+                    	if(keyField.isHidden() || !keyField.getValue())
                     	{
 	                    	keyField.show();
-	                    	keyField.focus();
+	                    	
+	                    	var hostRecord = hostField.findRecordByValue(hostField.getValue());
+	                    	
+	                    	if(hostRecord && hostRecord.get('key'))
+	                    		keyField.setValue(hostRecord.get('key'));
+	                    	else
+	                    		keyField.focus();
 	                    }
                     }
                     else
@@ -143,10 +149,10 @@ Ext.define('eMan.view.site.CreateForm', {
                 ,inputType: 'password'
                 ,name: 'user_password'
             },{
-                fieldLabel: 'FirstName'
+                fieldLabel: 'First name'
                 ,name: 'user_first'
             },{
-                fieldLabel: 'LastName'
+                fieldLabel: 'Last name'
                 ,name: 'user_last'
             }]
         }];

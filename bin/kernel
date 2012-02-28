@@ -7,7 +7,7 @@ var _ = require('underscore')
 	,fs = require('fs');
 
 // load kernel configuration
-var CONFIG = JSON.parse(fs.readFileSync('kernel.config.json'));
+var CONFIG = JSON.parse(fs.readFileSync('/emergence/kernel.config.json'));
 
 // load core modules
 var eSites = require('../kernel-lib/sites.js').createSites(CONFIG.sites);
