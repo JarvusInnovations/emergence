@@ -15,17 +15,28 @@ exports.nginx = function(name, controller, options) {
 	exports.nginx.super_.apply(me, arguments);
 	
 	// default options
-	me.options.bootstrapDir = me.options.bootstrapDir || '/emergence/php-bootstrap';
+	me.options.bootstrapDir = me.options.bootstrapDir || path.resolve(__dirname, '../../php-bootstrap');
 	me.options.configPath = me.options.configPath || controller.options.configDir + '/nginx.conf';
 	me.options.execPath = me.options.execPath || '/usr/sbin/nginx';
 	me.options.bindHost = me.options.bindHost || '0.0.0.0';
 	me.options.bindPort = me.options.bindPort || 80;
 	me.options.runDir = me.options.runDir || controller.options.runDir + '/nginx';
+	me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/nginx';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
+	me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/errors.log';
+	
+	me.options.phpLogsDir = me.options.phpLogsDir || controller.options.logsDir + '/php';
+	me.options.phpErrorLogPath = me.options.phpErrorLogPath || me.options.phpLogsDir + '/errors.log';
 	
 	// create required directories
 	if(!path.existsSync(me.options.runDir))
 		fs.mkdirSync(me.options.runDir, 0775);
+	
+	if(!path.existsSync(me.options.logsDir))
+		fs.mkdirSync(me.options.logsDir, 0775);
+	
+	if(!path.existsSync(me.options.phpLogsDir))
+		fs.mkdirSync(me.options.phpLogsDir, 0775);
 	
 	// check for existing master process
 	if(path.existsSync(me.options.pidPath))
@@ -156,7 +167,7 @@ exports.nginx.prototype.makeConfig = function() {
 	c += 'user nginx nginx;\n';
 	c += 'worker_processes 1;\n';
 	c += 'pid '+me.options.pidPath+';\n';
-	c += 'error_log /var/log/nginx/error_log info;\n';
+	c += 'error_log '+me.options.errorLogPath+' info;\n';
 
 	c += 'events {\n';
 	c += '	worker_connections 1024;\n';
@@ -243,7 +254,10 @@ exports.nginx.prototype.makeConfig = function() {
 		c += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
 		c += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/root$fastcgi_script_name;\n';
 		c += '			fastcgi_param PHP_VALUE	"auto_prepend_file='+me.options.bootstrapDir+'/bootstrap.php\n';
-		c += '						 include_path='+me.options.bootstrapDir+'/lib:'+siteDir+'";\n';
+		c += '						 include_path='+me.options.bootstrapDir+'/lib:'+siteDir+'\n';
+		c += '						 error_log='+me.options.phpErrorLogPath+'\n';
+		c += '						 error_reporting = E_ALL & ~E_NOTICE\n';
+		c += '						 date.timezone = America/New_York";\n';
 		c += '			fastcgi_index index.php;\n';
 		c += '		}\n';
 		c += '	}\n';
