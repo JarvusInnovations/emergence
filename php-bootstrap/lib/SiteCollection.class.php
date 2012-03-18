@@ -285,7 +285,7 @@ class SiteCollection
     public function createDirectory($handle)
     {
     	// check if deleted record already exists
-    	$existing = static::getByHandle($handle, $this->ID, $this->Site, true);
+    	$existing = static::getByHandle($handle, $this->ID, $this->Site != 'Local', true);
     	if($existing)
     	{
     		if($existing->Status == 'Deleted')
