@@ -1,0 +1,16 @@
+{
+    "name": "lib-v8debug",
+    "description": "Implementation of the V8 debugger protocol",
+    "version": "0.1",
+    "homepage" : "http://github.com/ajaxorg/lib-v8debug",
+    "author": "Fabian Jakobs <fabian@ajax.org>",
+    "main": "lib/v8debug",
+    "repository" : {
+        "type" : "git",
+         "url" : "http://github.com/ajaxorg/lib-v8debug.git"
+    },
+    "licenses": [{
+        "type": "LGPLv3",
+        "url": "http://www.gnu.org/licenses/lgpl-3.0.txt"}
+    ]
+}
