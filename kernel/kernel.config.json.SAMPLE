@@ -1,0 +1,18 @@
+{
+	"server": {
+		"host": "127.0.0.1"
+	}
+	,"services": {
+		"plugins": {
+			"web": {
+				"type": "nginx"
+				,"bindHost": "0.0.0.0"
+			}
+			,"sql": {
+				"type": "mysql"
+				,"managerUser": "eman"
+				,"managerPassword": "CHANGEME"
+			}
+		}
+	}
+}
