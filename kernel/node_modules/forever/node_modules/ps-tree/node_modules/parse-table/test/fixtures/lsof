@@ -1,0 +1,23 @@
+COMMAND   PID    USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME
+node    16125 dominic  cwd    DIR  251,0     4096 7343807 /home/dominic/source/dev/haibu
+node    16125 dominic  rtd    DIR  251,0     4096       2 /
+node    16125 dominic  txt    REG  251,0  8019298 5788203 /usr/local/bin/node
+node    16125 dominic  mem    REG  251,0    79476 2883827 /lib/libz.so.1.2.3.4
+node    16125 dominic  mem    REG  251,0  1421892 2887541 /lib/libc-2.12.1.so
+node    16125 dominic  mem    REG  251,0   121578 2887555 /lib/libpthread-2.12.1.so
+node    16125 dominic  mem    REG  251,0   108040 2883644 /lib/libgcc_s.so.1
+node    16125 dominic  mem    REG  251,0   149392 2887545 /lib/libm-2.12.1.so
+node    16125 dominic  mem    REG  251,0   930044 5771717 /usr/lib/libstdc++.so.6.0.14
+node    16125 dominic  mem    REG  251,0     9748 2887560 /lib/libutil-2.12.1.so
+node    16125 dominic  mem    REG  251,0     9736 2887544 /lib/libdl-2.12.1.so
+node    16125 dominic  mem    REG  251,0  1353652 2883602 /lib/libcrypto.so.0.9.8
+node    16125 dominic  mem    REG  251,0   294696 2883608 /lib/libssl.so.0.9.8
+node    16125 dominic  mem    REG  251,0    30684 2887557 /lib/librt-2.12.1.so
+node    16125 dominic  mem    REG  251,0   118084 2887538 /lib/ld-2.12.1.so
+node    16125 dominic    0u   CHR  136,0      0t0       3 /dev/pts/0
+node    16125 dominic    1u   CHR  136,0      0t0       3 /dev/pts/0
+node    16125 dominic    2u   CHR  136,0      0t0       3 /dev/pts/0
+node    16125 dominic    3u  0000    0,9        0    4276 anon_inode
+node    16125 dominic    4u  0000    0,9        0    4276 anon_inode
+node    16125 dominic    5u  IPv4 204382      0t0     TCP *:8000 (LISTEN)
+node    16125 dominic    6u  sock    0,6      0t0  204383 can't identify protocol
