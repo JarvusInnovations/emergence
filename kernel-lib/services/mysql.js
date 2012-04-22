@@ -22,9 +22,9 @@ exports.mysql = function(name, controller, options) {
 	me.options.runDir = me.options.runDir || controller.options.runDir + '/mysqld';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/mysqld.pid';
 	me.options.socketPath = me.options.socketPath || me.options.runDir + '/mysqld.sock';
-	me.options.dataDir = me.options.dataDir || '/var/lib/mysql';
+	me.options.dataDir = me.options.dataDir || controller.options.dataDir + '/mysql';
 	me.options.errorLogPath = me.options.errorLogPath || controller.options.logsDir + '/mysql/mysqld.err';
-	me.options.managerUser = me.options.managerUser || 'eman';
+	me.options.managerUser = me.options.managerUser || 'emergence';
 	me.options.managerPassword = me.options.managerPassword || '';
 	
 	// create required directories
@@ -32,6 +32,15 @@ exports.mysql = function(name, controller, options) {
 	{
 		fs.mkdirSync(me.options.runDir, 0775);
 		exec('chown mysql:mysql '+me.options.runDir);
+	}
+	
+	if(!path.existsSync(me.options.dataDir))
+	{
+		fs.mkdirSync(me.options.dataDir, 0775);
+		console.log('mysql_install_db --datadir='+me.options.dataDir+' --basedir=/usr/local');
+		console.log('chown -R mysql:mysql '+me.options.dataDir);
+		exec('mysql_install_db --datadir='+me.options.dataDir+' --basedir=/usr/local');
+		exec('chown -R mysql:mysql '+me.options.runDir);
 	}
 	
 	// instantiate MySQL client
@@ -199,7 +208,7 @@ exports.mysql.prototype.makeConfig = function() {
 	c += 'read_buffer_size 			= 256K\n';
 	c += 'read_rnd_buffer_size 		= 512K\n';
 	c += 'myisam_sort_buffer_size 	= 8M\n';
-	c += 'language 					= /usr/share/mysql/english\n';
+	c += 'lc-messages-dir 					= /usr/local/share/mysql\n';
 
 	if(me.options.bindHost)
 		c += 'bind-address = '+me.options.bindHost+'\n';

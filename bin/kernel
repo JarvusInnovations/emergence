@@ -4,10 +4,78 @@
 var _ = require('underscore')
 	,util = require('util')
 	,url = require('url')
+	,path = require('path')
 	,fs = require('fs');
 
-// load kernel configuration
-var CONFIG = JSON.parse(fs.readFileSync('/emergence/kernel.config.json'));
+
+// try to load existing kernel config
+var CONFIG;
+
+if(path.existsSync('/emergence/config.json'))
+{
+	CONFIG = JSON.parse(fs.readFileSync('/emergence/config.json'));
+}
+else
+{
+	console.log('Initializing new emergence environment...')
+
+	if(!path.existsSync('/emergence'))
+		fs.mkdirSync('/emergence', 0775);
+	
+	CONFIG = {
+		server: {
+			host: "0.0.0.0"
+		}
+		,services: {
+			plugins: { }
+		}
+	};
+	
+	
+	// detect nginx
+	if(path.existsSync('/usr/sbin/nginx'))
+		CONFIG.services.plugins.web = {
+			type: 'nginx'
+			,execPath: '/usr/sbin/nginx'
+		};
+	else if(path.existsSync('/usr/local/sbin/nginx'))
+		CONFIG.services.plugins.web = {
+			type: 'nginx'
+			,execPath: '/usr/local/sbin/nginx'
+		};
+	
+	
+	// detect mysql
+	if(path.existsSync('/usr/sbin/mysqld'))
+		CONFIG.services.plugins.sql = {
+			type: 'mysql'
+			,execPath: '/usr/sbin/mysqld'
+		};
+	else if(path.existsSync('/usr/local/bin/mysqld'))
+		CONFIG.services.plugins.sql = {
+			type: 'mysql'
+			,execPath: '/usr/local/bin/mysqld'
+		};
+	
+	
+	// detect php-fpm
+	if(path.existsSync('/usr/bin/php-fpm'))
+		CONFIG.services.plugins.php = {
+			type: 'php-fpm'
+			,execPath: '/usr/bin/php-fpm'
+		};
+	else if(path.existsSync('/usr/local/sbin/php-fpm'))
+		CONFIG.services.plugins.php = {
+			type: 'php-fpm'
+			,execPath: '/usr/local/sbin/php-fpm'
+		};
+	
+	
+	console.log('GENERATED CONFIG');
+	console.log(util.inspect(CONFIG.services.plugins));
+}
+
+// try to smart-init a new kernel config
 
 // load core modules
 var eSites = require('../kernel-lib/sites.js').createSites(CONFIG.sites);

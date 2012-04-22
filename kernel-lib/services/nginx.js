@@ -18,12 +18,13 @@ exports.nginx = function(name, controller, options) {
 	me.options.bootstrapDir = me.options.bootstrapDir || path.resolve(__dirname, '../../php-bootstrap');
 	me.options.configPath = me.options.configPath || controller.options.configDir + '/nginx.conf';
 	me.options.execPath = me.options.execPath || '/usr/sbin/nginx';
-	me.options.bindHost = me.options.bindHost || '0.0.0.0';
+	me.options.bindHost = me.options.bindHost || '127.0.0.1';
 	me.options.bindPort = me.options.bindPort || 80;
 	me.options.runDir = me.options.runDir || controller.options.runDir + '/nginx';
 	me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/nginx';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
 	me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/errors.log';
+	me.options.miscConfigDir = me.options.miscConfigDir || (process.platform=='darwin'?'/usr/local/etc/nginx':'/etc/nginx')
 	
 	me.options.phpLogsDir = me.options.phpLogsDir || controller.options.logsDir + '/php';
 	me.options.phpErrorLogPath = me.options.phpErrorLogPath || me.options.phpLogsDir + '/errors.log';
@@ -56,11 +57,11 @@ util.inherits(exports.nginx, require('./abstract.js').AbstractService);
 exports.nginx.prototype.start = function() {
 	var me = this;
 	
-	console.log(me.name+': spawning nginx: '+me.options.execPath);
+	console.log(me.name+': spawning daemon: '+me.options.execPath);
 
 	if(me.pid)
 	{
-		console.log(me.name+': nginx already runnig with PID '+me.pid);
+		console.log(me.name+': already running with PID '+me.pid);
 		return false;
 	}
 	
@@ -164,18 +165,21 @@ exports.nginx.prototype.makeConfig = function() {
 	var me = this
 		,c = '';
 		
-	c += 'user nginx nginx;\n';
+	c += 'user nobody nobody;\n';
 	c += 'worker_processes 1;\n';
 	c += 'pid '+me.options.pidPath+';\n';
 	c += 'error_log '+me.options.errorLogPath+' info;\n';
 
 	c += 'events {\n';
 	c += '	worker_connections 1024;\n';
-	c += '	use epoll;\n';
+	
+	if(process.platform == 'linux')
+		c += '	use epoll;\n';
+		
 	c += '}\n';
 
 	c += 'http {\n';
-	c += '	include /etc/nginx/mime.types;\n';
+	c += '	include '+me.options.miscConfigDir+'/mime.types;\n';
 	c += '	default_type application/octet-stream;\n';
 
 	c += '	log_format main\n';
@@ -248,7 +252,7 @@ exports.nginx.prototype.makeConfig = function() {
 		c += '		}\n';
 	
 		c += '		location ~ ^/index.php {\n';
-		c += '			include /etc/nginx/fastcgi_params;\n';
+		c += '			include '+me.options.miscConfigDir+'/fastcgi_params;\n';
 		c += '			fastcgi_pass 127.0.0.1:9000;\n';
 		c += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
 		c += '			fastcgi_param SITE_ROOT '+siteDir+';\n';

@@ -19,6 +19,7 @@ exports.ServicesController = function(sites, options) {
 	me.options.logsDir = me.options.logsDir || me.options.servicesDir+'/logs';
 	me.options.configDir = me.options.configDir || me.options.servicesDir+'/etc';
 	me.options.runDir = me.options.runDir || me.options.servicesDir+'/run';
+	me.options.dataDir = me.options.dataDir || me.options.servicesDir+'/data';
 	
 	// create required directories
 	if(!path.existsSync(me.options.servicesDir))
@@ -32,6 +33,9 @@ exports.ServicesController = function(sites, options) {
 	
 	if(!path.existsSync(me.options.runDir))
 		fs.mkdirSync(me.options.runDir, 0775);
+	
+	if(!path.existsSync(me.options.dataDir))
+		fs.mkdirSync(me.options.dataDir, 0775);
 	
 	// load service plugins
 	me.services = {};
