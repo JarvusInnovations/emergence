@@ -1,4 +1,4 @@
-node_modules
-services
-sites
-kernel.config.json
+/node_modules
+/services
+/sites
+/kernel.config.json
