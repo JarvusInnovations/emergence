@@ -160,7 +160,7 @@ exports.sites.prototype.updateSiteConfig = function(handle, changes) {
 };
 
 
-exports.sites.prototype.generatePassword = function(length) {
+exports.generatePassword = exports.sites.prototype.generatePassword = function(length) {
 	length = length || 16;
 	
 	var pass = ''

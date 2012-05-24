@@ -27,39 +27,16 @@ exports.mysql = function(name, controller, options) {
 	me.options.managerUser = me.options.managerUser || 'emergence';
 	me.options.managerPassword = me.options.managerPassword || '';
 	
-	// create required directories
-	if(!path.existsSync(me.options.runDir))
-	{
-		fs.mkdirSync(me.options.runDir, 0775);
-		exec('chown mysql:mysql '+me.options.runDir);
-	}
-	
-	if(!path.existsSync(me.options.dataDir))
-	{
-		fs.mkdirSync(me.options.dataDir, 0775);
-		console.log('mysql_install_db --datadir='+me.options.dataDir+' --basedir=/usr/local');
-		console.log('chown -R mysql:mysql '+me.options.dataDir);
-		exec('mysql_install_db --datadir='+me.options.dataDir+' --basedir=/usr/local');
-		exec('chown -R mysql:mysql '+me.options.runDir);
-	}
-	
-	// instantiate MySQL client
-	me.client = require('mysql').createClient({
-		port: me.options.socketPath
-		,user: me.options.managerUser
-		,password: me.options.managerPassword
-	});
 
 	// check for existing mysqld process
-	if(path.existsSync(me.options.pidPath))
+	if(fs.existsSync(me.options.pidPath))
 	{
 		me.pid = parseInt(fs.readFileSync(me.options.pidPath));
 		console.log(me.name+': found existing PID: '+me.pid+', checking /proc/'+me.pid);
 		
-		if(path.existsSync('/proc/'+me.pid))
+		if(fs.existsSync('/proc/'+me.pid))
 		{
 			me.status = 'online';
-			this.connectClient();
 		}
 		else
 		{
@@ -75,11 +52,9 @@ util.inherits(exports.mysql, require('./abstract.js').AbstractService);
 
 
 
-exports.mysql.prototype.start = function() {
+exports.mysql.prototype.start = function(firstRun) {
 	var me = this;
 	
-	console.log(me.name+': spawning mysql: '+me.options.execPath);
-
 	if(me.pid)
 	{
 		console.log(me.name+': mysql already runnig with PID '+me.pid);
@@ -89,7 +64,38 @@ exports.mysql.prototype.start = function() {
 	// write configuration file
 	this.writeConfig();
 	
+	// init run directory if needed
+	if(!fs.existsSync(me.options.runDir))
+	{
+		console.log(me.name+': initializing new run directory');
+		fs.mkdirSync(me.options.runDir, 0775);
+		exec('chown -R mysql:mysql '+me.options.runDir);
+	}
+	
+	// init data directory if needed
+	if(!fs.existsSync(me.options.dataDir))
+	{
+		console.log(me.name+': initializing new data directory...');
+		fs.mkdirSync(me.options.dataDir, 0775);
+		exec('chown -R mysql:mysql '+me.options.dataDir);
+		
+		exec('mysql_install_db --datadir='+me.options.dataDir, function(error, stdout, stderr) {
+			me.start(true);
+		});
+		
+		me.status = 'configuring';
+		return true; // not really started, we have to try again after mysql_install_db is done
+	}
+	
+	// instantiate MySQL client
+	me.client = require('mysql').createClient({
+		port: me.options.socketPath
+		,user: me.options.managerUser
+		,password: me.options.managerPassword
+	});
+
 	// spawn process
+	console.log(me.name+': spawning mysql: '+me.options.execPath);
 	me.proc = spawn(me.options.execPath, ['--defaults-file='+me.options.configPath]);
 	me.pid = me.proc.pid;
 	me.status = 'online';
@@ -122,8 +128,8 @@ exports.mysql.prototype.start = function() {
 		
 		if(/ready for connections/.test(data))
 		{
-			// connect to server with MySQL client
-			me.connectClient();
+			if(firstRun)
+				me.secureInstallation();
 		}
   	});
 	
@@ -168,7 +174,7 @@ exports.mysql.prototype.restart = function() {
 	
 	// wait for pid to disappear before attempting start
 	process.stdout.write(me.name+': waiting for shutdown');
-	while(path.existsSync(me.options.pidPath))
+	while(fs.existsSync(me.options.pidPath))
 	{
 		process.stdout.write('.');
 		var now = new Date().getTime();
@@ -208,7 +214,7 @@ exports.mysql.prototype.makeConfig = function() {
 	c += 'read_buffer_size 			= 256K\n';
 	c += 'read_rnd_buffer_size 		= 512K\n';
 	c += 'myisam_sort_buffer_size 	= 8M\n';
-	c += 'lc-messages-dir 					= /usr/local/share/mysql\n';
+//	c += 'lc-messages-dir 					= /usr/local/share/mysql\n';
 
 	if(me.options.bindHost)
 		c += 'bind-address = '+me.options.bindHost+'\n';
@@ -233,22 +239,36 @@ exports.mysql.prototype.makeConfig = function() {
 	return c;
 };
 
-exports.mysql.prototype.connectClient = function() {
-	var me = this;
+exports.mysql.prototype.secureInstallation = function() {
+
+	var me = this
+		,sql = '';
 	
-	// new mysql client does this automatically now... this routine will probably be removed soon 
-/*
-	me.client.connect(function(error, results) {
-		if(error)
-		{
-			console.log(me.name+': mysql client FAILED to connect: '+error.message);
-			me.status = 'unknown';
-			return;
-		}
-		console.log(me.name+': mysql client connected');
+	console.log(me.name+': securing installation...');
+	
+	// set root password
+	sql += 'UPDATE mysql.user SET Password=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
+	// remove anonymous users
+	sql += 'DELETE FROM mysql.user WHERE User="";';
+	// delete remote roots
+	sql += 'DELETE FROM mysql.user WHERE User="root" AND Host NOT IN ("localhost", "127.0.0.1", "::1");';
+	// remove test database
+	sql += 'DROP DATABASE test;';
+	sql += 'DELETE FROM mysql.db WHERE Db="test" OR Db="test\\_%";';
+	// reload privs
+	sql += 'FLUSH PRIVILEGES;';
+	
+	// open a temporary connection to the new non-secured installation
+	require('mysql').createClient({
+		port: me.options.socketPath
+		,user: 'root'
+		,password: ''
+	}).query(sql, function() {
+		console.log(me.name+': securing complete, mysql ready');
 	});
-*/
+
 };
+
 
 exports.mysql.prototype.onSiteCreated = function(siteData) {
 	var me = this
