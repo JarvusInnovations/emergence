@@ -30,17 +30,17 @@ exports.nginx = function(name, controller, options) {
 	me.options.phpErrorLogPath = me.options.phpErrorLogPath || me.options.phpLogsDir + '/errors.log';
 	
 	// create required directories
-	if(!path.existsSync(me.options.runDir))
+	if(!fs.existsSync(me.options.runDir))
 		fs.mkdirSync(me.options.runDir, 0775);
 	
-	if(!path.existsSync(me.options.logsDir))
+	if(!fs.existsSync(me.options.logsDir))
 		fs.mkdirSync(me.options.logsDir, 0775);
 	
-	if(!path.existsSync(me.options.phpLogsDir))
+	if(!fs.existsSync(me.options.phpLogsDir))
 		fs.mkdirSync(me.options.phpLogsDir, 0775);
 	
 	// check for existing master process
-	if(path.existsSync(me.options.pidPath))
+	if(fs.existsSync(me.options.pidPath))
 	{
 		me.pid = parseInt(fs.readFileSync(me.options.pidPath));
 		console.log(me.name+': found existing PID: '+me.pid);
@@ -79,7 +79,7 @@ exports.nginx.prototype.start = function() {
 		}
 		
 		// look for pid
-		if(path.existsSync(me.options.pidPath))
+		if(fs.existsSync(me.options.pidPath))
 		{
 			me.pid = parseInt(fs.readFileSync(me.options.pidPath));
 			console.log(me.name+': found new PID: '+me.pid);
@@ -236,7 +236,7 @@ exports.nginx.prototype.makeConfig = function() {
 		var siteDir = me.controller.sites.options.sitesDir+'/'+handle
 			,logsDir = siteDir+'/logs';
 			
-		if(!path.existsSync(logsDir))
+		if(!fs.existsSync(logsDir))
 			fs.mkdirSync(logsDir, 0775);
 	
 		// append config

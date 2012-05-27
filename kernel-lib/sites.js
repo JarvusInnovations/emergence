@@ -24,7 +24,7 @@ exports.sites = function(options) {
 	me.options.dataMode = me.options.dataMode || 0775;
 	
 	// create required directories
-	if(!path.existsSync(me.options.sitesDir))
+	if(!fs.existsSync(me.options.sitesDir))
 		fs.mkdirSync(me.options.sitesDir, 0775);
 	
 	// load sites
@@ -128,13 +128,13 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 	var siteDir = me.options.sitesDir+'/'+siteData.handle
 		,dataDir = siteDir + '/data';
 		
-	if(!path.existsSync(siteDir))
+	if(!fs.existsSync(siteDir))
 	{
 		console.log('sites: creating site directory '+siteDir);
 		fs.mkdirSync(siteDir, 0775);
 	}
 
-	if(!path.existsSync(dataDir))
+	if(!fs.existsSync(dataDir))
 	{
 		fs.mkdirSync(dataDir, me.options.dataMode);
 		fs.chownSync(dataDir, me.options.dataUID, me.options.dataGID);
@@ -143,7 +143,7 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 	// write site config to file
 	this.sites[siteData.handle] = siteData;
 	var filename = siteDir+'/site.json';
-	var isNew = !path.existsSync(filename);
+	var isNew = !fs.existsSync(filename);
 		
 	fs.writeFileSync(filename, JSON.stringify(siteData));
 		

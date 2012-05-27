@@ -22,19 +22,19 @@ exports.ServicesController = function(sites, options) {
 	me.options.dataDir = me.options.dataDir || me.options.servicesDir+'/data';
 	
 	// create required directories
-	if(!path.existsSync(me.options.servicesDir))
+	if(!fs.existsSync(me.options.servicesDir))
 		fs.mkdirSync(me.options.servicesDir, 0775);
 		
-	if(!path.existsSync(me.options.logsDir))
+	if(!fs.existsSync(me.options.logsDir))
 		fs.mkdirSync(me.options.logsDir, 0775);
 	
-	if(!path.existsSync(me.options.configDir))
+	if(!fs.existsSync(me.options.configDir))
 		fs.mkdirSync(me.options.configDir, 0775);
 	
-	if(!path.existsSync(me.options.runDir))
+	if(!fs.existsSync(me.options.runDir))
 		fs.mkdirSync(me.options.runDir, 0775);
 	
-	if(!path.existsSync(me.options.dataDir))
+	if(!fs.existsSync(me.options.dataDir))
 		fs.mkdirSync(me.options.dataDir, 0775);
 	
 	// load service plugins
