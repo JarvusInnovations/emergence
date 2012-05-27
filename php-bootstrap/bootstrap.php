@@ -1,16 +1,5 @@
 <?php
 
-if($_SERVER['QUERY_STRING']=='phpinfo')
-{
-	phpinfo();
-	exit();
-}
-elseif($_SERVER['QUERY_STRING']=='clearapc')
-{
-	apc_clear_cache('user');
-	die('cache cleared');
-}
-
 require('Emergence.class.php');
 require('Debug.class.php');
 require('DB.class.php');
