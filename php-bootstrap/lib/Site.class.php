@@ -23,6 +23,8 @@ class Site
 	static public $pathStack;
 
 	static public $config;
+	static public $time;
+	static public $queryBreaker;
 
 	// protected properties
 	static protected $_rootCollections;
@@ -30,6 +32,8 @@ class Site
 	
 	static public function initialize()
 	{
+		static::$time = microtime(true);
+
 		// resolve details from host name
 		
 		// get site ID
@@ -220,16 +224,25 @@ class Site
 	
 	static public function resolvePath($path, $checkParent = true)
 	{
-		if(is_string($path) && (empty($path) || $path == '/')) {
+		if(is_string($path) && (empty($path) || $path == '/'))
+		{
 			return new SiteDavDirectory();
 		}
-		else {
-            if(!is_array($path))
-			    $path = static::splitPath($path);
-                
-            $collectionHandle = array_shift($path);
-        }
+
+		if(!is_array($path))
+			   $path = static::splitPath($path);
+
+		
+		$cacheKey = ($checkParent ? 'efs' : 'efsi') . ':' . $_SERVER['HTTP_HOST'] . '//' . join('/', $path);
+
+		if(false !== ($node = apc_fetch($cacheKey)))
+		{
+			//MICS::dump($node, 'cache hit: '.$cacheKey, true);
+			return $node;
+		}
 			
+		$collectionHandle = array_shift($path);
+					
 		// get collection
 		if(!$collectionHandle || !$collection = static::getRootCollection($collectionHandle))
 		{
@@ -244,6 +257,11 @@ class Site
 		{
 			$node = Emergence::resolveFileFromParent($collectionHandle, $path);
 		}
+		
+		if(!$node)
+			$node = null;
+			
+		apc_store($cacheKey, $node);
 
 		return $node;
 	}

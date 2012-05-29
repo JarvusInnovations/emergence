@@ -41,6 +41,16 @@ class Debug
 	static public function log($entry, $source = null)
 	{
 		if(!Site::$debug) return;
+
+		if(Site::$queryBreaker && !empty($entry['query']) && !empty($_GET['breakpoints']))
+		{
+			if(call_user_func(Site::$queryBreaker, $entry['query']))
+			{
+				print('<h1>query breakpoint</h1><pre>');
+				debug_print_backtrace();
+				die("</pre><hr>breakpoint matched $pattern<br>against $entry[query]");
+			}
+		}
 	
 		static::$log[] = array_merge($entry, array(
 			'source' => isset($source) ? $source : static::_detectSource()
