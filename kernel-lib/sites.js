@@ -144,8 +144,14 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 	this.sites[siteData.handle] = siteData;
 	var filename = siteDir+'/site.json';
 	var isNew = !fs.existsSync(filename);
+	var createUser = siteData.create_user;
+	if(createUser)
+		delete siteData.create_user;
 		
 	fs.writeFileSync(filename, JSON.stringify(siteData));
+
+	if(createUser)
+		siteData.create_user = createUser;
 		
 	return {site: siteData, isNew: isNew};
 };
