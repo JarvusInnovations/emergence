@@ -3,7 +3,8 @@
 class Site
 {
 	// config properties
-	static public $debug = true;
+	static public $debug = false;
+	static public $production = false;
 	static public $defaultPage = 'home.php';
 	static public $controlKey = '86b153e60c0e801';	
 	static public $autoCreateSession = true;
@@ -235,7 +236,7 @@ class Site
 		
 		$cacheKey = ($checkParent ? 'efs' : 'efsi') . ':' . $_SERVER['HTTP_HOST'] . '//' . join('/', $path);
 
-		if(false !== ($node = apc_fetch($cacheKey)))
+		if(Site::$production && false !== ($node = apc_fetch($cacheKey)))
 		{
 			//MICS::dump($node, 'cache hit: '.$cacheKey, true);
 			return $node;
@@ -261,7 +262,8 @@ class Site
 		if(!$node)
 			$node = null;
 			
-		apc_store($cacheKey, $node);
+		if(Site::$production)
+			apc_store($cacheKey, $node);
 
 		return $node;
 	}
