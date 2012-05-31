@@ -163,10 +163,12 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'group = nobody\n';
 	c += 'listen = '+me.options.bindHost+':'+me.options.bindPort+'\n';
 	c += 'pm = dynamic\n';
-	c += 'pm.max_children = 5\n';
-	c += 'pm.start_servers = 2\n';
+	c += 'pm.max_children = 50\n';
+	c += 'pm.start_servers = 5\n';
 	c += 'pm.min_spare_servers = 1\n';
-	c += 'pm.max_spare_servers = 3\n';
+	c += 'pm.max_spare_servers = 10\n';
+	c += 'php_admin_value[apc.shm_size]=64M\n';
+	c += 'php_admin_value[apc.stat]=0\n';
 	
 	return c;
 };
