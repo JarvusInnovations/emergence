@@ -238,34 +238,50 @@ exports.nginx.prototype.makeConfig = function() {
 			
 		if(!fs.existsSync(logsDir))
 			fs.mkdirSync(logsDir, 0775);
+
+		var siteCfg = '		server_name '+hostnames.join(' ')+';\n';
+		siteCfg += '		access_log '+logsDir+'/access.log main;\n';
+		siteCfg += '		error_log '+logsDir+'/error.log info;\n';
+	
+		siteCfg += '		location / {\n';
+		siteCfg += '			root '+me.options.bootstrapDir+'/root;\n';
+		siteCfg += '			index index.php;\n';
+		siteCfg += '			rewrite ^(.+)$ /index.php last;\n';
+		siteCfg += '		}\n';
+	
+		siteCfg += '		location ~ ^/index.php {\n';
+		siteCfg += '			include '+me.options.miscConfigDir+'/fastcgi_params;\n';
+		siteCfg += '			fastcgi_pass 127.0.0.1:9000;\n';
+		siteCfg += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
+		siteCfg += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
+		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/root$fastcgi_script_name;\n';
+		siteCfg += '			fastcgi_param PHP_VALUE	"auto_prepend_file='+me.options.bootstrapDir+'/bootstrap.php\n';
+		siteCfg += '						 include_path='+me.options.bootstrapDir+'/lib:'+siteDir+'\n';
+		siteCfg += '						 error_log='+me.options.phpErrorLogPath+'\n';
+		siteCfg += '						 error_reporting = E_ALL & ~E_NOTICE\n';
+		siteCfg += '						 date.timezone = America/New_York";\n';
+		siteCfg += '			fastcgi_index index.php;\n';
+		siteCfg += '		}\n';
+
+
 	
 		// append config
 		c += '	server {\n';
 		c += '		listen '+me.options.bindHost+':'+me.options.bindPort+';\n';
-		c += '		server_name '+hostnames.join(' ')+';\n';
-		c += '		access_log '+logsDir+'/access.log main;\n';
-		c += '		error_log '+logsDir+'/error.log info;\n';
-	
-		c += '		location / {\n';
-		c += '			root '+me.options.bootstrapDir+'/root;\n';
-		c += '			index index.php;\n';
-		c += '			rewrite ^(.+)$ /index.php last;\n';
-		c += '		}\n';
-	
-		c += '		location ~ ^/index.php {\n';
-		c += '			include '+me.options.miscConfigDir+'/fastcgi_params;\n';
-		c += '			fastcgi_pass 127.0.0.1:9000;\n';
-		c += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
-		c += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
-		c += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/root$fastcgi_script_name;\n';
-		c += '			fastcgi_param PHP_VALUE	"auto_prepend_file='+me.options.bootstrapDir+'/bootstrap.php\n';
-		c += '						 include_path='+me.options.bootstrapDir+'/lib:'+siteDir+'\n';
-		c += '						 error_log='+me.options.phpErrorLogPath+'\n';
-		c += '						 error_reporting = E_ALL & ~E_NOTICE\n';
-		c += '						 date.timezone = America/New_York";\n';
-		c += '			fastcgi_index index.php;\n';
-		c += '		}\n';
+		c +=            siteCfg;
 		c += '	}\n';
+		
+		if(site.ssl)
+		{
+			c += '	server {\n';
+			c += '		listen '+me.options.bindHost+':443;\n';
+			
+			c += '		ssl_certificate '+site.ssl.certificate+';\n';
+			c += '		ssl_certificate_key '+site.ssl.certificate_key+';\n';
+			c += '		ssl_client_certificate'+site.ssl.certificate_client+';\n';
+			c +=            siteCfg;
+			c += '	}\n';
+		}
 	});
 	
 	c += '}\n';
