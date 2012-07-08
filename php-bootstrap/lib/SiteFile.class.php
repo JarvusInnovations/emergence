@@ -336,8 +336,9 @@ class SiteFile
     
     public function outputAsResponse()
     {
-		header('Content-type: '.$this->MIMEType);
+		header('Content-Type: '.$this->MIMEType);
 		header('ETag: '.$this->SHA1);
+		header('Last-Modified: '.date('r', $this->Timestamp));
 		
 		if(array_key_exists($this->MIMEType, static::$additionalHeaders))
 		{

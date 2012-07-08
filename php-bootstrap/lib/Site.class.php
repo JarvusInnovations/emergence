@@ -214,7 +214,20 @@ class Site
 			}
 			else
 			{
-				$resolvedNode->outputAsResponse();
+				if(!empty($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $resolvedNode->SHA1)
+				{
+					header('HTTP/1.0 304 Not Modified');
+					exit();
+				}
+				elseif(!empty($_SERVER['HTTP_IF_MODIFIED_SINCE']) && strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) >= $resolvedNode->Timestamp)
+				{
+					header('HTTP/1.0 304 Not Modified');
+					exit();
+				}
+				else
+				{
+					$resolvedNode->outputAsResponse();
+				}
 			}
 		}
 		else
