@@ -121,25 +121,25 @@ class SiteFile
 	
 	
 	static public function getTree(SiteCollection $Collection)
-    {
-    	$fileResults = DB::query(
-    		'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
-    		,array(
+	{
+		$fileResults = DB::query(
+			'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
+			,array(
 				static::$tableName
 				,SiteCollection::$tableName
 				,$Collection->PosLeft
 				,$Collection->PosRight
-    		)
-    	);
-    	
-    	$children = array();
-    	while($record = $fileResults->fetch_assoc())
+			)
+		);
+		
+		$children = array();
+		while($record = $fileResults->fetch_assoc())
 		{
 			$children[] = new static($record['Handle'], $record);
 		}
 
 		return $children;
-    }
+	}
 
 	
 	public function getRevisions()
@@ -270,46 +270,46 @@ class SiteFile
 		));
 	}
 
-    public function setName($handle)
-    {
-    	if($this->Size == 0 && $this->AuthorID == $GLOBALS['Session']->PersonID && !$this->AncestorID)
-    	{
-    		// updating existing record only if file is empty, by the same author, and has no ancestor
+	public function setName($handle)
+	{
+		if($this->Size == 0 && $this->AuthorID == $GLOBALS['Session']->PersonID && !$this->AncestorID)
+		{
+			// updating existing record only if file is empty, by the same author, and has no ancestor
 			DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
 				static::$tableName
 				,DB::escape($handle)
 				,$this->ID
 			));
-    	}
-    	else
-    	{
-    		// clone existing record
-    		DB::nonQuery(
-    			'INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "%s", SHA1 = "%s", Size = %u, Type = "%s", AuthorID = %u, AncestorID = %u'
-    			,array(
-    				static::$tableName
-    				,$this->CollectionID
-    				,DB::escape($handle)
-    				,$this->Status
-    				,$this->SHA1
-    				,$this->Size
-    				,$this->Type
-    				,$GLOBALS['Session']->PersonID
-    				,$this->ID
-    			)	
-    		);
-    		$newID = DB::insertID();
-    		
-    		// delete current record
-    		$this->delete();
-    		
-    		// symlink to old data point
-    		symlink($this->ID, static::getRealPathByID($newID));
-    	}
-    }
+		}
+		else
+		{
+			// clone existing record
+			DB::nonQuery(
+				'INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "%s", SHA1 = "%s", Size = %u, Type = "%s", AuthorID = %u, AncestorID = %u'
+				,array(
+					static::$tableName
+					,$this->CollectionID
+					,DB::escape($handle)
+					,$this->Status
+					,$this->SHA1
+					,$this->Size
+					,$this->Type
+					,$GLOBALS['Session']->PersonID
+					,$this->ID
+				)	
+			);
+			$newID = DB::insertID();
+			
+			// delete current record
+			$this->delete();
+			
+			// symlink to old data point
+			symlink($this->ID, static::getRealPathByID($newID));
+		}
+	}
 
-    public function delete()
-    {
+	public function delete()
+	{
 		DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Deleted", AuthorID = %u, AncestorID = %u', array(
 			static::$tableName
 			,$this->CollectionID
@@ -317,25 +317,36 @@ class SiteFile
 			,$GLOBALS['Session']->PersonID
 			,$this->ID
 		));
-    }
-    
-    static public function deleteTree(SiteCollection $Collection)
-    {
-    	DB::nonQuery(
-    		'INSERT INTO `%1$s` (CollectionID, Handle, Status, AuthorID, AncestorID) SELECT f2.CollectionID, f2.Handle, "Deleted", %5$u, f2.ID FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
-    		,array(
+	}
+	
+	static public function deleteTree(SiteCollection $Collection)
+	{
+		DB::nonQuery(
+			'INSERT INTO `%1$s` (CollectionID, Handle, Status, AuthorID, AncestorID) SELECT f2.CollectionID, f2.Handle, "Deleted", %5$u, f2.ID FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
+			,array(
 				static::$tableName
 				,SiteCollection::$tableName
 				,$Collection->PosLeft
 				,$Collection->PosRight
 				,$GLOBALS['Session']->PersonID
-    		)
-    	);
-    }
-    
-    
-    public function outputAsResponse()
-    {
+			)
+		);
+	}
+	
+	
+	public function outputAsResponse()
+	{
+		if(!empty($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $this->SHA1)
+		{
+			header('HTTP/1.0 304 Not Modified');
+			exit();
+		}
+		elseif(!empty($_SERVER['HTTP_IF_MODIFIED_SINCE']) && strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) >= $this->Timestamp)
+		{
+			header('HTTP/1.0 304 Not Modified');
+			exit();
+		}
+
 		header('Content-Type: '.$this->MIMEType);
 		header('ETag: '.$this->SHA1);
 		header('Last-Modified: '.date('r', $this->Timestamp));
@@ -362,10 +373,10 @@ class SiteFile
 		return $this->Timestamp;
 	}
 	
-    public function getContentType()
-    {
+	public function getContentType()
+	{
 		return $this->MIMEType;
-    }
+	}
 
 
 	public function getData()
