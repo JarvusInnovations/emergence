@@ -278,7 +278,7 @@ exports.nginx.prototype.makeConfig = function() {
 			
 			c += '		ssl_certificate '+site.ssl.certificate+';\n';
 			c += '		ssl_certificate_key '+site.ssl.certificate_key+';\n';
-			c += '		ssl_client_certificate'+site.ssl.certificate_client+';\n';
+			c += '		ssl_client_certificate '+site.ssl.certificate_client+';\n';
 			c +=            siteCfg;
 			c += '	}\n';
 		}
