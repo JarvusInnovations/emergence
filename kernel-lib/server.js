@@ -66,6 +66,7 @@ exports.server.prototype.start = function() {
 		});
 		
 	}).listen(me.options.port, me.options.host);
+	console.log('Management server listening on http://'+me.options.host+':'+me.options.port);
 
 };
 

@@ -101,4 +101,3 @@ var eManagementServer = require('../kernel-lib/server.js').createServer({
 	
 // start server
 eManagementServer.start();
-console.log('Management server running at http://127.0.0.1:1337');
