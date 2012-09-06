@@ -89,13 +89,21 @@ class Site
 		}
 */
 		
-		// get request URI
-		if(empty(static::$requestURI))
-			static::$requestURI = parse_url($_SERVER['REQUEST_URI']);
-			
 		// get path stack
-		static::$pathStack = static::$requestPath = static::splitPath(static::$requestURI['path']);
+		$path = $_SERVER['REQUEST_URI'];
 		
+		if(false !== ($qPos = strpos($path,'?')))
+		{
+			$path = substr($path, 0, $qPos);
+		}
+
+		static::$pathStack = static::$requestPath = static::splitPath($path);
+
+		if(!empty($_COOKIE['debugpath']))
+		{
+			MICS::dump(static::$pathStack, 'pathStack', true);
+		}
+
 		// register class loader
 		spl_autoload_register('Site::loadClass');
 		
