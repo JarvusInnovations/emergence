@@ -82,7 +82,7 @@ class Emergence
 			
 			if(curl_errno($ch))
 			{
-				die("curl error:".curl_error($ch));
+				throw new Exception("curl error:".curl_error($ch));
 			}
 		
 		
