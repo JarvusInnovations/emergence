@@ -197,6 +197,7 @@ exports.nginx.prototype.makeConfig = function() {
 	c += '	client_header_buffer_size 1k;\n';
 	c += '	large_client_header_buffers 4 2k;\n';
 	c += '	request_pool_size 4k;\n';
+	c += '	server_names_hash_bucket_size 1024;\n';
 
 	c += '	gzip on;\n';
 	c += '	gzip_min_length 1100;\n';
