@@ -7,6 +7,11 @@ class Emergence
     
 	static public function handleRequest()
 	{
+		if (extension_loaded('newrelic'))
+		{
+			newrelic_disable_autorum();
+		}
+
 		if(empty(Site::$config['inheritance_key']))
 		{
 			Site::respondUnauthorized('Remote emergence access is disabled');
