@@ -514,7 +514,8 @@ class DB
 
 		$report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
 		
-		
+		header('HTTP/1.1 500 Internal Server Error');
+
 		if(Site::$debug)
 		{
 			die($report);
