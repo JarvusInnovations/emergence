@@ -6,7 +6,6 @@ class Site
 	static public $debug = false;
 	static public $production = false;
 	static public $defaultPage = 'home.php';
-	static public $controlKey = '86b153e60c0e801';	
 	static public $autoCreateSession = true;
 	static public $onInitialized;
 	static public $onNotFound;
@@ -57,37 +56,12 @@ class Site
 		}
 		
 		// load config
-		if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])) || ($_GET['_recache']==static::$controlKey))
+		if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])))
 		{
 			static::$config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
 			apc_store($_SERVER['HTTP_HOST'], static::$config);
 		}
 		
-			
-		// retrieve static configuration
-/*
-		if(!(static::$_config = apc_fetch($_SERVER['HTTP_HOST'])) || ($_GET['_recache']==static::$controlKey))
-		{
-			static::$_config = static::_compileConfiguration();
-			apc_store($_SERVER['HTTP_HOST'], static::$_config);
-		}
-*/
-
-		// get host-specific config
-/*
-		if(!static::$_hostConfig = static::$_config['hosts'][$_SERVER['HTTP_HOST']])
-		{
-			throw new Exception('Current host is unknown');
-		}
-		
-		if(static::$_hostConfig['ParentHostname'])
-		{
-			if(!static::$_parentHostConfig = static::$_config['hosts'][static::$_hostConfig['ParentHostname']])
-			{
-				throw new Exception('Parent host is unknown');
-			}
-		}
-*/
 		
 		// get path stack
 		$path = $_SERVER['REQUEST_URI'];
@@ -102,6 +76,12 @@ class Site
 		if(!empty($_COOKIE['debugpath']))
 		{
 			MICS::dump(static::$pathStack, 'pathStack', true);
+		}
+
+		// set useful transaction name for newrelic
+		if(extension_loaded('newrelic'))
+		{
+			newrelic_name_transaction (static::$config['handle'] . '/' . implode('/', site::$requestPath));
 		}
 
 		// register class loader
@@ -124,76 +104,57 @@ class Site
 	
 	static public function handleRequest()
 	{
-		// TODO: try global handle lookup?
-
-		// resolve URL in root
-		$resolvedNode = false;
-		$rootNode = static::getRootCollection('site-root');
-
-		// handle root request - default page
-		if(empty(static::$pathStack[0]) && static::$defaultPage)
-		{
-			static::$pathStack[0] = static::$defaultPage;
-		}
-		
-		// route request
+		// handle emergence request
 		if(static::$pathStack[0] == 'emergence')
 		{
 			array_shift(static::$pathStack);
 			return Emergence::handleRequest();
 		}
-		elseif(static::$pathStack[0] == 'parent-refresh' && $_REQUEST['key'] == static::$controlKey)
+
+		// try to resolve URL in site-root
+		$rootNode = static::getRootCollection('site-root');
+		$resolvedNode = $rootNode;
+		$resolvedPath = array();
+
+		// handle default page request
+		if(empty(static::$pathStack[0]) && static::$defaultPage)
 		{
-			DB::nonQuery(
-				'DELETE FROM `%s` WHERE CollectionID IN (SELECT ID FROM `%s` WHERE SiteID != %u)'
-				,array(
-					SiteFile::$tableName
-					,SiteCollection::$tableName
-					,Site::getSiteID()
-				)
-			);
-			
-			die('Cleared '.DB::affectedRows().' cached files');
+			static::$pathStack[0] = static::$defaultPage;
 		}
-		else
+
+        // crawl down path stack until a handler is found
+		while(($handle = array_shift(static::$pathStack)))
 		{
-			$resolvedNode = $rootNode;
-			$resolvedPath = array();
+			$scriptHandle = (substr($handle,-4)=='.php') ? $handle : $handle.'.php';
 
-			while(($handle = array_shift(static::$pathStack)))
-			{
-				$scriptHandle = (substr($handle,-4)=='.php') ? $handle : $handle.'.php';
-
-				//printf('%s: (%s)/(%s) - %s<br>', $resolvedNode->Handle, $handle, implode('/',static::$pathStack), $scriptHandle);
-				if(
-					(
-						$resolvedNode
-						&& method_exists($resolvedNode, 'getChild')
-						&& (
-							($childNode = $resolvedNode->getChild($handle))
-							|| ($scriptHandle && $childNode = $resolvedNode->getChild($scriptHandle))
-						)
+			//printf('%s: (%s)/(%s) - %s<br>', $resolvedNode->Handle, $handle, implode('/',static::$pathStack), $scriptHandle);
+			if(
+				(
+					$resolvedNode
+					&& method_exists($resolvedNode, 'getChild')
+					&& (
+						($childNode = $resolvedNode->getChild($handle))
+						|| ($scriptHandle && $childNode = $resolvedNode->getChild($scriptHandle))
 					)
-					|| ($childNode = Emergence::resolveFileFromParent('site-root', array_merge($resolvedPath,array($handle))))
-					|| ($scriptHandle && $childNode = Emergence::resolveFileFromParent('site-root', array_merge($resolvedPath,array($scriptHandle))))
 				)
-				{
-					$resolvedNode = $childNode;
-					
-					if(is_a($resolvedNode, 'SiteFile'))
-					{
-						break;
-					}
-				}
-				else
-				{
-					$resolvedNode = false;
-					//break;
-				}
+				|| ($childNode = Emergence::resolveFileFromParent('site-root', array_merge($resolvedPath,array($handle))))
+				|| ($scriptHandle && $childNode = Emergence::resolveFileFromParent('site-root', array_merge($resolvedPath,array($scriptHandle))))
+			)
+			{
+				$resolvedNode = $childNode;
 				
-				$resolvedPath[] = $handle;
+				if(is_a($resolvedNode, 'SiteFile'))
+				{
+					break;
+				}
 			}
-
+			else
+			{
+				$resolvedNode = false;
+				//break;
+			}
+			
+			$resolvedPath[] = $handle;
 		}
 		
 		
@@ -241,7 +202,6 @@ class Site
 		if(!is_array($path))
             $path = static::splitPath($path);
 
-		
 		$cacheKey = ($checkParent ? 'efs' : 'efsi') . ':' . $_SERVER['HTTP_HOST'] . '//' . join('/', $path);
 
 		if(Site::$production && false !== ($node = apc_fetch($cacheKey)))
@@ -358,7 +318,7 @@ class Site
 	static public function handleException($e)
 	{
 		header('Status: 500 Internal Server Error');
-		die('<h1>Unhandled '.get_class($e).'</h1><pre>'.$e->getMessage().'</pre><h1>Backtrace:</h1><pre>'.$e->getTraceAsString().'</pre>');//<h1>Exception Dump</h1><pre>'.print_r($e,true).'</pre>');
+		die('<h1>Unhandled Exception</h1><p>'.get_class($e).': '.$e->getMessage().'</p><h1>Backtrace:</h1><pre>'.$e->getTraceAsString().'</pre><h1>Exception Dump</h1><pre>'.print_r($e,true).'</pre>');
 	}
 	
 	static public function respondNotFound($message = 'Page not found')
