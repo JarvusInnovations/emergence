@@ -317,6 +317,11 @@ class Site
 	
 	static public function handleException($e)
 	{
+		if(extension_loaded('newrelic'))
+		{
+			newrelic_notice_error(null, $e);
+		}
+		
 		header('Status: 500 Internal Server Error');
 		die('<h1>Unhandled Exception</h1><p>'.get_class($e).': '.$e->getMessage().'</p><h1>Backtrace:</h1><pre>'.$e->getTraceAsString().'</pre><h1>Exception Dump</h1><pre>'.print_r($e,true).'</pre>');
 	}
