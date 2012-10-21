@@ -101,29 +101,29 @@ class SiteCollection
 	}
 
 	public function getCollectionsTree()
-    {
-    	$collectionResults = DB::query(
-    		'SELECT * FROM `%1$s` WHERE PosLeft BETWEEN %2$u AND %3$u AND Status = "Normal"'
-    		,array(
+	{
+		$collectionResults = DB::query(
+			'SELECT * FROM `%1$s` WHERE PosLeft BETWEEN %2$u AND %3$u AND Status = "Normal"'
+			,array(
 				static::$tableName
 				,$this->PosLeft
 				,$this->PosRight
-    		)
-    	);
-    	
-    	$children = array();
-    	while($record = $collectionResults->fetch_assoc())
+			)
+		);
+		
+		$children = array();
+		while($record = $collectionResults->fetch_assoc())
 		{
 			$children[] = new static($record['Handle'], $record);
 		}
 
 		return $children;
-    }
-    
-    public function getFilesTree()
-    {
-    	return SiteFile::getTree($this);
-    }
+	}
+	
+	public function getFilesTree()
+	{
+		return SiteFile::getTree($this);
+	}
 
 	static public function getByHandle($handle, $parentID = null, $remote = false, $includeDeleted = false)
 	{
@@ -278,25 +278,25 @@ class SiteCollection
 		return $localNode;		
 	}
 	
-    public function createDirectory($handle)
-    {
-    	// check if deleted record already exists
-    	$existing = static::getByHandle($handle, $this->ID, $this->Site != 'Local', true);
-    	if($existing)
-    	{
-    		if($existing->Status == 'Deleted')
-	    		$existing->setStatus('Normal');
+	public function createDirectory($handle)
+	{
+		// check if deleted record already exists
+		$existing = static::getByHandle($handle, $this->ID, $this->Site != 'Local', true);
+		if($existing)
+		{
+			if($existing->Status == 'Deleted')
+		 		$existing->setStatus('Normal');
 
-    		return $existing;
-    	}
-    	else
-    	{
-    		return static::createRecord($handle, $this);
-    	}
-    }
-    
-    
-    // this functions sucks, $root=null will break, caches $root'd results without key
+			return $existing;
+		}
+		else
+		{
+			return static::createRecord($handle, $this);
+		}
+	}
+	
+	
+	// this functions sucks, $root=null will break, caches $root'd results without key
 	protected $_fullPath;
 	public function getFullPath($root = null)
 	{
@@ -320,99 +320,99 @@ class SiteCollection
 		}
 		
 		return $this->_fullPath;
-    }
-    
-    static public function getAllRootCollections($remote = false)
-    {
+	}
+	
+	static public function getAllRootCollections($remote = false)
+	{
 		if(!is_bool($remote))
 		{
 			debug_print_backtrace();
 			die('SiteID must be converted to (bool)$remote');
 		}
 
-    	$collections = array();
-    	$results = DB::query(
-    		'SELECT * FROM `%s` WHERE Site = "%s" AND ParentID IS NULL AND Status = "Normal" ORDER BY Handle'
+		$collections = array();
+		$results = DB::query(
+			'SELECT * FROM `%s` WHERE Site = "%s" AND ParentID IS NULL AND Status = "Normal" ORDER BY Handle'
 			,array(
 				static::$tableName
 				,$remote ? 'Remote' : 'Local'
 			)
-    	);
-    	while($collectionRecord = $results->fetch_assoc())
-    	{
-    		$collections[] = new static($collectionRecord['Handle'], $collection);
-    	}
-    	
-    	return $collections;
-    }
-    
-    static public function getOrCreateRootCollection($handle, $remote = false)
-    {
-    	return static::getOrCreateCollection($handle, null, $remote);
-    }
-    
-    static public function getOrCreateCollection($handle, $parentCollection = null, $remote = false)
-    {
+		);
+		while($collectionRecord = $results->fetch_assoc())
+		{
+			$collections[] = new static($collectionRecord['Handle'], $collection);
+		}
+		
+		return $collections;
+	}
+	
+	static public function getOrCreateRootCollection($handle, $remote = false)
+	{
+		return static::getOrCreateCollection($handle, null, $remote);
+	}
+	
+	static public function getOrCreateCollection($handle, $parentCollection = null, $remote = false)
+	{
 		if(!is_bool($remote))
 		{
 			debug_print_backtrace();
 			die('SiteID must be converted to (bool)$remote');
 		}
 
-    	if($parentCollection)
-    		$remote = $parentCollection->Site=='Remote';
-    
-    	//printf("looking for %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
-    	if(!$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote))
-    	{
-    		//printf("creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
-    		static::createRecord($handle, $parentCollection, $remote);
-    		//printf("getting after creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
-    		$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote);
-    	}
-    
-    	return $collection;
-    }
-    
-    static public function getCollection($handle, $parentCollection = null, $remote = false)
-    {
-    
-    }
-    
-    static public function create($handle, $parentCollection = null, $remote = false)
-    {
-    	$collectionID = static::createRecord($handle, $parentCollection, $remote);
-    	return static::getByID($collectionID);
-    }
-    
-    static public function createRecord($handle, $parentCollection = null, $remote = false)
-    {
-    	// check for existing deleted node
-    	$existingRecord = DB::oneRecord(
-    		'SELECT * FROM `%s` WHERE Site = "%s" AND ParentID = %s AND Handle = "%s"'
-    		,array(
+		if($parentCollection)
+			$remote = $parentCollection->Site=='Remote';
+	
+		//printf("looking for %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
+		if(!$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote))
+		{
+			//printf("creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
+			static::createRecord($handle, $parentCollection, $remote);
+			//printf("getting after creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
+			$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote);
+		}
+	
+		return $collection;
+	}
+	
+	static public function getCollection($handle, $parentCollection = null, $remote = false)
+	{
+	
+	}
+	
+	static public function create($handle, $parentCollection = null, $remote = false)
+	{
+		$collectionID = static::createRecord($handle, $parentCollection, $remote);
+		return static::getByID($collectionID);
+	}
+	
+	static public function createRecord($handle, $parentCollection = null, $remote = false)
+	{
+		// check for existing deleted node
+		$existingRecord = DB::oneRecord(
+			'SELECT * FROM `%s` WHERE Site = "%s" AND ParentID = %s AND Handle = "%s"'
+			,array(
 				static::$tableName
 				,$parentCollection ? $parentCollection->Site : ($remote ? 'Remote' : 'Local')
 				,$parentCollection ? $parentCollection->ID : 'NULL'
 				,DB::escape($handle)
-    		)
-    	);
-    	
-    	if($existingRecord)
-    	{
-    		DB::nonQuery(
-    			'UPDATE `%s` SET Status = "Normal" WHERE ID = %u'
-    			,array(
-    				static::$tableName
-    				,$existingRecord['ID']
-    			)
-    		);
-    		
-    		return $existingRecord['ID'];
-    	}
-    
-    	DB::nonQuery('LOCK TABLES '.static::$tableName.' WRITE');
-    
+			)
+		);
+		
+		if($existingRecord)
+		{
+			DB::nonQuery(
+				'UPDATE `%s` SET Status = "Normal" WHERE ID = %u'
+				,array(
+					static::$tableName
+					,$existingRecord['ID']
+				)
+			);
+			
+			return $existingRecord['ID'];
+		}
+	
+		DB::nonQuery('LOCK TABLES '.static::$tableName.' WRITE');
+	
 		// determine new node's position
 		$left = $parentCollection ? $parentCollection->PosRight : DB::oneValue('SELECT IFNULL(MAX(`PosRight`)+1,1) FROM `%s`', static::$tableName);
 		$right = $left + 1;
@@ -447,54 +447,83 @@ class SiteCollection
 			,$right
 		));
 		
-    	//DB::nonQuery('COMMIT');
-    	DB::nonQuery('UNLOCK TABLES');
+		//DB::nonQuery('COMMIT');
+		DB::nonQuery('UNLOCK TABLES');
 
 		return DB::insertID();
-    }
+	}
 
-    public function setName($handle)
-    {
+	public function setName($handle)
+	{
 		// updating existing record only if file is empty, by the same author, and has no ancestor
 		DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
 			static::$tableName
 			,DB::escape($handle)
 			,$this->ID
 		));
-    }
-    
-    public function setStatus($status)
-    {
+	}
+	
+	public function setStatus($status)
+	{
 		// updating existing record only if file is empty, by the same author, and has no ancestor
 		DB::nonQuery('UPDATE `%s` SET Status = "%s" WHERE ID = %u', array(
 			static::$tableName
 			,DB::escape($status)
 			,$this->ID
 		));
-    }
-    
-    
-    
-    public function getLastModified()
-    {
-        return time();
-    }
+	}
+	
+	public function outputAsResponse()
+	{
+		$collection = array();
+		
+		foreach($this->getChildren() AS $child)
+		{
+			if(is_a($child, 'SiteFile'))
+			{
+				$collection[] = array(
+					'type' =>  'file'
+					,'handle' => $child->Handle
+					,'mime-type' => $child->Type
+					,'size' => $child->Size
+					,'sha1' => $child->SHA1
+					,'timestamp' => $child->Timestamp
+				);
+			}
+			else
+			{
+				$collection[] = array(
+					'type' =>  'collection'
+					,'handle' => $child->Handle
+				);
+			}
+		}
+		
+		header('HTTP/1.0 300 Multiple Choices');
+		header('Content-Type: application/json');
+		print(json_encode($collection));
+	}	 
+	
+	public function getLastModified()
+	{
+		return time();
+	}
 
-    public function delete()
-    {
-    	// mark collection and all subcollections as deleted
+	public function delete()
+	{
+		// mark collection and all subcollections as deleted
 
-    	DB::nonQuery('UPDATE `%s` SET Status = "Deleted" WHERE PosLeft BETWEEN %u AND %u', array(
-    		static::$tableName
-    		,$this->PosLeft
-    		,$this->PosRight
-    	));
-    	
-    	// TODO: mark files and all subfiles as deleted
-    	SiteFile::deleteTree($this);
-    }
-    
-    function getRealPath() {
+		DB::nonQuery('UPDATE `%s` SET Status = "Deleted" WHERE PosLeft BETWEEN %u AND %u', array(
+			static::$tableName
+			,$this->PosLeft
+			,$this->PosRight
+		));
+		
+		// TODO: mark files and all subfiles as deleted
+		SiteFile::deleteTree($this);
+	}
+	
+	function getRealPath() {
 		return null;
 	}
 

@@ -7,6 +7,7 @@ class Site
 	static public $production = false;
 	static public $defaultPage = 'home.php';
 	static public $autoCreateSession = true;
+	static public $listCollections = false;
 	static public $onInitialized;
 	static public $onNotFound;
 	static public $onRequestMapped;
@@ -122,7 +123,7 @@ class Site
 			static::$pathStack[0] = static::$defaultPage;
 		}
 
-        // crawl down path stack until a handler is found
+		// crawl down path stack until a handler is found
 		while(($handle = array_shift(static::$pathStack)))
 		{
 			$scriptHandle = (substr($handle,-4)=='.php') ? $handle : $handle.'.php';
@@ -176,14 +177,18 @@ class Site
 				require($resolvedNode->RealPath);
 				exit();
 			}
-			elseif(!is_callable(array($resolvedNode, 'outputAsResponse')))
+			elseif(is_callable(array($resolvedNode, 'outputAsResponse')))
 			{
-				//throw new Exception('Node does not support rendering');
-				static::respondNotFound();
+				if(!is_a($resolvedNode, 'SiteFile') && !static::$listCollections)
+				{
+					static::respondNotFound();
+				}
+				
+				$resolvedNode->outputAsResponse();	
 			}
 			else
 			{
-				$resolvedNode->outputAsResponse();	
+				static::respondNotFound();
 			}
 		}
 		else
@@ -200,7 +205,7 @@ class Site
 		}
 
 		if(!is_array($path))
-            $path = static::splitPath($path);
+			$path = static::splitPath($path);
 
 		$cacheKey = ($checkParent ? 'efs' : 'efsi') . ':' . $_SERVER['HTTP_HOST'] . '//' . join('/', $path);
 

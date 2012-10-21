@@ -3,8 +3,8 @@
 class Emergence
 {
 
-    static private $cache = array();
-    
+	static private $cache = array();
+	
 	static public function handleRequest()
 	{
 		if (extension_loaded('newrelic'))
@@ -21,12 +21,8 @@ class Emergence
 			Site::respondUnauthorized('Remote emergence access denied');
 		}
 
-		//Debug::dumpVar(Site::$requestPath, false);
-		//Debug::dumpVar(Site::$pathStack, false);
 		if($node = Site::resolvePath(Site::$pathStack))
 		{
-			//Debug::dumpVar($node);
-			//header('X-Emergence-Site-ID: '.static::$ID);
 			if(method_exists($node, 'outputAsResponse'))
 				$node->outputAsResponse();
 			else
@@ -58,24 +54,14 @@ class Emergence
 			$remoteURL .= join('/',$path);
 			$remoteURL .= '?accessKey='.Site::$config['parent_key'];
 			
-//			if($_SERVER['HTTP_HOST'] == 'newsite.sites.emr.ge')
-//				print("checking cache $remoteURL<br>\n");
-				
-            $cache = apc_fetch($remoteURL);
-            if($cache == '404') {
-            	return false;
-            }
-            
-            //if(isset(self::$cache[$cacheKey])) {
-            //    $fp = self::$cache[$cacheKey];
-            //}
-            
+			$cache = apc_fetch($remoteURL);
+			if($cache)
+			{
+				return false;
+			}
+			
 			$fp = fopen('php://memory', 'w+');
 
-//			if($_SERVER['HTTP_HOST'] == 'newsite.sites.emr.ge')
-//				print("Retrieving: <a href='$remoteURL' target='_blank'>$remoteURL</a><br>\n");
-
-			//die("getting $remoteURL");
 			$ch = curl_init($remoteURL);
 			curl_setopt($ch, CURLOPT_FILE, $fp);
 			curl_setopt($ch, CURLOPT_HEADER, true);
@@ -97,14 +83,11 @@ class Emergence
 			// read status
 			$statusLine = trim(fgetss($fp));
 			list($protocol,$status,$message) = explode(' ', $statusLine);
-			//die("got status $status");
-//			if($_SERVER['HTTP_HOST'] == 'newsite.sites.emr.ge')
-//				print("got status $status<br>\n");
 			
 
 			if($status != '200')
 			{
-				apc_store($remoteURL,'404');
+				apc_store($remoteURL, $status);
 				return false;
 			}
 
@@ -113,7 +96,6 @@ class Emergence
 			{
 				if(!$header) break;
 				list($key, $value) = preg_split('/:\s*/', $header, 2);
-				//print "$key=$value<br>";
 			}
 
 			$collection->createFile($path, $fp);
