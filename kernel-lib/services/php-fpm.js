@@ -19,6 +19,7 @@ exports.phpFpm = function(name, controller, options) {
 	me.options.execPath = me.options.execPath || '/usr/bin/php-fpm';
 	me.options.bindHost = me.options.bindHost || '127.0.0.1';
 	me.options.bindPort = me.options.bindPort || 9000;
+	me.options.statScripts = me.options.statScripts || false;
 	me.options.runDir = me.options.runDir || controller.options.runDir + '/php-fpm';
 	me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/php-fpm';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/php-fpm.pid';
@@ -168,7 +169,7 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'pm.min_spare_servers = 1\n';
 	c += 'pm.max_spare_servers = 10\n';
 	c += 'php_admin_value[apc.shm_size]=64M\n';
-	c += 'php_admin_value[apc.stat]=0\n';
+	c += 'php_admin_value[apc.stat]='+(me.options.statScripts?'1':'0')+'\n';
 	
 	return c;
 };
