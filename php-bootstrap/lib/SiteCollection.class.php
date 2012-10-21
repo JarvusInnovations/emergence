@@ -173,10 +173,6 @@ class SiteCollection
 		
 		//print("getChild($handle)\n");
 		
-		// no hidden files
-		if ($handle[0]=='.')
-			throw new Sabre_DAV_Exception_FileNotFound('Access denied');
-
 		// try to get collection record
 		if($collection = static::getByHandle($handle, $this->ID, $this->Site == 'Remote'))
 		{
@@ -250,7 +246,7 @@ class SiteCollection
 		}
 
 		$fileClass = static::$fileClass;
-		$fileClass::create($parentCollection->ID, $path[0], $data, $ancestorID);
+		return $fileClass::create($parentCollection->ID, $path[0], $data, $ancestorID);
 	}
 	
 	public function getLocalizedCollection()

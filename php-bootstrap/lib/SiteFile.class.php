@@ -208,6 +208,8 @@ class SiteFile
 	
 		if($data)
 			static::saveRecordData($record, $data);
+
+		return $record;
 	}
 
 	function put($data, $ancestorID = null)
@@ -243,7 +245,7 @@ class SiteFile
 		);
 	}
 	
-	static public function saveRecordData($record, $data)
+	static public function saveRecordData($record, $data, $sha1 = null)
 	{
 		if(defined('DEBUG')) print("saveRecordData($record[ID])\n");
 		
@@ -263,7 +265,7 @@ class SiteFile
 		// calculate hash and update size
 		DB::nonQuery('UPDATE `%s` SET SHA1 = "%s", Size = %u, Type = "%s", Status = "Normal" WHERE ID = %u', array(
 			static::$tableName
-			,sha1_file($filePath)
+			,$sha1 ? $sha1 : sha1_file($filePath)
 			,filesize($filePath)
 			,$mimeType
 			,$record['ID']
