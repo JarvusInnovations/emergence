@@ -126,7 +126,8 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 
 	// create site directory
 	var siteDir = me.options.sitesDir+'/'+siteData.handle
-		,dataDir = siteDir + '/data';
+		,dataDir = siteDir + '/data'
+		,siteDataDir = siteDir + '/site-data';
 		
 	if(!fs.existsSync(siteDir))
 	{
@@ -138,6 +139,12 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 	{
 		fs.mkdirSync(dataDir, me.options.dataMode);
 		fs.chownSync(dataDir, me.options.dataUID, me.options.dataGID);
+	}
+
+	if(!fs.existsSync(siteDataDir))
+	{
+		fs.mkdirSync(siteDataDir, me.options.dataMode);
+		fs.chownSync(siteDataDir, me.options.dataUID, me.options.dataGID);
 	}
 		
 	// write site config to file
