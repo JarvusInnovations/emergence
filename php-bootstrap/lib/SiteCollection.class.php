@@ -298,28 +298,32 @@ class SiteCollection
 	
 	// this functions sucks, $root=null will break, caches $root'd results without key
 	protected $_fullPath;
-	public function getFullPath($root = null)
+	public function getFullPath($root = null, $prependParent = true)
 	{
-		if(!isset($this->_fullPath) || $root)
+		if(isset($this->_fullPath) && !$root)
 		{
-			$path = array();
-			$curNode = $this;
-			do
+			$path = $this->_fullPath;
+		}
+		else
+		{
+			if($this->Parent)
 			{
-				if($curNode->ID == $root->ID)
-					return $path;
-				
-				array_unshift($path, $curNode->Handle);
+				$path = $this->Parent->getFullPath($root, false);
 			}
-			while($curNode = $curNode->Parent);
+			else
+			{
+				$path = array();
+			}
 			
-			if($this->Site == 'Remote')
-				array_unshift($path, '_parent');
-				
+			array_push($path, $this->Handle);
+
 			$this->_fullPath = $path;
 		}
 		
-		return $this->_fullPath;
+		if($prependParent && $this->Site == 'Remote')
+			array_unshift($path, '_parent');
+
+		return $path;
 	}
 	
 	static public function getAllRootCollections($remote = false)
@@ -370,6 +374,9 @@ class SiteCollection
 			//printf("getting after creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
 			$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote);
 		}
+		
+		if($parentCollection && !$collection->_parent)
+			$collection->_parent = $parentCollection;
 	
 		return $collection;
 	}
@@ -416,7 +423,7 @@ class SiteCollection
 		// determine new node's position
 		$left = $parentCollection ? $parentCollection->PosRight : DB::oneValue('SELECT IFNULL(MAX(`PosRight`)+1,1) FROM `%s`', static::$tableName);
 		$right = $left + 1;
-		
+				
 		if($parentCollection)
 		{
 			// push rest of set right by 2 to make room
@@ -434,6 +441,14 @@ class SiteCollection
 					,$left
 				)
 			);
+			
+			// update nodes cached in memory
+			$staleParent = $parentCollection;
+			while($staleParent)
+			{
+				$staleParent->_record['PosRight'] += 2;
+				$staleParent = $staleParent->_parent;
+			}
 		}
 		
 		// create record
@@ -475,6 +490,16 @@ class SiteCollection
 	
 	public function outputAsResponse()
 	{
+		header('HTTP/1.0 300 Multiple Choices');
+		header('Content-Type: application/json');
+		print(json_encode(array(
+			'collection' => $this->getTreeHash(!empty($_GET['tree']))
+		)));
+		exit();
+	}
+	
+	public function getTreeHash($deep = false)
+	{
 		$collection = array();
 		
 		foreach($this->getChildren() AS $child)
@@ -490,6 +515,14 @@ class SiteCollection
 					,'timestamp' => $child->Timestamp
 				);
 			}
+			elseif($deep)
+			{
+				$collection[] = array(
+					'type' =>  'collection'
+					,'handle' => $child->Handle
+					,'collection' => $child->getTreeHash($deep)
+				);
+			}
 			else
 			{
 				$collection[] = array(
@@ -498,11 +531,9 @@ class SiteCollection
 				);
 			}
 		}
-		
-		header('HTTP/1.0 300 Multiple Choices');
-		header('Content-Type: application/json');
-		print(json_encode($collection));
-	}	 
+
+		return $collection;
+	}
 	
 	public function getLastModified()
 	{

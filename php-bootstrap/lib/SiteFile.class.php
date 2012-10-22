@@ -351,7 +351,7 @@ class SiteFile
 
 		header('Content-Type: '.$this->MIMEType);
 		header('ETag: '.$this->SHA1);
-		header('Last-Modified: '.date('r', $this->Timestamp));
+		header('Last-Modified: '.date('D, d M Y H:i:s \G\M\T', $this->Timestamp));
 		
 		if(array_key_exists($this->MIMEType, static::$additionalHeaders))
 		{
