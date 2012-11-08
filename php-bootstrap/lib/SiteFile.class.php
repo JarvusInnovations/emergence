@@ -350,6 +350,7 @@ class SiteFile
 		}
 
 		header('Content-Type: '.$this->MIMEType);
+		header('Content-Length: '.$this->Size);
 		header('ETag: '.$this->SHA1);
 		header('Last-Modified: '.date('D, d M Y H:i:s \G\M\T', $this->Timestamp));
 		
