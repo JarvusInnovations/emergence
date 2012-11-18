@@ -168,6 +168,7 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'pm.start_servers = 5\n';
 	c += 'pm.min_spare_servers = 1\n';
 	c += 'pm.max_spare_servers = 10\n';
+	c += 'php_admin_flag[short_open_tag]=on\n';
 	c += 'php_admin_value[apc.shm_size]=64M\n';
 	c += 'php_admin_value[apc.stat]='+(me.options.statScripts?'1':'0')+'\n';
 	
