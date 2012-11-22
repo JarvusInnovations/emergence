@@ -17,11 +17,11 @@ class SiteFile
 	);
 	
 	static public $additionalHeaders = array(
-		'image' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma:')
+		'image' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
 		,'image/png' => 'image'
 		,'image/jpeg' => 'image'
-		,'application/javascript' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma:')
-		,'text/css' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma:')
+		,'application/javascript' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
+		,'text/css' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
 	);
 
 
@@ -338,22 +338,11 @@ class SiteFile
 	
 	public function outputAsResponse()
 	{
-		if(!empty($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $this->SHA1)
-		{
-			header('HTTP/1.0 304 Not Modified');
-			exit();
-		}
-		elseif(!empty($_SERVER['HTTP_IF_MODIFIED_SINCE']) && strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) >= $this->Timestamp)
-		{
-			header('HTTP/1.0 304 Not Modified');
-			exit();
-		}
-
 		header('Content-Type: '.$this->MIMEType);
 		header('Content-Length: '.$this->Size);
 		header('ETag: '.$this->SHA1);
 		header('Last-Modified: '.date('D, d M Y H:i:s \G\M\T', $this->Timestamp));
-		
+
 		if(array_key_exists($this->MIMEType, static::$additionalHeaders))
 		{
 			$headers = static::$additionalHeaders[$this->MIMEType];
@@ -365,6 +354,25 @@ class SiteFile
 			foreach($headers AS $header)
 				header($header);
 		}
+
+		if(!empty($_GET['_sha1']) && $_GET['_sha1'] == $this->SHA1)
+		{
+			$expires = 60*60*24*365;
+			header('Cache-Control: public, max-age='.$expires);
+			header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
+		}
+		
+		if(!empty($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $this->SHA1)
+		{
+			header('HTTP/1.0 304 Not Modified');
+			exit();
+		}
+		elseif(!empty($_SERVER['HTTP_IF_MODIFIED_SINCE']) && strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) >= $this->Timestamp)
+		{
+			header('HTTP/1.0 304 Not Modified');
+			exit();
+		}
+
 
 		readfile($this->RealPath);
 		exit();
