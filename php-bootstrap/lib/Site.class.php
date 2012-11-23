@@ -197,7 +197,7 @@ class Site
 		}
 	}
 	
-	static public function resolvePath($path, $checkParent = true)
+	static public function resolvePath($path, $checkParent = true, $checkCache = true)
 	{
 		if(is_string($path) && (empty($path) || $path == '/'))
 		{
@@ -209,7 +209,7 @@ class Site
 
 		$cacheKey = ($checkParent ? 'efs' : 'efsi') . ':' . $_SERVER['HTTP_HOST'] . '//' . join('/', $path);
 
-		if(Site::$production && false !== ($node = apc_fetch($cacheKey)))
+		if($checkCache && Site::$production && false !== ($node = apc_fetch($cacheKey)))
 		{
 			//MICS::dump($node, 'cache hit: '.$cacheKey, true);
 			return $node;
