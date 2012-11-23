@@ -338,11 +338,6 @@ class SiteFile
 	
 	public function outputAsResponse()
 	{
-		header('Content-Type: '.$this->MIMEType);
-		header('Content-Length: '.$this->Size);
-		header('ETag: '.$this->SHA1);
-		header('Last-Modified: '.date('D, d M Y H:i:s \G\M\T', $this->Timestamp));
-
 		if(array_key_exists($this->MIMEType, static::$additionalHeaders))
 		{
 			$headers = static::$additionalHeaders[$this->MIMEType];
@@ -355,13 +350,16 @@ class SiteFile
 				header($header);
 		}
 
+		// use SHA1 for ETag and manifest-based caching
+		header('ETag: '.$this->SHA1);
 		if(!empty($_GET['_sha1']) && $_GET['_sha1'] == $this->SHA1)
 		{
 			$expires = 60*60*24*365;
 			header('Cache-Control: public, max-age='.$expires);
-			header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
+			header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time()+$expires));
 		}
 		
+		// send 304 and exit if current version matches HTTP_IF_* check
 		if(!empty($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $this->SHA1)
 		{
 			header('HTTP/1.0 304 Not Modified');
@@ -373,6 +371,9 @@ class SiteFile
 			exit();
 		}
 
+		header('Content-Type: '.$this->MIMEType);
+		header('Content-Length: '.$this->Size);
+		header('Last-Modified: '.gmdate('D, d M Y H:i:s \G\M\T', $this->Timestamp));
 
 		readfile($this->RealPath);
 		exit();
