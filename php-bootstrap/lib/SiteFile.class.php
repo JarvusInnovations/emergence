@@ -338,6 +338,11 @@ class SiteFile
 	
 	public function outputAsResponse()
 	{
+		if(extension_loaded('newrelic'))
+		{
+			newrelic_disable_autorum();
+		}
+
 		if(array_key_exists($this->MIMEType, static::$additionalHeaders))
 		{
 			$headers = static::$additionalHeaders[$this->MIMEType];
