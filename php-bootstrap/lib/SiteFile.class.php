@@ -7,6 +7,7 @@ class SiteFile
 	static public $collectionClass = 'SiteCollection';
 	static public $extensionMIMETypes = array(
 		'js' => 'application/javascript'
+		,'json' => 'application/json'
 		,'php' => 'application/php'
 		,'html' => 'text/html'
 		,'css' => 'text/css'
@@ -21,6 +22,7 @@ class SiteFile
 		,'image/png' => 'image'
 		,'image/jpeg' => 'image'
 		,'application/javascript' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
+		,'application/json' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
 		,'text/css' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
 	);
 
