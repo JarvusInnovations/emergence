@@ -365,6 +365,7 @@ class SiteFile
 			$expires = 60*60*24*365;
 			header('Cache-Control: public, max-age='.$expires);
 			header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time()+$expires));
+			header('Pragma: public');
 		}
 		
 		// send 304 and exit if current version matches HTTP_IF_* check
