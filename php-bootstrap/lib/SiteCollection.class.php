@@ -565,4 +565,22 @@ class SiteCollection
 		$data['FullPath'] = $this->FullPath;
 		return $data;
 	}
+
+	static public function getOrCreatePath($path, SiteCollection $root = null)
+	{
+                if(!is_array($path)) {
+                        $path = Site::splitPath($path);
+		}
+
+                $collection = $root;
+
+                // create collections
+                while(count($path))
+                {
+                        $collection = static::getOrCreateCollection(array_shift($path), $collection);
+                }
+
+		return $collection;
+	}
+
 }
