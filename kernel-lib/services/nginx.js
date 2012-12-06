@@ -87,9 +87,22 @@ exports.nginx.prototype.start = function() {
 		}
 		else
 		{
-			console.log(me.name+': failed to find pid after launching');
-			me.status = 'unknown';
-			me.pid = null;
+			console.log(me.name+': failed to find pid after launching, waiting 1000ms and trying again...');
+			setTimeout(function() {
+
+				if(fs.existsSync(me.options.pidPath))
+				{
+					me.pid = parseInt(fs.readFileSync(me.options.pidPath));
+					console.log(me.name+': found new PID: '+me.pid);
+					me.status = 'online';
+				}
+				else
+				{
+					console.log(me.name+': failed to find pid after launching');
+					me.status = 'unknown';
+					me.pid = null;
+				}
+			}, 1000);
 		}
 	});
 	
