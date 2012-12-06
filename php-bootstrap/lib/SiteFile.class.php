@@ -21,6 +21,7 @@ class SiteFile
 		'image' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
 		,'image/png' => 'image'
 		,'image/jpeg' => 'image'
+		,'image/gif' => 'image'
 		,'application/javascript' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
 		,'application/json' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
 		,'text/css' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
