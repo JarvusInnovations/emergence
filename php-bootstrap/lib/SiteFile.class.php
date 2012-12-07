@@ -15,6 +15,8 @@ class SiteFile
 		,'woff' => 'application/x-font-woff'
 		,'ttf' => 'font/ttf'
 		,'eot' => 'application/vnd.ms-fontobject'
+		,'scss' => 'text/x-scss'
+		,'tpl' => 'text/x-html-template'
 	);
 	
 	static public $additionalHeaders = array(

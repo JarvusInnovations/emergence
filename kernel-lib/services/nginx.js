@@ -215,7 +215,7 @@ exports.nginx.prototype.makeConfig = function() {
 	c += '	gzip on;\n';
 	c += '	gzip_min_length 1100;\n';
 	c += '	gzip_buffers 4 8k;\n';
-	c += '	gzip_types text/plain;\n';
+	c += '	gzip_types text/plain text/css text/x-scss text/x-html-template application/xml application/javascript application/json application/php;\n';
 
 	c += '	output_buffers 1 32k;\n';
 	c += '	postpone_output 1460;\n';
