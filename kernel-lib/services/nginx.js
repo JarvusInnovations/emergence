@@ -275,7 +275,7 @@ exports.nginx.prototype.makeConfig = function() {
 		siteCfg += '						 error_reporting = E_ALL & ~E_NOTICE\n';
 		siteCfg += '						 date.timezone = America/New_York";\n';
 		siteCfg += '			fastcgi_index index.php;\n';
-		siteCfg += '			fastcgi_read_timeout 120s;\n';
+		siteCfg += '			fastcgi_read_timeout 6h;\n';
 		siteCfg += '		}\n';
 
 
