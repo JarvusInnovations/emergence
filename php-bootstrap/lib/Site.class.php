@@ -397,6 +397,12 @@ class Site
 		exit();
 	}
 
+	static public function redirectPermanent($path, $get = false, $hash = false)
+	{
+		header('HTTP/1.1 301 Moved Permanently');
+		return static::redirect($path, $get, $hash);
+	}
+
 	static public function getPath($index = null)
 	{
 		if($index === null)
