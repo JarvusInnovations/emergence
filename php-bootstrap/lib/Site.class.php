@@ -266,9 +266,23 @@ class Site
 			return;
 		}
 		
-		// try to load class
-		//print("Trying to resolve php-classes/$className.class.php<br/>");
-		$classNode = static::resolvePath("php-classes/$className.class.php");
+		// PSR-0 support
+		if ($lastNsPos = strrpos($className, '\\')) {
+	        $namespace = substr($className, 0, $lastNsPos);
+	        $className = substr($className, $lastNsPos + 1);
+	        $fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+	    }
+	    $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
+		
+		// try to load class via PSR-0
+		//print("Trying to resolve php-classes/$fileName.class.php<br/>");
+		$classNode = static::resolvePath("php-classes/$fileName.class.php");
+		if(!$classNode)
+		{
+			// try to load class flatly
+			//print("Trying to resolve php-classes/$className.class.php<br/>");
+			$classNode = static::resolvePath("php-classes/$className.class.php");
+		}
 
 		if(!$classNode)
 		{
