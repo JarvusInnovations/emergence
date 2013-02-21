@@ -57,7 +57,7 @@ class Site
 		}
 		
 		// load config
-		if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])) || ($_GET['_recache']==static::$controlKey))
+		if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])))
 		{
             if(is_readable(static::$rootPath.'/site.json'))
             {
