@@ -57,10 +57,18 @@ class Site
 		}
 		
 		// load config
-		if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])))
+		if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])) || ($_GET['_recache']==static::$controlKey))
 		{
-			static::$config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
-			apc_store($_SERVER['HTTP_HOST'], static::$config);
+            if(is_readable(static::$rootPath.'/site.json'))
+            {
+			    static::$config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
+			    apc_store($_SERVER['HTTP_HOST'], static::$config);
+            }
+            else if(is_readable(static::$rootPath.'/Site.config.php'))
+            {
+                include(static::$rootPath.'/Site.config.php');
+                apc_store($_SERVER['HTTP_HOST'], static::$config);
+            }
 		}
 		
 		
