@@ -7,7 +7,7 @@ var http = require('http')
 	,url = require('url')
 	,static = require('node-static')
 	,events = require('events');
-	
+
 exports.server = function(paths, options) {
 	var me = this;
 	
@@ -29,40 +29,55 @@ util.inherits(exports.server, events.EventEmitter);
 exports.server.prototype.start = function() {
 	var me = this;
 
+	// create HTTP authentication module
+	if(!fs.existsSync('/emergence/admins.htpasswd')) {
+		console.log('Cannot start emergence-kernel without /emergence/admins.htpasswd, use htpasswd to create it with at least 1 user');
+		return;
+	}
+
+	var http_auth = require('http-auth')({
+		authRealm: 'Emergence Node Management'
+		,authFile: '/emergence/admins.htpasswd'
+	});
+
 	// create static fileserver
 	me.fileServer = new static.Server(me.options.staticDir);
 	
 	// start control server
 	http.createServer(function(request, response) {
-		request.content = '';
-	
-		request.addListener('data', function(chunk) {
-			request.content += chunk;
-		});
-	
-		request.addListener('end', function() {
-			request.urlInfo = url.parse(request.url)
-			request.path = request.urlInfo.pathname.substr(1).split('/');
-			console.log(request.method+' '+JSON.stringify(request.urlInfo));
-			
-			if(me.paths.hasOwnProperty(request.path[0]))
-			{
-				var result = me.paths[request.path[0]].handleRequest(request, response, me);
-				if(result===false)
+
+		http_auth.apply(request, response, function(username) {
+			request.content = '';
+		
+			request.addListener('data', function(chunk) {
+				request.content += chunk;
+			});
+		
+			request.addListener('end', function() {
+				request.urlInfo = url.parse(request.url)
+				request.path = request.urlInfo.pathname.substr(1).split('/');
+				console.log(request.method+' '+JSON.stringify(request.urlInfo));
+				
+				if(me.paths.hasOwnProperty(request.path[0]))
 				{
-					response.writeHead(404);
-					response.end();
+					var result = me.paths[request.path[0]].handleRequest(request, response, me);
+					if(result===false)
+					{
+						response.writeHead(404);
+						response.end();
+					}
+					else if(result !== true)
+					{
+						response.writeHead(200, {'Content-Type':'application/json'});
+						response.end(JSON.stringify(result));
+					}
 				}
-				else if(result !== true)
+				else
 				{
-					response.writeHead(200, {'Content-Type':'application/json'});
-					response.end(JSON.stringify(result));
+					me.fileServer.serve(request, response);
 				}
-			}
-			else
-			{
-				me.fileServer.serve(request, response);
-			}
+			});
+
 		});
 		
 	}).listen(me.options.port, me.options.host);
