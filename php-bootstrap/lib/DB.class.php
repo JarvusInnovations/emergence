@@ -1,6 +1,10 @@
 <?php
 
-class DuplicateKeyException extends Exception { }
+namespace Emergence;
+use \mysqli as mysqli;
+
+
+class DuplicateKeyException extends \Exception { }
 
 
 class DB
@@ -54,7 +58,7 @@ class DB
 	}
 	
 	
-	static public function nonQuery($query, $parameters = array())
+	static public function nonQuery($query, $parameters = array(), $errorHandler = null)
 	{
 		// MICS::dump(func_get_args(), 'nonquery');
 		
@@ -69,7 +73,7 @@ class DB
 		// handle query error
 		if($success === false)
 		{
-			self::handleError($query, $queryLog);
+			self::handleError($query, $queryLog, $errorHandler);
 		}
 		
 		// finish query log
@@ -77,8 +81,9 @@ class DB
 	}
 	
 	
-	static public function query($query, $parameters = array())
+	static public function query($query, $parameters = array(), $errorHandler = null)
 	{
+        
 		$query = self::preprocessQuery($query, $parameters);
 		
 		// start query log
@@ -90,7 +95,7 @@ class DB
 		// handle query error
 		if($result === false)
 		{
-			self::handleError($query, $queryLog);
+			$result = self::handleError($query, $queryLog, $parameters, $errorHandler);
 		}
 		
 		// finish query log
@@ -100,10 +105,10 @@ class DB
 	}
 	
 	
-	static public function table($tableKey, $query, $parameters = array(), $nullKey = '')
+	static public function table($tableKey, $query, $parameters = array(), $nullKey = '', $errorHandler = null)
 	{		
 		// execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		$records = array();
 		while($record = $result->fetch_assoc())
@@ -118,10 +123,10 @@ class DB
 	}
 	
 
-	static public function arrayTable($tableKey, $query, $parameters = array())
+	static public function arrayTable($tableKey, $query, $parameters = array(), $errorHandler = null)
 	{		
 		// execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		$records = array();
 		while($record = $result->fetch_assoc())
@@ -141,10 +146,10 @@ class DB
 	}
 	
 	
-	static public function valuesTable($tableKey, $valueKey, $query, $parameters = array())
+	static public function valuesTable($tableKey, $valueKey, $query, $parameters = array(), $errorHandler = null)
 	{
 		// execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		$records = array();
 		while($record = $result->fetch_assoc())
@@ -158,10 +163,10 @@ class DB
 		return $records;
 	}
 
-	static public function allRecordsWithInstantiation($query, $classMapping, $parameters = array())
+	static public function allRecordsWithInstantiation($query, $classMapping, $parameters = array(), $errorHandler = null)
 	{
 		// execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		$records = array();
 		while($record = $result->fetch_assoc())
@@ -180,10 +185,10 @@ class DB
 		return $records;
 	}
 
-	static public function allInstances($className, $query, $parameters = array())
+	static public function allInstances($className, $query, $parameters = array(), $errorHandler = null)
 	{
 		// execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		$records = array();
 		while($record = $result->fetch_assoc())
@@ -197,12 +202,12 @@ class DB
 		return $records;
 	}
 	
-	static public function allRecords($query, $parameters = array())
+	static public function allRecords($query, $parameters = array(), $errorHandler = null)
 	{
-		// MICS::dump(array('query' => $query, 'params' => $parameters), 'allRecords');
-		
+		// Debug::dump(array('query' => $query, 'params' => $parameters), 'allRecords');
+        
 		// execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		$records = array();
 		while($record = $result->fetch_assoc())
@@ -217,12 +222,12 @@ class DB
 	}
 	
 	
-	static public function allValues($valueKey, $query, $parameters = array())
+	static public function allValues($valueKey, $query, $parameters = array(), $errorHandler = null)
 	{
 		// MICS::dump(array('query' => $query, 'params' => $parameters), 'allRecords');
 		
 		// execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		$records = array();
 		while($record = $result->fetch_assoc())
@@ -242,7 +247,7 @@ class DB
 		unset(self::$_record_cache[$cacheKey]);
 	}
 	
-	static public function oneRecordCached($cacheKey, $query, $parameters = array())
+	static public function oneRecordCached($cacheKey, $query, $parameters = array(), $errorHandler = null)
 	{
 
 		// check for cached record
@@ -261,7 +266,7 @@ class DB
 		}
 		
 		// preprocess and execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		// handle query error
 		if($result === false)
@@ -286,10 +291,10 @@ class DB
 	}
 	
 	
-	static public function oneRecord($query, $parameters = array())
+	static public function oneRecord($query, $parameters = array(), $errorHandler = null)
 	{
 		// preprocess and execute query
-		$result = self::query($query, $parameters);
+		$result = self::query($query, $parameters, $errorHandler);
 		
 		// get record
 		$record = $result->fetch_assoc();
@@ -302,9 +307,9 @@ class DB
 	}
 	
 	
-	static public function oneValue($query, $parameters = array())
+	static public function oneValue($query, $parameters = array(), $errorHandler = null)
 	{
-		$record = self::oneRecord($query, $parameters);
+		$record = self::oneRecord($query, $parameters, $errorHandler);
 		
 		if($record)
 		{
@@ -476,8 +481,17 @@ class DB
 	}
 	
 	
-	static protected function handleError($query = '', $queryLog = false)
+	static protected function handleError($query = '', $queryLog = false, $parameters = null, $errorHandler = null)
 	{
+        
+        if(is_string($errorHandler)) {
+            $errorHandler = explode('::',$errorHandler);   
+        }
+        if(is_callable($errorHandler, false, $callable))
+        {
+            return call_user_func($errorHandler,$query,$queryLog, $parameters);
+        }
+        
 		// save queryLog
 		if($queryLog)
 		{

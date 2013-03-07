@@ -1,10 +1,11 @@
 <?php
+namespace Emergence;
 
 class SiteFile
 {
 	static public $tableName = '_e_files';
 	static public $dataPath = 'data';
-	static public $collectionClass = 'SiteCollection';
+	static public $collectionClass = 'Emergence\\SiteCollection';
 	static public $extensionMIMETypes = array(
 		'js' => 'application/javascript'
 		,'json' => 'application/json'
@@ -207,8 +208,10 @@ class SiteFile
 	static public function create($collectionID, $handle, $data = null, $ancestorID = null)
 	{
 		if(!$handle)
-			return;
-			
+		{
+			trigger_error('No handle was provided when creating a new file node.');
+		}
+		
 		$record = static::createPhantom($collectionID, $handle, $ancestorID);
 	
 		if($data)
@@ -232,6 +235,11 @@ class SiteFile
 	
 	static public function createPhantom($collectionID, $handle, $ancestorID = null)
 	{
+		if(!is_writable(Site::$rootPath . '/' . static::$dataPath . '/'))
+		{
+			trigger_error('Site data path (' . Site::$rootPath . '/' . static::$dataPath . '/) is not writable as ' . get_current_user() . '. Aborting phantom node creation.');
+		}
+	
 		DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Phantom", AuthorID = %s, AncestorID = %s', array(
 			static::$tableName
 			,$collectionID
@@ -256,7 +264,14 @@ class SiteFile
 		
 		// save file
 		$filePath = static::getRealPathByID($record['ID']);
-		file_put_contents($filePath, $data);
+		if(is_writable(Site::$rootPath . '/' . static::$dataPath . '/'))
+		{
+			file_put_contents($filePath, $data);
+		}
+		else
+		{
+			trigger_error('(' . Site::$rootPath . '/' . static::$dataPath . '/) is not writable.');
+		}
 		
 		// get mime type
 		$mimeType = File::getMIMEType($filePath);

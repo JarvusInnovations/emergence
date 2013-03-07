@@ -1,5 +1,7 @@
 <?php
 
+namespace Emergence;
+
 class Debug
 {
 	static public $log = array();

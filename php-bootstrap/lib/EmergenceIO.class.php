@@ -1,4 +1,6 @@
 <?php
+namespace Emergence;
+
 class EmergenceIO {
 	
 	/*	function export	
@@ -93,6 +95,13 @@ class EmergenceIO {
 					while (!feof($fp)) {
 					    $contents .= fread($fp, 2);
 					}
+                    if(php_sapi_name() == "cli")
+                    {
+                        $pathinfo = pathinfo($file['name']);
+                        
+                        echo sprintf("\033[KImporting %s . . . %s%%\t %s\r",$inputFile,number_format(($i / $zip->numFiles) * 100,2),$pathinfo['filename']);
+                    }
+                    
 					SiteCollection::createFile($targetDirectory.$file['name'],$contents);
 					fclose($fp);
 					$i++;
@@ -101,6 +110,11 @@ class EmergenceIO {
 			default:
 				throw new Exception('MIME type ' . $type . ' unsupported.');
 		}
+        
+        if(php_sapi_name() == "cli")
+        {
+            echo "\033[KImport complete.\n";
+        }
 
 	}
 	

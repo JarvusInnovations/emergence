@@ -1,9 +1,11 @@
 <?php
 
+namespace Emergence;
+
 class Site
 {
 	// config properties
-	static public $debug = false;
+	static public $debug = true;
 	static public $production = false;
 	static public $defaultPage = 'home.php';
 	static public $autoCreateSession = true;
@@ -34,7 +36,7 @@ class Site
 	static public function initialize()
 	{
 		static::$time = microtime(true);
-
+		
 		// resolve details from host name
 		
 		// get site ID
@@ -55,7 +57,7 @@ class Site
 			else
 				throw new Exception('No Site root detected');
 		}
-		
+
 		// load config
 		if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])))
 		{
@@ -94,17 +96,16 @@ class Site
 		}
 
 		// register class loader
-		spl_autoload_register('Site::loadClass');
-		
+		spl_autoload_register('Emergence\\Site::loadClass');
+
 		// set error handle
-		set_error_handler('Site::handleError');
+		set_error_handler('Emergence\\Site::handleError');
 		
 		// register exception handler
-		set_exception_handler('Site::handleException');
-		
+		set_exception_handler('Emergence\\Site::handleException');
+
 		// check virtual system for site config
 		static::loadConfig(__CLASS__);
-		
 		
 		if(is_callable(static::$onInitialized))
 			call_user_func(static::$onInitialized);
@@ -152,7 +153,7 @@ class Site
 			{
 				$resolvedNode = $childNode;
 				
-				if(is_a($resolvedNode, 'SiteFile'))
+				if(is_a($resolvedNode, 'Emergence\\SiteFile'))
 				{
 					break;
 				}
@@ -165,14 +166,14 @@ class Site
 			
 			$resolvedPath[] = $handle;
 		}
-		
+
 		
 		if($resolvedNode)
 		{
 			// create session
 			if(static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php')
 			{
-				$GLOBALS['Session'] = UserSession::getFromRequest();
+				$GLOBALS['Session'] = \UserSession::getFromRequest();
 			}
 
 			if(is_callable(static::$onRequestMapped))
@@ -187,7 +188,7 @@ class Site
 			}
 			elseif(is_callable(array($resolvedNode, 'outputAsResponse')))
 			{
-				if(!is_a($resolvedNode, 'SiteFile') && !static::$listCollections)
+				if(!is_a($resolvedNode, 'Emergence\\SiteFile') && !static::$listCollections)
 				{
 					static::respondNotFound();
 				}
@@ -224,7 +225,7 @@ class Site
 		}
 			
 		$collectionHandle = array_shift($path);
-					
+		
 		// get collection
 		if(!$collectionHandle || !$collection = static::getRootCollection($collectionHandle))
 		{
@@ -286,18 +287,32 @@ class Site
 
 		if(!$classNode)
 		{
-			die("Unable to load class '$className'");
+			echo "Unable to load class '$className'<br>\n";	
+			if(static::$debug)
+			{
+				echo '<pre>';
+				debug_print_backtrace();
+				echo '</pre>';
+			}
+			exit;
 		}
 		elseif(!$classNode->MIMEType == 'application/php')
 		{
-			die("Class file for '$className' is not application/php");
+			//die("Class file for '$className' is not application/php");
 		}
 		
 		// add to loaded class queue
 		static::$_loadedClasses[] = $className;
 		
 		//print "...loadClass($className) -> $classNode->RealPath<br/>";
-		require($classNode->RealPath);	
+		if(is_readable($classNode->RealPath))
+		{
+			require($classNode->RealPath);
+		}
+		else
+		{
+			trigger_error('Failed to read (' . $classNode->RealPath . ') from called SiteFile node.');
+		}
 
 		// try to load config
 		static::loadConfig($className);
@@ -314,14 +329,36 @@ class Site
 	
 	static public function loadConfig($className)
 	{
-		if($configNode = static::resolvePath("php-config/$className.config.php"))
+		// PSR-0 support
+		if ($lastNsPos = strrpos($className, '\\')) {
+	        $namespace = substr($className, 0, $lastNsPos);
+	        $className = substr($className, $lastNsPos + 1);
+	        $fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+	    }
+	    $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
+
+	    $configNode = static::resolvePath("php-config/$fileName.config.php");
+		if(!$configNode)
 		{
 			if(!$configNode->MIMEType == 'application/php')
 			{
-				die('Config file for "'.$className.'" is not application/php');
+				//trigger_error('Config file for "'.$fileName.'" is not application/php',E_USER_NOTICE);
 			}
-			
-			require($configNode->RealPath);
+			else
+			{
+				require($configNode->RealPath);
+			}
+		}
+		else if($configNode = static::resolvePath("php-config/$className.config.php"))
+		{
+			if(!$configNode->MIMEType == 'application/php')
+			{
+				//trigger_error('Config file for "'.$className.'" is not application/php',E_USER_NOTICE);
+			}
+			else
+			{
+				require($configNode->RealPath);
+			}
 		}
 	}
 	
@@ -386,7 +423,7 @@ class Site
 	{
 		if(!empty(static::$_rootCollections[$handle]))
 			return static::$_rootCollections[$handle];
-				
+
 		return static::$_rootCollections[$handle] = SiteCollection::getOrCreateRootCollection($handle);
 	}
 
@@ -436,5 +473,31 @@ class Site
 	static public function matchPath($index, $string)
 	{
 		return 0==strcasecmp(static::getPath($index), $string);
+	}
+	
+	/*
+	 * TODO: Auto-detect calling class/method for default title
+	 */
+	static public function dump($value, $title = 'Dump', $exit = false, $backtrace = false) {
+		printf("<h2>%s:</h2><pre>%s</pre>", $title, htmlspecialchars(var_export($value, true)));
+		
+		if($backtrace)
+		{
+			print('<hr><pre>');debug_print_backtrace();print('</pre>');
+		}
+		
+		if ($exit)
+			exit();
+			
+		return $value;
+	}
+	static public function prepareOptions($value, $defaults = array())
+	{
+		if(is_string($value))
+		{
+			$value = json_decode($value, true);
+		}
+		
+		return is_array($value) ? array_merge($defaults, $value) : $defaults;
 	}
 }

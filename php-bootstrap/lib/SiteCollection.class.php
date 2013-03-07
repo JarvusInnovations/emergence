@@ -1,11 +1,11 @@
 <?php
-
+namespace Emergence;
 
 class SiteCollection
 {
 	static public $tableName = '_e_file_collections';
 	static public $autoCreate = false;
-	static public $fileClass = 'SiteFile';
+	static public $fileClass = 'Emergence\\SiteFile';
 
 	public $_handle;
 	public $_record;
@@ -75,7 +75,7 @@ class SiteCollection
 			debug_print_backtrace();
 			die('SiteID must be converted to (bool)$remote');
 		}
-		
+
 		$where[] = sprintf('Handle = "%s"', DB::escape($handle));
 		
 		if(!$includeDeleted)
@@ -145,7 +145,7 @@ class SiteCollection
 				,$this->ID
 			)
 		);
-		
+
 		while($record = $collectionResults->fetch_assoc())
 		{
 			$children[] = new static($record['Handle'], $record);
@@ -374,10 +374,10 @@ class SiteCollection
 			//printf("getting after creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
 			$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote);
 		}
-		
+
 		if($parentCollection && !$collection->_parent)
 			$collection->_parent = $parentCollection;
-	
+
 		return $collection;
 	}
 	
