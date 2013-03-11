@@ -11,6 +11,7 @@ class Site
 	static public $onInitialized;
 	static public $onNotFound;
 	static public $onRequestMapped;
+	static public $permittedOrigins = array();
 
 	// public properties
 	//static public $ID;
@@ -118,6 +119,32 @@ class Site
 		{
 			array_shift(static::$pathStack);
 			return Emergence::handleRequest();
+		}
+
+		// handle CORS headers
+		if(isset($_SERVER['HTTP_ORIGIN'])) {
+			$hostname = strtolower(parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST));
+			if($hostname == strtolower($_SERVER['HTTP_HOST']) || static::$permittedOrigins == '*' || in_array($hostname, static::$permittedOrigins)) {
+				header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+				header('Access-Control-Allow-Credentials: true');
+				//header('Access-Control-Max-Age: 86400')
+			}
+			else {
+				header('HTTP/1.1 403 Forbidden');
+				exit();
+			}
+		}
+	   
+		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+			if(isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
+				header('Access-Control-Request-Method: *');
+			}       
+	
+			if(isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
+				header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept');
+			}
+			
+			exit();
 		}
 
 		// try to resolve URL in site-root
