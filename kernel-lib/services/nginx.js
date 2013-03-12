@@ -266,6 +266,7 @@ exports.nginx.prototype.makeConfig = function() {
 		siteCfg += '		location ~ ^/index.php {\n';
 		siteCfg += '			include '+me.options.miscConfigDir+'/fastcgi_params;\n';
 		siteCfg += '			fastcgi_pass 127.0.0.1:9000;\n';
+		siteCfg += '			fastcgi_param HTTPS $php_https;\n';
 		siteCfg += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
 		siteCfg += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
 		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/root$fastcgi_script_name;\n';
@@ -274,6 +275,7 @@ exports.nginx.prototype.makeConfig = function() {
 		siteCfg += '						 error_log='+me.options.phpErrorLogPath+'\n';
 		siteCfg += '						 error_reporting = E_ALL & ~E_NOTICE\n';
 		siteCfg += '						 date.timezone = America/New_York";\n';
+
 		siteCfg += '			fastcgi_index index.php;\n';
 		siteCfg += '			fastcgi_read_timeout 6h;\n';
 		siteCfg += '		}\n';
@@ -283,6 +285,7 @@ exports.nginx.prototype.makeConfig = function() {
 		// append config
 		c += '	server {\n';
 		c += '		listen '+me.options.bindHost+':'+me.options.bindPort+';\n';
+		c += '		set $php_https "";\n';
 		c +=            siteCfg;
 		c += '	}\n';
 		
@@ -290,10 +293,12 @@ exports.nginx.prototype.makeConfig = function() {
 		{
 			c += '	server {\n';
 			c += '		listen '+me.options.bindHost+':443;\n';
+			c += '		set $php_https on;\n';
 			
 			c += '		ssl on;\n';
 			c += '		ssl_certificate '+site.ssl.certificate+';\n';
 			c += '		ssl_certificate_key '+site.ssl.certificate_key+';\n';
+
 			c +=            siteCfg;
 			c += '	}\n';
 		}
