@@ -23,6 +23,7 @@ class Site
 	static public $requestURI;
 	static public $requestPath;
 	static public $pathStack;
+	static public $resolvedPath;
 
 	static public $config;
 	static public $time;
@@ -150,7 +151,7 @@ class Site
 		// try to resolve URL in site-root
 		$rootNode = static::getRootCollection('site-root');
 		$resolvedNode = $rootNode;
-		$resolvedPath = array();
+		static::$resolvedPath = array();
 
 		// handle default page request
 		if(empty(static::$pathStack[0]) && static::$defaultPage)
@@ -173,14 +174,15 @@ class Site
 						|| ($scriptHandle && $childNode = $resolvedNode->getChild($scriptHandle))
 					)
 				)
-				|| ($childNode = Emergence::resolveFileFromParent('site-root', array_merge($resolvedPath,array($handle))))
-				|| ($scriptHandle && $childNode = Emergence::resolveFileFromParent('site-root', array_merge($resolvedPath,array($scriptHandle))))
+				|| ($childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath,array($handle))))
+				|| ($scriptHandle && $childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath,array($scriptHandle))))
 			)
 			{
 				$resolvedNode = $childNode;
 				
 				if(is_a($resolvedNode, 'SiteFile'))
 				{
+					static::$resolvedPath[] = $scriptHandle;
 					break;
 				}
 			}
@@ -190,7 +192,7 @@ class Site
 				//break;
 			}
 			
-			$resolvedPath[] = $handle;
+			static::$resolvedPath[] = $handle;
 		}
 		
 		
@@ -209,6 +211,13 @@ class Site
 
 			if($resolvedNode->MIMEType == 'application/php')
 			{
+				function e_include($file) {
+					$file = Site::normalizePath('site-root/'.implode('/', Site::$resolvedPath).'/../'.$file);
+					if(!$node = Site::resolvePath($file)) {
+						die('e_include failed to find in efs: '.$file);
+					}
+					require($node->RealPath);
+				}
 				require($resolvedNode->RealPath);
 				exit();
 			}
@@ -463,5 +472,21 @@ class Site
 	static public function matchPath($index, $string)
 	{
 		return 0==strcasecmp(static::getPath($index), $string);
+	}
+
+	static public function normalizePath($filename)
+	{
+		$filename = str_replace('//', '/', $filename);
+		$parts = explode('/', $filename);
+		$out = array();
+		foreach ($parts as $part) {
+			if ($part == '.') continue;
+			if ($part == '..') {
+				array_pop($out);
+				continue;
+			}
+			$out[] = $part;
+		}
+		return implode('/', $out);
 	}
 }
