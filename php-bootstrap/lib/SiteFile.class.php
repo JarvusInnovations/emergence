@@ -20,13 +20,16 @@ class SiteFile
 	);
 	
 	static public $additionalHeaders = array(
-		'image' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
-		,'image/png' => 'image'
-		,'image/jpeg' => 'image'
-		,'image/gif' => 'image'
-		,'application/javascript' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
-		,'application/json' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
-		,'text/css' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
+		'static' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
+		,'image/png' => 'static'
+		,'image/jpeg' => 'static'
+		,'image/gif' => 'static'
+		,'application/javascript' => 'static'
+		,'application/json' => 'static'
+		,'text/css' => 'static'
+		,'application/x-font-woff' => 'static'
+		,'font/ttf' => 'static'
+		,'application/vnd.ms-fontobject' => 'static'
 	);
 
 
