@@ -155,7 +155,7 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 	if(createUser)
 		delete siteData.create_user;
 		
-	fs.writeFileSync(filename, JSON.stringify(siteData));
+	fs.writeFileSync(filename, JSON.stringify(siteData, null, 4));
 
 	if(createUser)
 		siteData.create_user = createUser;

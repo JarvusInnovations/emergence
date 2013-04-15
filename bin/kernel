@@ -40,12 +40,14 @@ else
 	if(fs.existsSync('/usr/sbin/nginx'))
 		CONFIG.services.plugins.web = {
 			type: 'nginx'
+			,autoStart: true
 			,execPath: '/usr/sbin/nginx'
 			,bindHost: '0.0.0.0'
 		};
 	else if(fs.existsSync('/usr/local/sbin/nginx'))
 		CONFIG.services.plugins.web = {
 			type: 'nginx'
+			,autoStart: true
 			,execPath: '/usr/local/sbin/nginx'
 			,bindHost: '0.0.0.0'
 		};
@@ -54,6 +56,7 @@ else
 	if(fs.existsSync('/usr/sbin/mysqld'))
 		CONFIG.services.plugins.sql = {
 			type: 'mysql'
+			,autoStart: true
 			,execPath: '/usr/sbin/mysqld'
 			,managerUser: 'root'
 			,managerPassword: sitesLib.generatePassword()
@@ -61,6 +64,7 @@ else
 	else if(fs.existsSync('/usr/local/bin/mysqld'))
 		CONFIG.services.plugins.sql = {
 			type: 'mysql'
+			,autoStart: true
 			,execPath: '/usr/local/bin/mysqld'
 			,managerUser: 'root'
 			,managerPassword: sitesLib.generatePassword()
@@ -71,11 +75,13 @@ else
 	if(fs.existsSync('/usr/bin/php-fpm'))
 		CONFIG.services.plugins.php = {
 			type: 'php-fpm'
+			,autoStart: true
 			,execPath: '/usr/bin/php-fpm'
 		};
 	else if(fs.existsSync('/usr/local/sbin/php-fpm'))
 		CONFIG.services.plugins.php = {
 			type: 'php-fpm'
+			,autoStart: true
 			,execPath: '/usr/local/sbin/php-fpm'
 		};
 	
@@ -83,8 +89,14 @@ else
 	console.log('GENERATED CONFIG');
 	console.log(util.inspect(CONFIG.services.plugins));
 	
-	fs.writeFileSync('/emergence/config.json', JSON.stringify(CONFIG));
+	fs.writeFileSync('/emergence/config.json', JSON.stringify(CONFIG, null, 4));
 	console.log('WROTE CONFIG: /emergence/config.json');
+}
+
+// create default admin user
+if(!fs.existsSync('/emergence/admins.htpasswd')) {
+	console.log('Creating default administrative user: admin/admin');
+	fs.writeFileSync('/emergence/admins.htpasswd', 'admin:{SHA}0DPiKuNIrrVmD8IUCuw1hQxNqZc=');
 }
 
 

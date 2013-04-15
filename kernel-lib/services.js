@@ -22,36 +22,43 @@ exports.ServicesController = function(sites, options) {
 	me.options.dataDir = me.options.dataDir || me.options.servicesDir+'/data';
 	
 	// create required directories
-	if(!fs.existsSync(me.options.servicesDir))
+	if(!fs.existsSync(me.options.servicesDir)) {
 		fs.mkdirSync(me.options.servicesDir, 0775);
+	}
 		
-	if(!fs.existsSync(me.options.logsDir))
+	if(!fs.existsSync(me.options.logsDir)) {
 		fs.mkdirSync(me.options.logsDir, 0775);
+	}
 	
-	if(!fs.existsSync(me.options.configDir))
+	if(!fs.existsSync(me.options.configDir)) {
 		fs.mkdirSync(me.options.configDir, 0775);
+	}
 	
-	if(!fs.existsSync(me.options.runDir))
+	if(!fs.existsSync(me.options.runDir)) {
 		fs.mkdirSync(me.options.runDir, 0775);
+	}
 	
-	if(!fs.existsSync(me.options.dataDir))
+	if(!fs.existsSync(me.options.dataDir)) {
 		fs.mkdirSync(me.options.dataDir, 0775);
+	}
 	
 	// load service plugins
 	me.services = {};
 	_.each(me.options.plugins, function(plugin, name) {
 		console.log('Loading service: '+name);
 		
-		if(_.isString(plugin))
-		{
+		if(_.isString(plugin)) {
 			plugin = require('./services/'+plugin).createService(name, me);
 		}
-		else if(!plugin.isService && plugin.type)
-		{
+		else if(!plugin.isService && plugin.type) {
 			plugin = require('./services/'+plugin.type).createService(name, me, plugin);
 		}
 		
 		me.services[name] = plugin;
+		if(plugin.options.autoStart) {
+			console.log('Autostarting service: '+name);
+			plugin.start();
+		}
 	});
 }
 util.inherits(exports.ServicesController, events.EventEmitter);
@@ -60,13 +67,11 @@ util.inherits(exports.ServicesController, events.EventEmitter);
 exports.ServicesController.prototype.handleRequest = function(request, response, server) {
 	var me = this;
 
-	if(request.path[1])
-	{
+	if(request.path[1]) {
 		return me.handleServiceRequest.apply(me, arguments);
 	}
 
-	if(request.method == 'GET')
-	{
+	if(request.method == 'GET') {
 		var statusData = {
 			services: []
 		};
@@ -85,33 +90,27 @@ exports.ServicesController.prototype.handleServiceRequest = function(request, re
 	var me = this
 		service = me.services[request.path[1]];
 		
-	if(!service)
-	{
+	if(!service) {
 		return false;
 	}
 
-	if(request.method == 'GET')
-	{
+	if(request.method == 'GET') {
 		return true;
 	}
-	else if(request.method == 'POST')
-	{
-		if(request.path[2] == '!start')
-		{
+	else if(request.method == 'POST') {
+		if(request.path[2] == '!start') {
 			return {
 				success: service.start()
 				,status: service.getStatus()
 			};
 		}
-		else if(request.path[2] == '!stop')
-		{
+		else if(request.path[2] == '!stop') {
 			return {
 				success: service.stop()
 				,status: service.getStatus()
 			};
 		}
-		else if(request.path[2] == '!restart')
-		{
+		else if(request.path[2] == '!restart') {
 			return {
 				success: service.restart()
 				,status: service.getStatus()

@@ -30,11 +30,6 @@ exports.server.prototype.start = function() {
 	var me = this;
 
 	// create HTTP authentication module
-	if(!fs.existsSync('/emergence/admins.htpasswd')) {
-		console.log('Cannot start emergence-kernel without /emergence/admins.htpasswd, use htpasswd to create it with at least 1 user');
-		return;
-	}
-
 	var http_auth = require('http-auth')({
 		authRealm: 'Emergence Node Management'
 		,authFile: '/emergence/admins.htpasswd'
