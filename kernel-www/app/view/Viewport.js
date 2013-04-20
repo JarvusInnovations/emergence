@@ -9,7 +9,6 @@ Ext.define('eMan.view.Viewport', {
 		
 		this.items = [{
 			region: 'north'
-			,title: 'Emergence Manager'
 			,layout: {
 				type: 'hbox'
 				,align: 'stretch'
