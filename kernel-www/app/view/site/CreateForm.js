@@ -52,11 +52,12 @@ Ext.define('eMan.view.site.CreateForm', {
             ,listeners: {
                 scope: this
                 ,focus: function(priField) {
-                    var handleField = this.getForm().findField('handle');
+                    var handleField = this.getForm().findField('handle')
+		    	,defaultSuffix = eMan.app.serverConfig.defaultSuffix;;
                     
-                    if(!priField.getValue() && handleField.getValue())
+                    if(!priField.getValue() && handleField.getValue() && defaultSuffix)
                     {
-                        priField.setValue(handleField.getValue() + '.' + eMan.app.defaultPrimaryDomain);
+                        priField.setValue(handleField.getValue() + '.' + defaultSuffix);
                     }
                 }
                 ,blur: function(priField) {

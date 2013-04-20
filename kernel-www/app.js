@@ -2,14 +2,13 @@
 Ext.Loader.setConfig({
 	enabled:true
 	,paths:{
-		Ext: 'http://extjs.cachefly.net/ext-4.0.2a/src'
+		Ext: 'http://cdn.sencha.com/ext/gpl/4.2.0/src'
 	}
 });
 
 Ext.application({
 	name: 'eMan'
 	,appFolder: 'app'
-	,defaultPrimaryDomain: 'sites.emr.ge'
 	
 	,controllers: ['Viewport', 'Services', 'Sites', 'Log']
 	
@@ -19,6 +18,15 @@ Ext.application({
 		eMan.app = this;
 		eMan.log = Ext.bind(eMan.app.log, eMan.app);
 		this.viewport = Ext.create('eMan.view.Viewport');
+		this.viewport.setLoading(true);
+		Ext.Ajax.request({
+			url: '/server-config'
+			,success: function(response) {
+				var r = Ext.decode(response.responseText);
+				eMan.app.serverConfig = r;
+				eMan.app.viewport.setLoading(false);
+			}
+		});
 		this.fireEvent('log', 'Emergence Manager ready.');
 	}
 	

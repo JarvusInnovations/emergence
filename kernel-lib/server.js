@@ -51,7 +51,13 @@ exports.server.prototype.start = function() {
 			request.addListener('end', function() {
 				request.urlInfo = url.parse(request.url)
 				request.path = request.urlInfo.pathname.substr(1).split('/');
-				console.log(request.method+' '+JSON.stringify(request.urlInfo));
+				console.log(request.method+' '+request.url);
+
+				if(request.path[0] == 'server-config')
+				{
+					response.writeHead(200, {'Content-Type':'application/json'});
+					response.end(JSON.stringify(me.options));
+				}
 				
 				if(me.paths.hasOwnProperty(request.path[0]))
 				{
