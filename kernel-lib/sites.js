@@ -166,10 +166,20 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 exports.sites.prototype.updateSiteConfig = function(handle, changes) {
 	var me = this
 		,siteDir = me.options.sitesDir+'/'+handle
-		,filename = siteDir+'/site.json';
+		,filename = siteDir+'/site.json'
+		,siteData = this.sites[handle]
+		,create_useri;
 
-	_.extend(this.sites[handle], changes);
-	fs.writeFileSync(filename, JSON.stringify(this.sites[handle]));
+	_.extend(siteData, changes);
+
+	create_user = siteData.create_user;
+	delete siteData.create_user;
+	
+	fs.writeFileSync(filename, JSON.stringify(this.sites[handle], null, 4));
+
+	if(create_user) {
+		siteData.create_user = create_user;
+	}
 };
 
 

@@ -4,5 +4,4 @@ Ext.define('eMan.store.Sites', {
 	,model: 'eMan.model.Site'
 	,autoSync: true
 	,autoLoad: true
-
 });

@@ -37,6 +37,13 @@ exports.mysql = function(name, controller, options) {
 		if(fs.existsSync('/proc/'+me.pid))
 		{
 			me.status = 'online';
+
+			// instantiate MySQL client
+			me.client = require('mysql').createClient({
+				port: me.options.socketPath
+				,user: me.options.managerUser
+				,password: me.options.managerPassword
+			});
 		}
 		else
 		{

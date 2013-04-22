@@ -11,7 +11,6 @@ Ext.define('eMan.model.Site', {
 		,{name: 'inheritance_key', type: 'string'}
 		,{name: 'create_user', useNull: true}
 	]
-	,idProperty: 'handle'
 	,proxy: {
 		type: 'rest'
 		,url: '/sites'
