@@ -1,5 +1,3 @@
-**Note:** _this is an experimental branch_, for the current stable release see https://github.com/JarvusInnovations/Emergence-preview
-
 Emergence
 =========
 
