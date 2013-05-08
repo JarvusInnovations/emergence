@@ -225,11 +225,13 @@ class SiteFile
 		if($this->Status == 'Phantom' && $this->AuthorID == $GLOBALS['Session']->PersonID)
 		{
 			static::saveRecordData($this->_record, $data);
+			return $this->_record;
 		}
 		else
 		{
 			$newRecord = static::createPhantom($this->CollectionID, $this->Handle, $ancestorID ? $ancestorID : $this->ID);
 			static::saveRecordData($newRecord, $data);
+			return $newRecord;
 		}
 	}
 	
