@@ -120,7 +120,7 @@ class SiteFile
 			,array(
 				static::$tableName
 				,$collectionID
-				,$handle
+				,DB::escape($handle)
 			)
 		);
 		
@@ -157,7 +157,7 @@ class SiteFile
 			,array(
 				static::$tableName
 				,$this->CollectionID
-				,$this->Handle
+				,DB::escape($this->Handle)
 			)
 		);
 		
