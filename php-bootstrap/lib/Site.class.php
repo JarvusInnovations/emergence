@@ -489,4 +489,25 @@ class Site
 		}
 		return implode('/', $out);
 	}
+	
+	static public function getVersionedRootUrl($path)
+	{
+		if(is_string($path))
+		{
+			$path = static::splitPath($path);
+		}
+		
+		$fsPath = $path;
+		array_unshift($fsPath, 'site-root');
+		$url = '/' . implode('/', $path);
+		
+		$Node = static::resolvePath($fsPath);
+		
+		if($Node) {
+			return $url . '?_sha1=' . $Node->SHA1;
+		}
+		else {
+			return $url;
+		}
+	}
 }
