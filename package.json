@@ -11,5 +11,9 @@
 	},
 	"bin": {
 		"emergence-kernel": "./bin/kernel"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JarvusInnovations/Emergence.git"
 	}
 }
