@@ -338,7 +338,7 @@ exports.mysql.prototype.createSkeletonTables = function(siteData) {
 	sql += 'CREATE TABLE `_e_file_collections` (';
 	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
 	sql += ',`Site` ENUM(\'Local\',\'Remote\') NOT NULL';
-	sql += ',`Handle` varchar(255) NOT NULL';
+	sql += ',`Handle` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL';
 	sql += ',`Status` enum(\'Normal\',\'Deleted\') NOT NULL DEFAULT \'Normal\'';
 	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
 	sql += ',`CreatorID` int(10) unsigned DEFAULT NULL';
@@ -347,14 +347,14 @@ exports.mysql.prototype.createSkeletonTables = function(siteData) {
 	sql += ',`PosRight` int(10) unsigned DEFAULT NULL';
 	sql += ',PRIMARY KEY (`ID`)';
 	sql += ',UNIQUE KEY `PosLeft` (`PosLeft`)';
-	sql += ',UNIQUE KEY `SiteCollection` (`Site`,`ParentID`,`Handle`)';
+	sql += ',UNIQUE KEY `SiteCollection` (`Site`,`ParentID`,`Handle`,`Status`)';
 	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
 	
 	// Table: _e_files
 	sql += 'CREATE TABLE `_e_files` (';
 	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
 	sql += ',`CollectionID` int(10) unsigned NOT NULL';
-	sql += ',`Handle` varchar(255) NOT NULL';
+	sql += ',`Handle` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL';
 	sql += ',`Status` enum(\'Phantom\',\'Normal\',\'Deleted\') NOT NULL DEFAULT \'Phantom\'';
 	sql += ',`SHA1` char(40) DEFAULT NULL';
 	sql += ',`Size` int(10) unsigned DEFAULT NULL';
