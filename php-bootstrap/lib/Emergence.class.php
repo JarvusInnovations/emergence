@@ -58,12 +58,9 @@ class Emergence
 		{
 			$path = Site::splitPath($path);
 		}
-		
-		
-		$fileNode = $collection->resolvePath($path);
 
 		// try to download from parent site
-		if(!$fileNode || $forceRemote)
+		if($forceRemote || !($fileNode = $collection->resolvePath($path)))
 		{
 			$remoteURL = static::buildUrl(array_merge($collection->getFullPath(null, false), $path));
 
