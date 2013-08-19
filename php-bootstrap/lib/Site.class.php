@@ -164,7 +164,6 @@ class Site
 		{
 			$scriptHandle = (substr($handle,-4)=='.php') ? $handle : $handle.'.php';
 
-			//printf('%s: (%s)/(%s) - %s<br>', $resolvedNode->Handle, $handle, implode('/',static::$pathStack), $scriptHandle);
 			if(
 				(
 					$resolvedNode
@@ -243,44 +242,49 @@ class Site
 	
 	static public function resolvePath($path, $checkParent = true, $checkCache = true)
 	{
-		if(is_string($path) && (empty($path) || $path == '/'))
-		{
+		// special case: request for root collection
+		if( is_string($path) && (empty($path) || $path == '/')) {
 			return new SiteDavDirectory();
 		}
 
-		if(!is_array($path))
+		// parse path
+		if (!is_array($path)) {
 			$path = static::splitPath($path);
+		}
+		
+/*
+		// build cache key
+		$cacheKey = static::$config['handle'] . ':efs' . (!$checkParent ? ':local/' : '/') . join('/', $path);
 
-		$cacheKey = ($checkParent ? 'efs' : 'efsi') . ':' . $_SERVER['HTTP_HOST'] . '//' . join('/', $path);
-
-		if($checkCache && Site::$production && false !== ($node = apc_fetch($cacheKey)))
-		{
+		if ($checkCache && false !== ($node = apc_fetch($cacheKey))) {
+			printf("--cache hit on '%s'<br>", $cacheKey);
 			//MICS::dump($node, 'cache hit: '.$cacheKey, true);
 			return $node;
+		} else {
+			printf("--cache miss on '%s'<br>", $cacheKey);
 		}
+*/
 			
 		$collectionHandle = array_shift($path);
 					
-		// get collection
-		if(!$collectionHandle || !$collection = static::getRootCollection($collectionHandle))
-		{
+		// get root collection
+		if (!$collectionHandle || !$collection = static::getRootCollection($collectionHandle)) {
 			throw new Exception('Could not resolve root collection: '.$collectionHandle);
 		}
 
-		// get file
+		// get node from collection
 		$node = $collection->resolvePath($path);
 
 		// try to get from parent
-		if(!$node && $checkParent)
-		{
+		if (!$node && $checkParent) {
 			$node = Emergence::resolveFileFromParent($collectionHandle, $path);
 		}
 		
-		if(!$node)
+		if (!$node) {
 			$node = null;
-			
-		if(Site::$production)
-			apc_store($cacheKey, $node);
+		}
+		
+/* 		apc_store($cacheKey, $node); */
 
 		return $node;
 	}
@@ -290,8 +294,6 @@ class Site
 	
 	static public function loadClass($className)
 	{
-		//printf("loadClass(%s) -> %s<br/>\n", $className, var_export(class_exists($className, false), true));
-
 		// skip if already loaded
 		if(
 			class_exists($className, false)
@@ -311,12 +313,10 @@ class Site
 	    $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
 		
 		// try to load class via PSR-0
-		//print("Trying to resolve php-classes/$fileName.class.php<br/>");
 		$classNode = static::resolvePath("php-classes/$fileName.class.php");
 		if(!$classNode)
 		{
 			// try to load class flatly
-			//print("Trying to resolve php-classes/$className.class.php<br/>");
 			$classNode = static::resolvePath("php-classes/$className.class.php");
 		}
 
@@ -332,7 +332,6 @@ class Site
 		// add to loaded class queue
 		static::$_loadedClasses[] = $className;
 		
-		//print "...loadClass($className) -> $classNode->RealPath<br/>";
 		require($classNode->RealPath);	
 
 		// try to load config

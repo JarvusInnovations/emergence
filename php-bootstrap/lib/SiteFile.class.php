@@ -98,7 +98,10 @@ class SiteFile
 		}
 	}
 	
-
+	static public function getCacheKey($collectionID, $handle)
+	{
+		return sprintf('%s:efs:file/%u/%s', Site::$config['handle'], $collectionID, $handle);
+	}
 	
 	static public function getByID($fileID)
 	{
@@ -114,15 +117,21 @@ class SiteFile
 	}
 	
 	static public function getByHandle($collectionID, $handle)
-	{	
-		$record = DB::oneRecord(
-			'SELECT * FROM `%s` WHERE CollectionID = %u AND Handle = "%s" ORDER BY ID DESC LIMIT 1'
-			,array(
-				static::$tableName
-				,$collectionID
-				,DB::escape($handle)
-			)
-		);
+	{
+		$cacheKey = static::getCacheKey($collectionID, $handle);
+		
+		if (false === ($record = apc_fetch($cacheKey))) {
+			$record = DB::oneRecord(
+				'SELECT * FROM `%s` WHERE CollectionID = %u AND Handle = "%s" ORDER BY ID DESC LIMIT 1'
+				,array(
+					static::$tableName
+					,$collectionID
+					,DB::escape($handle)
+				)
+			);
+			
+			apc_store($cacheKey, $record);
+		}
 		
 		return $record ? new static($record['Handle'], $record) : null;
 	}
@@ -257,8 +266,6 @@ class SiteFile
 	
 	static public function saveRecordData($record, $data, $sha1 = null)
 	{
-		if(defined('DEBUG')) print("saveRecordData($record[ID])\n");
-		
 		// save file
 		$filePath = static::getRealPathByID($record['ID']);
 		file_put_contents($filePath, $data);
@@ -280,6 +287,9 @@ class SiteFile
 			,$mimeType
 			,$record['ID']
 		));
+		
+		// invalidate cache
+		apc_delete(static::getCacheKey($record['CollectionID'], $record['Handle']));
 	}
 
 	public function setName($handle)
@@ -317,6 +327,9 @@ class SiteFile
 			
 			// symlink to old data point
 			symlink($this->ID, static::getRealPathByID($newID));
+		
+			// invalidate cache of new path
+			apc_delete(static::getCacheKey($this->CollectionID, $handle));
 		}
 	}
 
@@ -329,8 +342,17 @@ class SiteFile
 			,$GLOBALS['Session']->PersonID
 			,$this->ID
 		));
+		
+		// invalidate cache
+		apc_delete(static::getCacheKey($this->CollectionID, $this->Handle));
 	}
 	
+	/**
+	 * Clear all the files from a given collection's tree
+	 *
+	 * Warning: this method is designed to be called from SiteCollection::delete and will leave stale cache entries if called
+	 * on its own
+	 */
 	static public function deleteTree(SiteCollection $Collection)
 	{
 		DB::nonQuery(

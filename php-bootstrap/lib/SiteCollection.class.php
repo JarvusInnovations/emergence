@@ -62,6 +62,21 @@ class SiteCollection
 		}
 	}
 	
+	static public function getCacheKey($handle, $parentID = null, $remote = false)
+	{
+		// build cache key and query conditions
+		$cacheKey = Site::$config['handle'] . ':efs:col';
+		
+		if ($parentID) {
+			$cacheKey .= sprintf('/%u/', $parentID);
+			$where[] = sprintf('ParentID = %u', $parentID);
+		} else {
+			$cacheKey .= sprintf('/%s/', $remote ? 'remote' : 'local');
+		}
+		
+		return $cacheKey . $handle;
+	}
+	
 	static public function getByID($collectionID)
 	{
 		$record = DB::oneRecord('SELECT * FROM `%s` WHERE ID = %u', array(static::$tableName, $collectionID));
@@ -70,34 +85,42 @@ class SiteCollection
 	
 	static public function getRecordByHandle($handle, $parentID = null, $remote = false, $includeDeleted = false)
 	{
-		if(!is_bool($remote))
-		{
-			debug_print_backtrace();
-			die('SiteID must be converted to (bool)$remote');
+		// build cache key and query conditions
+		$cacheKey = static::getCacheKey($handle, $parentID, $remote);
+		$where = array();
+		
+		if ($parentID) {
+			$where[] = sprintf('ParentID = %u', $parentID);
+		} else {
+			$where[] = sprintf('Site = "%s"', $remote ? 'Remote' : 'Local');
+			$where[] = 'ParentID IS NULL';
 		}
 		
 		$where[] = sprintf('Handle = "%s"', DB::escape($handle));
 		
-		if(!$includeDeleted)
+		if (!$includeDeleted) {
 			$where[] = 'Status = "Normal"';
-		
-		if($parentID)
-		{
-			$where[] = sprintf('ParentID = %u', $parentID);
-		}
-		else
-		{
-			$where[] = 'ParentID IS NULL';
-			$where[] = sprintf('Site = "%s"', $remote ? 'Remote' : 'Local');
+		} else {
+			$cacheKey .= '?deleted';
 		}
 		
-		return DB::oneRecord(
+		// attempt to get from cache
+		if (false !== ($record = apc_fetch($cacheKey))) {
+			return $record;
+		}
+		
+		// query and cache
+		$record = DB::oneRecord(
 			'SELECT * FROM `%s` WHERE (%s) ORDER BY ID DESC LIMIT 1'
 			,array(
 				static::$tableName
 				,implode(') AND (', $where)
 			)
 		);
+		
+		apc_store($cacheKey, $record);
+		
+		return $record;
 	}
 
 	public function getCollectionsTree()
@@ -171,8 +194,6 @@ class SiteCollection
 	{
 		$fileClass = static::$fileClass;
 		
-		//print("getChild($handle)\n");
-		
 		// try to get collection record
 		if($collection = static::getByHandle($handle, $this->ID, $this->Site == 'Remote'))
 		{
@@ -203,12 +224,7 @@ class SiteCollection
 	{
 		if(!is_array($path))
 			$path = Site::splitPath($path);
-		
-/*
-		if($this->ID > 4){
-			printf("%s:%u->resolvePath(%s)<br>", get_class($this), $this->ID, implode('/', $path));
-		}
-*/
+	
 		$node = $this;
 		while($childHandle = array_shift($path))
 		{
@@ -280,19 +296,7 @@ class SiteCollection
 	
 	public function createDirectory($handle)
 	{
-		// check if deleted record already exists
-		$existing = static::getByHandle($handle, $this->ID, $this->Site != 'Local', true);
-		if($existing)
-		{
-			if($existing->Status == 'Deleted')
-		 		$existing->setStatus('Normal');
-
-			return $existing;
-		}
-		else
-		{
-			return static::createRecord($handle, $this);
-		}
+		return static::createRecord($handle, $this);
 	}
 	
 	
@@ -366,12 +370,9 @@ class SiteCollection
 		if($parentCollection)
 			$remote = $parentCollection->Site=='Remote';
 	
-		//printf("looking for %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
 		if(!$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote))
 		{
-			//printf("creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
 			static::createRecord($handle, $parentCollection, $remote);
-			//printf("getting after creating %s in %u->%s<br>", $handle, $parentCollection ? $parentCollection->ID : null, $siteID);
 			$collection = static::getByHandle($handle, $parentCollection ? $parentCollection->ID : null, $remote);
 		}
 		
@@ -389,11 +390,15 @@ class SiteCollection
 	static public function create($handle, $parentCollection = null, $remote = false)
 	{
 		$collectionID = static::createRecord($handle, $parentCollection, $remote);
+		
 		return static::getByID($collectionID);
 	}
 	
 	static public function createRecord($handle, $parentCollection = null, $remote = false)
 	{
+		// clear cache of not-found or deleted record
+		apc_delete(static::getCacheKey($handle, $parentCollection ? $parentCollection->ID : null, $remote));
+		
 		// check for existing deleted node
 		$existingRecord = DB::oneRecord(
 			'SELECT * FROM `%s` WHERE Site = "%s" AND ParentID = %s AND Handle = "%s"'
@@ -420,49 +425,68 @@ class SiteCollection
 	
 		DB::nonQuery('LOCK TABLES '.static::$tableName.' WRITE');
 	
-		// determine new node's position
-		$left = $parentCollection ? $parentCollection->PosRight : DB::oneValue('SELECT IFNULL(MAX(`PosRight`)+1,1) FROM `%s`', static::$tableName);
-		$right = $left + 1;
-				
-		if($parentCollection)
-		{
-			// push rest of set right by 2 to make room
-			DB::nonQuery(
-				'UPDATE `%s` SET PosRight = PosRight + 2 WHERE PosRight >= %u ORDER BY PosRight DESC'
-				,array(
-					static::$tableName
-					,$left
-				)
-			);
-			DB::nonQuery(
-				'UPDATE `%s` SET PosLeft = PosLeft + 2 WHERE PosLeft > %u ORDER BY PosLeft DESC'
-				,array(
-					static::$tableName
-					,$left
-				)
-			);
-			
-			// update nodes cached in memory
-			$staleParent = $parentCollection;
-			while($staleParent)
+		// The table lock will interfere with normal error handling, so any exceptions until the table is unlocked must be intercepted
+		try {
+			// determine new node's position
+			$left = $parentCollection ? $parentCollection->PosRight : DB::oneValue('SELECT IFNULL(MAX(`PosRight`)+1,1) FROM `%s`', static::$tableName);
+			$right = $left + 1;
+					
+			if($parentCollection)
 			{
-				$staleParent->_record['PosRight'] += 2;
-				$staleParent = $staleParent->_parent;
+				// push rest of set right by 2 to make room
+				DB::nonQuery(
+					'UPDATE `%s` SET PosRight = PosRight + 2 WHERE PosRight >= %u ORDER BY PosRight DESC'
+					,array(
+						static::$tableName
+						,$left
+					)
+				);
+				DB::nonQuery(
+					'UPDATE `%s` SET PosLeft = PosLeft + 2 WHERE PosLeft > %u ORDER BY PosLeft DESC'
+					,array(
+						static::$tableName
+						,$left
+					)
+				);
+				
+				// update nodes cached in memory
+				$staleParent = $parentCollection;
+				while($staleParent)
+				{
+					$staleParent->_record['PosRight'] += 2;
+					$staleParent = $staleParent->_parent;
+				}
+			
+				// clear cache of bumped collections
+				foreach (new APCIterator('user', '|^' . Site::$config['handle'] . ':efs:col/|') AS $cachedCollection) {
+					if (
+						$cachedCollection['value']
+						&& (
+							$cachedCollection['value']['PosRight'] >= $left
+							|| $cachedCollection['value']['PosLeft'] > $left
+						)
+					) {
+						apc_delete($cachedCollection['key']);
+					}
+				}
 			}
+			
+			// create record
+			DB::nonQuery('INSERT INTO `%s` SET Site = "%s", Handle = "%s", CreatorID = %u, ParentID = %s, PosLeft = %u, PosRight = %u', array(
+				static::$tableName
+				,$parentCollection ? $parentCollection->Site : ($remote ? 'Remote' : 'Local')
+				,DB::escape($handle)
+				,!empty($GLOBALS['Session']) ? $GLOBALS['Session']->PersonID : null
+				,$parentCollection ? $parentCollection->ID : 'NULL'
+				,$left
+				,$right
+			));		
+		} catch(Exception $e) {
+			// TODO: use `finally` structure in PHP 5.5
+			DB::nonQuery('UNLOCK TABLES');
+			throw $e;
 		}
 		
-		// create record
-		DB::nonQuery('INSERT INTO `%s` SET Site = "%s", Handle = "%s", CreatorID = %u, ParentID = %s, PosLeft = %u, PosRight = %u', array(
-			static::$tableName
-			,$parentCollection ? $parentCollection->Site : ($remote ? 'Remote' : 'Local')
-			,DB::escape($handle)
-			,!empty($GLOBALS['Session']) ? $GLOBALS['Session']->PersonID : null
-			,$parentCollection ? $parentCollection->ID : 'NULL'
-			,$left
-			,$right
-		));
-		
-		//DB::nonQuery('COMMIT');
 		DB::nonQuery('UNLOCK TABLES');
 
 		return DB::insertID();
@@ -470,7 +494,9 @@ class SiteCollection
 
 	public function setName($handle)
 	{
-		// updating existing record only if file is empty, by the same author, and has no ancestor
+		apc_delete(static::getCacheKey($this->Handle, $this->ParentID, $this->Site == 'Remote'));
+		apc_delete(static::getCacheKey($handle, $this->ParentID, $this->Site == 'Remote'));
+		
 		DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
 			static::$tableName
 			,DB::escape($handle)
@@ -480,7 +506,8 @@ class SiteCollection
 	
 	public function setStatus($status)
 	{
-		// updating existing record only if file is empty, by the same author, and has no ancestor
+		apc_delete(static::getCacheKey($this->Handle, $this->ParentID, $this->Site == 'Remote'));
+	
 		DB::nonQuery('UPDATE `%s` SET Status = "%s" WHERE ID = %u', array(
 			static::$tableName
 			,DB::escape($status)
@@ -542,16 +569,46 @@ class SiteCollection
 
 	public function delete()
 	{
+		// FIXME: check if status/handle unique combo already exists
+		
 		// mark collection and all subcollections as deleted
-
 		DB::nonQuery('UPDATE `%s` SET Status = "Deleted" WHERE PosLeft BETWEEN %u AND %u', array(
 			static::$tableName
 			,$this->PosLeft
 			,$this->PosRight
 		));
 		
-		// TODO: mark files and all subfiles as deleted
+		// delete all files
 		SiteFile::deleteTree($this);
+		
+		// clear caches
+		static::clearCacheTree($this->_record);
+	}
+	
+	public function clearCacheTree($record, $key = null) {
+		if (!$key) {
+			$key = static::getCacheKey($record['Handle'], $record['ParentID'], $record['Site'] == 'Remote');
+		}
+	
+		apc_delete($key);
+		
+		// iterate child collections
+		$childCollectionsKey = static::getCacheKey('.*', $record['ID'], $record['Site'] == 'Remote');
+		
+		foreach (new APCIterator('user', '|^'.$childCollectionsKey.'|') AS $childCollection) {
+			if ($childCollection['value']) {
+				static::clearCacheTree($childCollection['value'], $childCollection['key']);
+			}
+		}
+		
+		// iterate child files
+		$childFilesKey = SiteFile::getCacheKey($record['ID'], '.*');
+		
+		foreach (new APCIterator('user', '|^'.$childFilesKey.'|') AS $childFile) {
+			if ($childFile['value']) {
+		    	apc_delete($childFile['key']);
+			}
+		}
 	}
 	
 	function getRealPath() {
@@ -568,17 +625,17 @@ class SiteCollection
 
 	static public function getOrCreatePath($path, SiteCollection $root = null)
 	{
-                if(!is_array($path)) {
-                        $path = Site::splitPath($path);
+		if(!is_array($path)) {
+			$path = Site::splitPath($path);
 		}
 
-                $collection = $root;
+		$collection = $root;
 
-                // create collections
-                while(count($path))
-                {
-                        $collection = static::getOrCreateCollection(array_shift($path), $collection);
-                }
+		// create collections
+		while(count($path))
+		{
+			$collection = static::getOrCreateCollection(array_shift($path), $collection);
+		}
 
 		return $collection;
 	}
