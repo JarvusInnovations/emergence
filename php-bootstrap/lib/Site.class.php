@@ -509,4 +509,9 @@ class Site
 			return $url;
 		}
 	}
+
+	static public function getConfig($key = null)
+	{
+		return $key ? static::$config[$key] : static::$config;
+	}
 }
