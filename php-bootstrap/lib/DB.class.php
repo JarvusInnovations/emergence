@@ -1,6 +1,7 @@
 <?php
 
 class DuplicateKeyException extends Exception { }
+class TableNotFoundException extends Exception { }
 
 
 class DB
@@ -64,18 +65,50 @@ class DB
 		$queryLog = self::startQueryLog($query);
 		
 		// preprocess and execute query
-		$success = self::getMysqli()->query($query);
+		$result = self::getMysqli()->query($query);
 		
 		// handle query error
-		if($success === false)
+		if($result === false)
 		{
 			self::handleError($query, $queryLog);
 		}
-		
+		elseif($result !== true)
+		{
+			$result->free();
+		}
+
 		// finish query log
 		self::finishQueryLog($queryLog);
 	}
-	
+
+	static public function multiQuery($query, $parameters = array())
+	{
+		// MICS::dump(func_get_args(), 'nonquery');
+		
+		$query = self::preprocessQuery($query, $parameters);
+		
+		// start query log
+		$queryLog = self::startQueryLog($query);
+		
+		// preprocess and execute query
+		$result = self::getMysqli()->multi_query($query);
+		
+		// handle query error
+		if($result === false)
+		{
+			self::handleError($query, $queryLog);
+		}
+
+		// free results
+		do {
+			if($result = self::getMysqli()->store_result()) {
+				$result->free();
+			}
+		} while(self::getMysqli()->next_result());
+
+		// finish query log
+		self::finishQueryLog($queryLog);
+	}
 	
 	static public function query($query, $parameters = array())
 	{
@@ -494,13 +527,17 @@ class DB
 		{
 			throw new DuplicateKeyException(static::$_mysqli->error);
 		}
+		elseif(static::$_mysqli->errno == 1146)
+		{
+			throw new TableNotFoundException(static::$_mysqli->error);
+		}
 		else
 		{
 			$message = static::$_mysqli->error;
 		}
 		
 		// respond
-		$report = sprintf("<h1 style='color:red'>Database Error</h1>\n");
+		$report = sprintf("<h1 style='color:red'>Database Error #%s</h1>\n", static::$_mysqli->errno);
 		$report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
 		$report .= sprintf("<h2>Query</h2>\n<p>%s</p>\n", htmlspecialchars($query));
 		$report .= sprintf("<h2>Reported</h2>\n<p>%s</p>\n", htmlspecialchars($message));
