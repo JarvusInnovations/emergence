@@ -100,11 +100,12 @@ class DB
 		}
 
 		// free results
-		do {
-			if($result = self::getMysqli()->store_result()) {
+		while(self::getMysqli()->more_results()) {
+			if($result = self::getMysqli()->use_result()) {
 				$result->free();
 			}
-		} while(self::getMysqli()->next_result());
+            self::getMysqli()->next_result();
+		}
 
 		// finish query log
 		self::finishQueryLog($queryLog);
