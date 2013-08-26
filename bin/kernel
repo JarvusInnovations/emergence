@@ -98,6 +98,12 @@ else
 			,autoStart: true
 			,execPath: '/usr/bin/php-fpm'
 		};
+	else if(fs.existsSync('/usr/sbin/php5-fpm'))
+		CONFIG.services.plugins.php = {
+			type: 'php-fpm'
+			,autoStart: true
+			,execPath: '/usr/sbin/php5-fpm'
+		};
 	else if(fs.existsSync('/usr/local/sbin/php-fpm'))
 		CONFIG.services.plugins.php = {
 			type: 'php-fpm'
