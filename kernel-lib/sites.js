@@ -3,15 +3,17 @@ var _ = require('underscore')
 	,fs = require('fs')
 	,path = require('path')
 	,util = require('util')
-	,events = require('events');
+	,events = require('events')
+	,posix = require('posix');
 	
 
-exports.createSites = function(options) {
-	return new exports.sites(options);
+exports.createSites = function(config) {
+	return new exports.sites(config);
 };
 
-exports.sites = function(options) {
-	var me = this;
+exports.sites = function(config) {
+	var me = this
+	   ,options = config.sites;
 	
 	// call events constructor
 	events.EventEmitter.call(me);
@@ -19,8 +21,8 @@ exports.sites = function(options) {
 	// initialize options and apply defaults
 	me.options = options || {};
 	me.options.sitesDir = me.options.sitesDir || '/emergence/sites';
-	me.options.dataUID = me.options.dataUID || 65534;
-	me.options.dataGID = me.options.dataGID || 65534;
+	me.options.dataUID = me.options.dataUID || posix.getpwnam(config.user).uid;
+	me.options.dataGID = me.options.dataGID || posix.getgrnam(config.group).gid;
 	me.options.dataMode = me.options.dataMode || 0775;
 	
 	// create required directories

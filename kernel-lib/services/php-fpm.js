@@ -24,6 +24,8 @@ exports.phpFpm = function(name, controller, options) {
 	me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/php-fpm';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/php-fpm.pid';
 	me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/errors.log';
+	me.options.user = me.options.user || controller.options.user;
+	me.options.group = me.options.group || controller.options.group;
 	
 	// create required directories
 	if(!fs.existsSync(me.options.runDir))
@@ -160,9 +162,9 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'pid = '+me.options.pidPath+'\n';
 	c += 'error_log = '+me.options.errorLogPath+'\n';
 	c += '[www]\n';
-	c += 'user = nobody\n';
-	c += 'group = nobody\n';
 	c += 'listen = '+me.options.bindHost+':'+me.options.bindPort+'\n';
+	c += 'user = '+me.options.user+'\n';
+	c += 'group = '+me.options.group+'\n';
 	c += 'pm = dynamic\n';
 	c += 'pm.max_children = 50\n';
 	c += 'pm.start_servers = 5\n';

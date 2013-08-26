@@ -4,8 +4,9 @@ var _ = require('underscore')
 	,path = require('path')
 	,events = require('events');
 	
-exports.ServicesController = function(sites, options) {
-	var me = this;
+exports.ServicesController = function(sites, config) {
+	var me = this
+	   ,options = config.services;
 	
 	me.sites = sites;
 		
@@ -20,6 +21,8 @@ exports.ServicesController = function(sites, options) {
 	me.options.configDir = me.options.configDir || me.options.servicesDir+'/etc';
 	me.options.runDir = me.options.runDir || me.options.servicesDir+'/run';
 	me.options.dataDir = me.options.dataDir || me.options.servicesDir+'/data';
+	me.options.user = me.options.user || config.user;
+	me.options.group = me.options.group || config.group;
 	
 	// create required directories
 	if(!fs.existsSync(me.options.servicesDir)) {
@@ -121,6 +124,6 @@ exports.ServicesController.prototype.handleServiceRequest = function(request, re
 	return false;
 };
 
-exports.createServices = function(sites, options) {
-	return new exports.ServicesController(sites, options);
+exports.createServices = function(sites, config) {
+	return new exports.ServicesController(sites, config);
 };

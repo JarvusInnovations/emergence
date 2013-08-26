@@ -8,8 +8,9 @@ var http = require('http')
 	,static = require('node-static')
 	,events = require('events');
 
-exports.server = function(paths, options) {
-	var me = this;
+exports.server = function(paths, config) {
+	var me = this
+	   ,options = config.server;
 	
 	// call events constructor
 	events.EventEmitter.call(me);

@@ -28,6 +28,8 @@ exports.nginx = function(name, controller, options) {
 	
 	me.options.phpLogsDir = me.options.phpLogsDir || controller.options.logsDir + '/php';
 	me.options.phpErrorLogPath = me.options.phpErrorLogPath || me.options.phpLogsDir + '/errors.log';
+	me.options.user = me.options.user || controller.options.user;
+	me.options.group = me.options.group || controller.options.group;
 	
 	// create required directories
 	if(!fs.existsSync(me.options.runDir))
@@ -178,7 +180,7 @@ exports.nginx.prototype.makeConfig = function() {
 	var me = this
 		,c = '';
 		
-	c += 'user nobody nobody;\n';
+	c += 'user '+me.options.user+' '+me.options.group+';\n';
 	c += 'worker_processes 1;\n';
 	c += 'pid '+me.options.pidPath+';\n';
 	c += 'error_log '+me.options.errorLogPath+' info;\n';
@@ -186,8 +188,9 @@ exports.nginx.prototype.makeConfig = function() {
 	c += 'events {\n';
 	c += '	worker_connections 1024;\n';
 	
-	if(process.platform == 'linux')
+	if (process.platform == 'linux') {
 		c += '	use epoll;\n';
+    }
 		
 	c += '}\n';
 

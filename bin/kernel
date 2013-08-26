@@ -20,20 +20,40 @@ if(fs.existsSync('/emergence/config.json'))
 else
 {
 	// try to smart-init a new kernel config
+	var issueFile = "",
+		platform = require('os').platform(),
+		distro = platform;
 	
-	console.log('Initializing new emergence environment...')
+	// detect ubuntu
+	// TODO: find better ways to determine default options that platform detection
+	if (platform == 'linux') {
+		try {
+			issueFile = fs.readFileSync('/etc/issue', 'ascii');
+			if (issueFile.match(/Ubuntu/)) {
+				distro = 'ubuntu';
+			}
+		} catch (err) {}
+	}
+
+
+	console.log('Initializing new emergence environment for distro="'+distro+'"...')
 
 	if(!fs.existsSync('/emergence'))
 		fs.mkdirSync('/emergence', 0775);
 	
 	CONFIG = {
-		server: {
+		user: distro=='ubuntu' ? 'www-data' : 'nobody'
+		,group: distro=='ubuntu' ? 'www-data' : 'nobody'
+
+		,server: {
 			host: "0.0.0.0"
 		}
 		,services: {
 			plugins: { }
 		}
 	};
+	
+	
 	
 	
 	// detect nginx
@@ -101,14 +121,14 @@ if(!fs.existsSync('/emergence/admins.htpasswd')) {
 
 
 // load core modules
-var eSites = sitesLib.createSites(CONFIG.sites);
-var eServices = require('../kernel-lib/services.js').createServices(eSites, CONFIG.services);
+var eSites = sitesLib.createSites(CONFIG);
+var eServices = require('../kernel-lib/services.js').createServices(eSites, CONFIG);
 
 // instantiate management server
 var eManagementServer = require('../kernel-lib/server.js').createServer({
 	sites: eSites
 	,services: eServices
-}, CONFIG.server);
+}, CONFIG);
 	
 	
 // start server
