@@ -366,19 +366,6 @@ exports.mysql.prototype.createSkeletonTables = function(siteData) {
 	sql += ',KEY `CollectionID` (`CollectionID`)';
 	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
 
-	// Table: sessions
-	sql += 'CREATE TABLE `sessions` (';
-	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
-	sql += ',`Class` enum(\'Session\',\'UserSession\') NOT NULL DEFAULT \'Session\'';
-	sql += ',`Handle` char(32) NOT NULL';
-	sql += ',`PersonID` int(10) unsigned DEFAULT NULL';
-	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
-	sql += ',`LastRequest` timestamp NULL DEFAULT NULL';
-	sql += ',`LastIP` int(11) unsigned NOT NULL';
-	sql += ',PRIMARY KEY (`ID`)';
-	sql += ',UNIQUE KEY `Handle` (`Handle`)';
-	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-	
 	// Table: people
 	sql += 'CREATE TABLE `people` (';
 	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
@@ -424,36 +411,7 @@ exports.mysql.prototype.createSkeletonTables = function(siteData) {
 	sql += ',PRIMARY KEY (`RevisionID`)';
 	sql += ',KEY `ID` (`ID`)';
 	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-	
-	// Table: tokens
-	sql += 'CREATE TABLE `tokens` (';
-	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
-	sql += ',`Class` enum(\'PasswordToken\') NOT NULL';
-	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
-	sql += ',`CreatorID` int(10) unsigned NOT NULL';
-	sql += ',`Handle` varchar(255) NOT NULL';
-	sql += ',`Expires` timestamp NULL DEFAULT NULL';
-	sql += ',`Used` timestamp NULL DEFAULT NULL';
-	sql += ',PRIMARY KEY (`ID`)';
-	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
 
-	// Table: media
-	sql += 'CREATE TABLE `media` (';
-	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
-	sql += ',`Class` enum(\'Media\',\'PhotoMedia\',\'AudioMedia\',\'VideoMedia\',\'PDFMedia\') NOT NULL';
-	sql += ',`ContextClass` enum(\'Person\',\'Album\',\'BlogPost\') DEFAULT NULL';
-	sql += ',`ContextID` int(10) unsigned DEFAULT NULL';
-	sql += ',`MIMEType` enum(\'image/gif\',\'image/jpeg\',\'image/png\',\'video/x-flv\',\'application/pdf\',\'audio/mpeg\') NOT NULL';
-	sql += ',`Width` smallint(5) unsigned NOT NULL';
-	sql += ',`Height` smallint(5) unsigned NOT NULL';
-	sql += ',`Duration` float unsigned DEFAULT NULL';
-	sql += ',`Caption` varchar(255) DEFAULT NULL';
-	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
-	sql += ',`CreatorID` mediumint(8) unsigned NOT NULL';
-	sql += ',PRIMARY KEY (`ID`)';
-	sql += ',KEY `Context` (`ContextClass`,`ContextID`)';
-	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-	
 	//console.log('running sql: '+sql);
 	
 	// run tables
