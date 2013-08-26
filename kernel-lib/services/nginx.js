@@ -25,9 +25,6 @@ exports.nginx = function(name, controller, options) {
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
 	me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/errors.log';
 	me.options.miscConfigDir = me.options.miscConfigDir || (process.platform=='darwin'?'/usr/local/etc/nginx':'/etc/nginx')
-	
-	me.options.phpLogsDir = me.options.phpLogsDir || controller.options.logsDir + '/php';
-	me.options.phpErrorLogPath = me.options.phpErrorLogPath || me.options.phpLogsDir + '/errors.log';
 	me.options.user = me.options.user || controller.options.user;
 	me.options.group = me.options.group || controller.options.group;
 	
@@ -37,9 +34,6 @@ exports.nginx = function(name, controller, options) {
 	
 	if(!fs.existsSync(me.options.logsDir))
 		fs.mkdirSync(me.options.logsDir, 0775);
-	
-	if(!fs.existsSync(me.options.phpLogsDir))
-		fs.mkdirSync(me.options.phpLogsDir, 0775);
 	
 	// check for existing master process
 	if(fs.existsSync(me.options.pidPath))
@@ -261,23 +255,12 @@ exports.nginx.prototype.makeConfig = function() {
 		siteCfg += '		error_log '+logsDir+'/error.log info;\n';
 	
 		siteCfg += '		location / {\n';
-		siteCfg += '			root '+me.options.bootstrapDir+'/root;\n';
-		siteCfg += '			index index.php;\n';
-		siteCfg += '			rewrite ^(.+)$ /index.php last;\n';
-		siteCfg += '		}\n';
-	
-		siteCfg += '		location ~ ^/index.php {\n';
 		siteCfg += '			include '+me.options.miscConfigDir+'/fastcgi_params;\n';
 		siteCfg += '			fastcgi_pass 127.0.0.1:9000;\n';
 		siteCfg += '			fastcgi_param HTTPS $php_https;\n';
 		siteCfg += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
 		siteCfg += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
-		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/root$fastcgi_script_name;\n';
-		siteCfg += '			fastcgi_param PHP_VALUE	"auto_prepend_file='+me.options.bootstrapDir+'/bootstrap.php\n';
-		siteCfg += '						 include_path='+me.options.bootstrapDir+'/lib:'+siteDir+'\n';
-		siteCfg += '						 error_log='+me.options.phpErrorLogPath+'\n';
-		siteCfg += '						 error_reporting = E_ALL & ~E_NOTICE\n';
-		siteCfg += '						 date.timezone = America/New_York";\n';
+		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/bootstrap.php;\n';
 
 		siteCfg += '			fastcgi_index index.php;\n';
 		siteCfg += '			fastcgi_read_timeout 6h;\n';

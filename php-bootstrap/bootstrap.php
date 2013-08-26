@@ -1,18 +1,20 @@
 <?php
 
-require('Emergence.class.php');
-require('Debug.class.php');
-require('DB.class.php');
-require('File.class.php');
-require('Site.class.php');
-require('SiteCollection.class.php');
-require('SiteFile.class.php');
+// load core libraries
+require('./lib/Emergence.class.php');
+require('./lib/Debug.class.php');
+require('./lib/DB.class.php');
+require('./lib/File.class.php');
+require('./lib/Site.class.php');
+require('./lib/SiteCollection.class.php');
+require('./lib/SiteFile.class.php');
 
-//include('Site.config.php');
-
-// load MICS-compatibility layer
-require('MICS.class.php');
+// load and initialize MICS-compatibility layer
+require('./lib/MICS.class.php');
 MICS::initialize();
 
-
+// load core
 Site::initialize();
+
+// dispatch request
+Site::handleRequest();

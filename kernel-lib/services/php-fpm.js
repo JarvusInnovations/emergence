@@ -177,6 +177,8 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'php_admin_value[upload_max_filesize]=200M\n';
 	c += 'php_admin_value[post_max_size]=200M\n';
 	c += 'php_admin_value[memory_limit]='+(me.options.memoryLimit ? me.options.memoryLimit : '200M')+'\n';
+	c += 'php_admin_value[error_reporting]=E_ALL & ~E_NOTICE\n';
+	c += 'php_admin_value[date.timezone]=America/New_York\n';
 	
 	return c;
 };
