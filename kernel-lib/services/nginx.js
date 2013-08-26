@@ -256,8 +256,8 @@ exports.nginx.prototype.makeConfig = function() {
 	
 		siteCfg += '		location / {\n';
 		siteCfg += '			include '+me.options.miscConfigDir+'/fastcgi_params;\n';
-		siteCfg += '			fastcgi_pass 127.0.0.1:9000;\n';
 		siteCfg += '			fastcgi_param HTTPS $php_https;\n';
+		siteCfg += '			fastcgi_pass unix:'+me.controller.options.runDir+'/php-fpm/php-fpm.sock;\n';
 		siteCfg += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
 		siteCfg += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
 		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/bootstrap.php;\n';

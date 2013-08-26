@@ -17,12 +17,11 @@ exports.phpFpm = function(name, controller, options) {
 	// default options
 	me.options.configPath = me.options.configPath || controller.options.configDir + '/php-fpm.conf';
 	me.options.execPath = me.options.execPath || '/usr/bin/php-fpm';
-	me.options.bindHost = me.options.bindHost || '127.0.0.1';
-	me.options.bindPort = me.options.bindPort || 9000;
 	me.options.statScripts = me.options.statScripts || false;
 	me.options.runDir = me.options.runDir || controller.options.runDir + '/php-fpm';
 	me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/php-fpm';
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/php-fpm.pid';
+	me.options.socketPath = me.options.socketPath || me.options.runDir + '/php-fpm.sock';
 	me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/errors.log';
 	me.options.user = me.options.user || controller.options.user;
 	me.options.group = me.options.group || controller.options.group;
@@ -162,9 +161,9 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'pid = '+me.options.pidPath+'\n';
 	c += 'error_log = '+me.options.errorLogPath+'\n';
 	c += '[www]\n';
-	c += 'listen = '+me.options.bindHost+':'+me.options.bindPort+'\n';
 	c += 'user = '+me.options.user+'\n';
 	c += 'group = '+me.options.group+'\n';
+	c += 'listen = '+me.options.socketPath+'\n';
 	c += 'pm = dynamic\n';
 	c += 'pm.max_children = 50\n';
 	c += 'pm.start_servers = 5\n';
