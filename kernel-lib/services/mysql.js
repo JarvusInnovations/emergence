@@ -103,7 +103,7 @@ exports.mysql.prototype.start = function(firstRun) {
 
 	// spawn process
 	console.log(me.name+': spawning mysql: '+me.options.execPath);
-	me.proc = spawn(me.options.execPath, ['--defaults-file='+me.options.configPath]);
+	me.proc = spawn(me.options.execPath, ['--defaults-file='+me.options.configPath], {detached: true});
 	me.pid = me.proc.pid;
 	me.status = 'online';
 	
