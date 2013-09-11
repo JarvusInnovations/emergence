@@ -216,6 +216,22 @@ class SiteFile
 		return fopen($this->getRealPath(), 'r');
 	}
 	
+	public function createFile($path, $data = null, $ancestorID = null)
+	{
+		if (!is_array($path)) {
+			$path = Site::splitPath($path);
+        }
+        
+		$parentCollection = null;
+
+		// create collections
+		while (count($path) > 1) {
+			$parentCollection = static::getOrCreateCollection(array_shift($path), $parentCollection);
+		}
+
+		return static::create($parentCollection->ID, $path[0], $data, $ancestorID);
+	}
+	
 	static public function create($collectionID, $handle, $data = null, $ancestorID = null)
 	{
 		if(!$handle)
