@@ -216,7 +216,7 @@ class SiteFile
 		return fopen($this->getRealPath(), 'r');
 	}
 	
-	public function createFile($path, $data = null, $ancestorID = null)
+	static public function createFromPath($path, $data = null, $ancestorID = null)
 	{
 		if (!is_array($path)) {
 			$path = Site::splitPath($path);
@@ -226,7 +226,7 @@ class SiteFile
 
 		// create collections
 		while (count($path) > 1) {
-			$parentCollection = static::getOrCreateCollection(array_shift($path), $parentCollection);
+			$parentCollection = SiteCollection::getOrCreateCollection(array_shift($path), $parentCollection);
 		}
 
 		return static::create($parentCollection->ID, $path[0], $data, $ancestorID);
