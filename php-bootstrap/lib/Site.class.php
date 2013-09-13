@@ -373,6 +373,11 @@ class Site
 
 			$errfile .= ' ('.$File->Handle.')';
 		}
+		
+		if(!headers_sent())
+		{
+			header('Status: 500 Internal Server Error');
+		}
 			
 		die("<h1>Error</h1><p>$errstr</p><p><b>Source:</b> $errfile<br /><b>Line:</b> $errline<br /><b>Author:</b> {$File->Author->Username}<br /><b>Timestamp:</b> ".date('Y-m-d h:i:s', $File->Timestamp)."</p>");
 	}
