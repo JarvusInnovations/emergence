@@ -21,6 +21,7 @@ class Emergence
 		
 		
         if ($_REQUEST['remote'] == 'parent') {
+            set_time_limit(0);
             HttpProxy::relayRequest(array(
                 'url' => static::buildUrl(Site::$pathStack)
                 ,'autoAppend' => false
