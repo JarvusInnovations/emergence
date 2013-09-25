@@ -8,6 +8,7 @@ require('./lib/File.class.php');
 require('./lib/Site.class.php');
 require('./lib/SiteCollection.class.php');
 require('./lib/SiteFile.class.php');
+require('./lib/HttpProxy.class.php');
 
 // load and initialize MICS-compatibility layer
 require('./lib/MICS.class.php');

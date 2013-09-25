@@ -21,8 +21,11 @@ class Emergence
 		
 		
         if ($_REQUEST['remote'] == 'parent') {
-            readfile(static::buildUrl(Site::$pathStack));
-            exit();
+            HttpProxy::relayRequest(array(
+                'url' => static::buildUrl(Site::$pathStack)
+                ,'autoAppend' => false
+                ,'autoQuery' => false
+            ));
         }
 
 		if(empty(Site::$pathStack[0])) {
@@ -50,7 +53,8 @@ class Emergence
 		$rootPath = $rootNode ? $rootNode->getFullPath(null, false) : null;
 		$files = Emergence_FS::getTreeFiles($rootPath);
 		
-		header('Content-Type: application/json');
+		header('HTTP/1.1 300 Multiple Choices');
+		header('Content-Type: application/vnd.emergence.tree+json');
 		print(json_encode(array(
 			'total' => count($files)
 			,'files' => $files
@@ -122,6 +126,7 @@ class Emergence
 			
 			if($status != '200')
 			{
+                fclose($fp);
 				apc_store($remoteURL, (int)$status);
 				return false;
 			}
@@ -131,9 +136,10 @@ class Emergence
 			{
 				if(!$header) break;
 				list($key, $value) = preg_split('/:\s*/', $header, 2);
+				$key = strtolower($key);
 
 				// if etag found, use it to skip write if existing file matches
-				if($key == 'ETag' && $fileNode && $fileNode->SHA1 == $value)
+				if($key == 'etag' && $fileNode && $fileNode->SHA1 == $value)
 				{
 				    fclose($fp);
 					return $fileNode;
@@ -172,7 +178,7 @@ class Emergence
 			throw new Exception("curl error:".curl_error($ch));
 		}
 		
-		if($responseStatus != 300 || $responseType != 'application/json')
+		if($responseStatus != 300 || $responseType != 'application/vnd.emergence.tree+json')
 		{
 			return false;
 		}
