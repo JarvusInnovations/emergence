@@ -84,6 +84,11 @@ class HttpProxy
 		{
 			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']); 
 		}
+			
+        if (isset($options['timeout'])) {
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
+            curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeout']);
+        }
 
 		if(!empty($options['debug']))
 		{

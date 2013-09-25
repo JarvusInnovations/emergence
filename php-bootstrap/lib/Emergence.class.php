@@ -26,6 +26,7 @@ class Emergence
                 'url' => static::buildUrl(Site::$pathStack)
                 ,'autoAppend' => false
                 ,'autoQuery' => false
+                ,'timeout' => 300
             ));
         }
 
