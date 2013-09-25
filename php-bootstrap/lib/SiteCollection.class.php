@@ -3,6 +3,8 @@
 
 class SiteCollection
 {
+	static public $isCollection = true;
+	
 	static public $tableName = '_e_file_collections';
 	static public $autoCreate = false;
 	static public $fileClass = 'SiteFile';
@@ -513,53 +515,6 @@ class SiteCollection
 			,DB::escape($status)
 			,$this->ID
 		));
-	}
-	
-	public function outputAsResponse()
-	{
-		header('HTTP/1.0 300 Multiple Choices');
-		header('Content-Type: application/json');
-		print(json_encode(array(
-			'collection' => $this->getTreeHash(!empty($_GET['tree']))
-		)));
-		exit();
-	}
-	
-	public function getTreeHash($deep = false)
-	{
-		$collection = array();
-		
-		foreach($this->getChildren() AS $child)
-		{
-			if(is_a($child, 'SiteFile'))
-			{
-				$collection[] = array(
-					'type' =>  'file'
-					,'handle' => $child->Handle
-					,'mime-type' => $child->Type
-					,'size' => $child->Size
-					,'sha1' => $child->SHA1
-					,'timestamp' => $child->Timestamp
-				);
-			}
-			elseif($deep)
-			{
-				$collection[] = array(
-					'type' =>  'collection'
-					,'handle' => $child->Handle
-					,'collection' => $child->getTreeHash($deep)
-				);
-			}
-			else
-			{
-				$collection[] = array(
-					'type' =>  'collection'
-					,'handle' => $child->Handle
-				);
-			}
-		}
-
-		return $collection;
 	}
 	
 	public function getLastModified()

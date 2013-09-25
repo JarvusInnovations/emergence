@@ -362,6 +362,17 @@ class SiteFile
 		// invalidate cache
 		apc_delete(static::getCacheKey($this->CollectionID, $this->Handle));
 	}
+
+	public function destroyRecord()
+	{
+		DB::nonQuery('DELETE FROM `%s` WHERE ID = %u', array(
+			static::$tableName
+			,$this->ID
+		));
+		
+		// invalidate cache
+		apc_delete(static::getCacheKey($this->CollectionID, $this->Handle));
+	}
 	
 	/**
 	 * Clear all the files from a given collection's tree
