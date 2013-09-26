@@ -21,12 +21,12 @@ class Emergence
 		
 		
         if ($_REQUEST['remote'] == 'parent') {
-            set_time_limit(0);
+            set_time_limit(600);
             HttpProxy::relayRequest(array(
                 'url' => static::buildUrl(Site::$pathStack)
                 ,'autoAppend' => false
                 ,'autoQuery' => false
-                ,'timeout' => 300
+                ,'timeout' => 500
             ));
         }
 
@@ -52,6 +52,7 @@ class Emergence
 	
 	static public function handleTreeRequest($rootNode = null)
 	{
+        set_time_limit(600);
 		$rootPath = $rootNode ? $rootNode->getFullPath(null, false) : null;
 		$files = Emergence_FS::getTreeFiles($rootPath);
 		
