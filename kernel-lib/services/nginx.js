@@ -203,7 +203,7 @@ exports.nginx.prototype.makeConfig = function() {
 	c += '	send_timeout 10m;\n';
 
 	c += '	connection_pool_size 256;\n';
-	c += '	client_max_body_size 50M;\n';
+	c += '	client_max_body_size 200M;\n';
 	c += '	client_header_buffer_size 1k;\n';
 	c += '	large_client_header_buffers 8 512k;\n';
 	c += '	request_pool_size 4k;\n';
