@@ -98,6 +98,10 @@ class Emergence
 		// try to download from parent site
 		if($forceRemote || !$fileNode)
 		{
+			if (!Site::$autoPull) {
+				return false;
+			}
+		
 			$remoteURL = static::buildUrl(array_merge($collection->getFullPath(null, false), $path), $params);
 //if($forceRemote) MICS::dump($remoteURL, 'resolveFileFromParent');
 			$cachedStatus = apc_fetch($remoteURL);

@@ -12,6 +12,7 @@ class Site
 	static public $onNotFound;
 	static public $onRequestMapped;
 	static public $permittedOrigins = array();
+	static public $autoPull = true;
 
 	// public properties
 	//static public $ID;
