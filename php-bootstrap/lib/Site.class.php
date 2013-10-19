@@ -200,7 +200,7 @@ class Site
 		if($resolvedNode)
 		{
 			// create session
-			if(static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php' && !in_array(implode('/', $resolvedNode->getFullPath(null, false)), static::$skipSessionPaths))
+			if(static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php' && !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths))
 			{
 				$GLOBALS['Session'] = UserSession::getFromRequest();
 			}
