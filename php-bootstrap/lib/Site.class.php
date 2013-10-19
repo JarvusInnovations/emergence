@@ -13,6 +13,7 @@ class Site
 	static public $onRequestMapped;
 	static public $permittedOrigins = array();
 	static public $autoPull = true;
+	static public $skipSessionPaths = array();
 
 	// public properties
 	//static public $ID;
@@ -199,7 +200,7 @@ class Site
 		if($resolvedNode)
 		{
 			// create session
-			if(static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php')
+			if(static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php' && !in_array(implode('/', $resolvedNode->getFullPath(null, false)), static::$skipSessionPaths))
 			{
 				$GLOBALS['Session'] = UserSession::getFromRequest();
 			}

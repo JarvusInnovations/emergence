@@ -184,9 +184,9 @@ class SiteFile
 		return static::getRealPathByID($this->ID);
 	}
 	
-	function getFullPath($root = null)
+	function getFullPath($root = null, $prependParent = true)
 	{
-		$path = $this->Collection->getFullPath($root);
+		$path = $this->Collection->getFullPath($root, $prependParent);
 		array_push($path, $this->Handle);
 		return $path;
 	}
