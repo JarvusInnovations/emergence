@@ -165,7 +165,7 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'group = '+me.options.group+'\n';
 	c += 'listen = '+me.options.socketPath+'\n';
 	c += 'pm = dynamic\n';
-	c += 'pm.max_children = 50\n';
+	c += 'pm.max_children = '+(me.options.maxClients||50)+'\n';
 	c += 'pm.start_servers = 5\n';
 	c += 'pm.min_spare_servers = 1\n';
 	c += 'pm.max_spare_servers = 10\n';
