@@ -10,6 +10,8 @@ class HttpProxy
 		,'/^Date:/'
 		,'/^Set-Cookie:/'
 		,'/^Location:/'
+		,'/^ETag:/'
+		,'/^Last-Modified:/'
 	);
 	
 	static public $defaultForwardHeaders = array(
