@@ -12,6 +12,7 @@ class HttpProxy
 		,'/^Location:/'
 		,'/^ETag:/'
 		,'/^Last-Modified:/'
+		,'/^Author:/'
 	);
 	
 	static public $defaultForwardHeaders = array(

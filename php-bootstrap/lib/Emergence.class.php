@@ -35,7 +35,7 @@ class Emergence
 		}
 		elseif($node = Site::resolvePath(Site::$pathStack)) {
 			if(method_exists($node, 'outputAsResponse')) {
-				$node->outputAsResponse();
+				$node->outputAsResponse(true);
 			}
 			elseif($node::$isCollection) {
 				return static::handleTreeRequest($node);

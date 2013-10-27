@@ -395,7 +395,7 @@ class SiteFile
 	}
 	
 	
-	public function outputAsResponse()
+	public function outputAsResponse($includeAuthor)
 	{
 		if(extension_loaded('newrelic'))
 		{
@@ -439,6 +439,10 @@ class SiteFile
 		header('Content-Type: '.$this->MIMEType);
 		header('Content-Length: '.$this->Size);
 		header('Last-Modified: '.gmdate('D, d M Y H:i:s \G\M\T', $this->Timestamp));
+		
+		if ($includeAuthor && $this->Author) {
+		  header('Author: '.$this->Author->EmailRecipient);
+		}
 
 		readfile($this->RealPath);
 		exit();
