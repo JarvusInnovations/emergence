@@ -395,7 +395,7 @@ class SiteFile
 	}
 	
 	
-	public function outputAsResponse($includeAuthor)
+	public function outputAsResponse($includeAuthor = false)
 	{
 		if(extension_loaded('newrelic'))
 		{
