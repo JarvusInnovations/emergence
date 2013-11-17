@@ -182,8 +182,15 @@ class HttpProxy
 		} else {
 			header('HTTP/1.1 502 Bad Gateway');
 		}
+		
+		fastcgi_finish_request();
+		
+		if (is_callable($options['afterResponse'])) {
+			call_user_func($options['afterResponse'], $responseBody, $options, $ch);
+        }
 
 		curl_close($ch);
+		
 		exit();
 	}
 
