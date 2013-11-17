@@ -460,7 +460,7 @@ class SiteCollection
 				}
 			
 				// clear cache of bumped collections
-				foreach (new APCIterator('user', '|^' . Site::$config['handle'] . ':efs:col/|') AS $cachedCollection) {
+				foreach (static::_getCacheIterator('|^' . Site::$config['handle'] . ':efs:col/|') AS $cachedCollection) {
 					if (
 						$cachedCollection['value']
 						&& (
@@ -550,7 +550,7 @@ class SiteCollection
 		// iterate child collections
 		$childCollectionsKey = static::getCacheKey('.*', $record['ID'], $record['Site'] == 'Remote');
 		
-		foreach (new APCIterator('user', '|^'.$childCollectionsKey.'|') AS $childCollection) {
+		foreach (static::_getCacheIterator('user', '|^'.$childCollectionsKey.'|') AS $childCollection) {
 			if ($childCollection['value']) {
 				static::clearCacheTree($childCollection['value'], $childCollection['key']);
 			}
@@ -559,7 +559,7 @@ class SiteCollection
 		// iterate child files
 		$childFilesKey = SiteFile::getCacheKey($record['ID'], '.*');
 		
-		foreach (new APCIterator('user', '|^'.$childFilesKey.'|') AS $childFile) {
+		foreach (static::_getCacheIterator('user', '|^'.$childFilesKey.'|') AS $childFile) {
 			if ($childFile['value']) {
 		    	apc_delete($childFile['key']);
 			}
@@ -595,4 +595,8 @@ class SiteCollection
 		return $collection;
 	}
 
+	static private function _getCacheIterator($pattern)
+	{
+		return extension_loaded('apcu') ? new APCIterator($pattern) : new APCIterator('user', $pattern);
+	}
 }
