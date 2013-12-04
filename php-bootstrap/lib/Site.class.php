@@ -109,6 +109,10 @@ class Site
 		// check virtual system for site config
 		static::loadConfig(__CLASS__);
 		
+		// check virtual system for proxy config
+		if (class_exists('HttpProxy')) {
+			static::loadConfig('HttpProxy');
+		}
 		
 		if(is_callable(static::$onInitialized))
 			call_user_func(static::$onInitialized);

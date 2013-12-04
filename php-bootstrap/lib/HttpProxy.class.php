@@ -2,6 +2,8 @@
 
 class HttpProxy
 {
+	static public $sourceInterface = null; // string=hostname or IP, null=http hostname, false=let cURL pick
+
 	static public $defaultPassthruHeaders = array(
 		'/^HTTP\//'
 		,'/^Content-Type:/'
@@ -42,7 +44,7 @@ class HttpProxy
         }
 
 		if (!isset($options['interface'])) {
-			$options['interface'] = $_SERVER['HTTP_HOST'];
+			$options['interface'] = isset(static::$sourceInterface) ? static::$sourceInterface : $_SERVER['HTTP_HOST'];
         }
 
 		// build URL
