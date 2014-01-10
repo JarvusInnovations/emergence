@@ -17,6 +17,7 @@ class SiteFile
 		,'eot' => 'application/vnd.ms-fontobject'
 		,'scss' => 'text/x-scss'
 		,'tpl' => 'text/x-html-template'
+		,'svg' => 'image/svg+xml'
 	);
 	
 	static public $additionalHeaders = array(
@@ -30,6 +31,7 @@ class SiteFile
 		,'application/x-font-woff' => 'static'
 		,'font/ttf' => 'static'
 		,'application/vnd.ms-fontobject' => 'static'
+		,'image/svg+xml' => 'static'
 	);
 
 
