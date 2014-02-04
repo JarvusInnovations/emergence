@@ -319,7 +319,7 @@ class Site
 	    $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
 		
 		// try to load class via PSR-0
-		$classNode = static::resolvePath("php-classes/$fileName.class.php");
+		$classNode = static::resolvePath("php-classes/$fileName.php");
 		if(!$classNode)
 		{
 			// try to load class flatly
