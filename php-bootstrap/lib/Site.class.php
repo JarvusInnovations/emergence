@@ -219,7 +219,7 @@ class Site
 				function e_include($file) {
 					$file = Site::normalizePath('site-root/'.implode('/', Site::$resolvedPath).'/../'.$file);
 					if(!$node = Site::resolvePath($file)) {
-						die('e_include failed to find in efs: '.$file);
+						throw new Exception('e_include failed to find in efs: '.$file);
 					}
 					require($node->RealPath);
 				}
@@ -328,11 +328,11 @@ class Site
 
 		if(!$classNode)
 		{
-			die("Unable to load class '$className'");
+			throw new Exception("Unable to load class '$className'");
 		}
 		elseif(!$classNode->MIMEType == 'application/php')
 		{
-			die("Class file for '$className' is not application/php");
+			throw new Exception("Class file for '$className' is not application/php");
 		}
 		
 		// add to loaded class queue
@@ -359,7 +359,7 @@ class Site
 		{
 			if(!$configNode->MIMEType == 'application/php')
 			{
-				die('Config file for "'.$className.'" is not application/php');
+				throw new Exception('Config file for "'.$className.'" is not application/php');
 			}
 			
 			require($configNode->RealPath);
