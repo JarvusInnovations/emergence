@@ -34,7 +34,6 @@ class Site
 	// protected properties
 	static protected $_rootCollections;
 
-	
 	static public function initialize()
 	{
 		static::$time = microtime(true);
@@ -250,7 +249,7 @@ class Site
 	{
 		// special case: request for root collection
 		if( is_string($path) && (empty($path) || $path == '/')) {
-			return new SiteDavDirectory();
+			return new Emergence\DAV\RootCollection();
 		}
 
 		// parse path
@@ -309,17 +308,19 @@ class Site
 		{
 			return;
 		}
-		
-		// PSR-0 support
-		if ($lastNsPos = strrpos($className, '\\')) {
-	        $namespace = substr($className, 0, $lastNsPos);
-	        $className = substr($className, $lastNsPos + 1);
-	        $fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
-	    }
-	    $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
-		
-		// try to load class via PSR-0
-		$classNode = static::resolvePath("php-classes/$fileName.php");
+
+		// try to load class PSR-0 style
+		if (!preg_match('/^Sabre_/', $className)) {
+			if ($lastNsPos = strrpos($className, '\\')) {
+				$namespace = substr($className, 0, $lastNsPos);
+				$className = substr($className, $lastNsPos + 1);
+				$fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+			}
+			$fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
+			$classNode = static::resolvePath("php-classes/$fileName.php");
+		}
+
+		// fall back to emergence legacy class format
 		if(!$classNode)
 		{
 			// try to load class flatly
