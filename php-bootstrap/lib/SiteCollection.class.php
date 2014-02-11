@@ -550,7 +550,7 @@ class SiteCollection
 		// iterate child collections
 		$childCollectionsKey = static::getCacheKey('.*', $record['ID'], $record['Site'] == 'Remote');
 		
-		foreach (static::_getCacheIterator('user', '|^'.$childCollectionsKey.'|') AS $childCollection) {
+		foreach (static::_getCacheIterator('|^'.$childCollectionsKey.'|') AS $childCollection) {
 			if ($childCollection['value']) {
 				static::clearCacheTree($childCollection['value'], $childCollection['key']);
 			}
@@ -559,7 +559,7 @@ class SiteCollection
 		// iterate child files
 		$childFilesKey = SiteFile::getCacheKey($record['ID'], '.*');
 		
-		foreach (static::_getCacheIterator('user', '|^'.$childFilesKey.'|') AS $childFile) {
+		foreach (static::_getCacheIterator('|^'.$childFilesKey.'|') AS $childFile) {
 			if ($childFile['value']) {
 		    	apc_delete($childFile['key']);
 			}
