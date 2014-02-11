@@ -227,6 +227,10 @@ exports.nginx.prototype.makeConfig = function() {
 	c += '	ignore_invalid_headers on;\n';
 
 	c += '	index index.php;\n';
+	
+	c += '	fastcgi_index index.php;\n';
+	c += '	fastcgi_read_timeout 6h;\n';
+	c += '	fastcgi_buffers 32 64k;\n';
 
 /*
 
@@ -262,9 +266,6 @@ exports.nginx.prototype.makeConfig = function() {
 		siteCfg += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
 		siteCfg += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
 		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/bootstrap.php;\n';
-
-		siteCfg += '			fastcgi_index index.php;\n';
-		siteCfg += '			fastcgi_read_timeout 6h;\n';
 		siteCfg += '		}\n';
 
 
