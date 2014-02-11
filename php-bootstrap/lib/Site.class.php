@@ -526,4 +526,13 @@ class Site
 	{
 		return $key ? static::$config[$key] : static::$config;
 	}
+	
+	static public function finishRequest($exit = true)
+	{
+		if ($exit) {
+			exit();
+		} else {
+			fastcgi_finish_request();
+		}
+	}
 }
