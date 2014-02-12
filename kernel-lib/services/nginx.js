@@ -257,7 +257,7 @@ exports.nginx.prototype.makeConfig = function() {
 
 		var siteCfg = '		server_name '+hostnames.join(' ')+';\n';
 		siteCfg += '		access_log '+logsDir+'/access.log main;\n';
-		siteCfg += '		error_log '+logsDir+'/error.log info;\n';
+		siteCfg += '		error_log '+logsDir+'/error.log notice;\n';
 	
 		siteCfg += '		location / {\n';
 		siteCfg += '			include '+me.options.miscConfigDir+'/fastcgi_params;\n';
