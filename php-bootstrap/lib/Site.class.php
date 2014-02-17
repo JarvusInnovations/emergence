@@ -295,15 +295,14 @@ class Site
 	}
 	
 	
-	static protected $_loadedClasses = array();
-	
 	static public function loadClass($className)
 	{
+		$fullClassName = $className;
+
 		// skip if already loaded
 		if(
 			class_exists($className, false)
 			|| interface_exists($className, false)
-			|| in_array($className, static::$_loadedClasses)
 		)
 		{
 			return;
@@ -321,7 +320,7 @@ class Site
 		}
 
 		// fall back to emergence legacy class format
-		if(!$classNode)
+		if(!$classNode && empty($namespace))
 		{
 			// try to load class flatly
 			$classNode = static::resolvePath("php-classes/$className.class.php");
@@ -329,37 +328,43 @@ class Site
 
 		if(!$classNode)
 		{
-			throw new Exception("Unable to load class '$className'");
+			throw new Exception("Unable to load class '$fullClassName'");
 		}
 		elseif(!$classNode->MIMEType == 'application/php')
 		{
-			throw new Exception("Class file for '$className' is not application/php");
+			throw new Exception("Class file for '$fullClassName' is not application/php");
 		}
-		
-		// add to loaded class queue
-		static::$_loadedClasses[] = $className;
 		
 		require($classNode->RealPath);	
 
 		// try to load config
-		static::loadConfig($className);
+		if (class_exists($fullClassName, false)) {
+			static::loadConfig($fullClassName);
 		
-		// invoke __classLoaded
-		if(method_exists($className, '__classLoaded'))
-		{
-			call_user_func(array($className, '__classLoaded'));
+			// invoke __classLoaded
+			if (method_exists($fullClassName, '__classLoaded')) {
+				call_user_func(array($fullClassName, '__classLoaded'));
+			}
 		}
-
-		
-		//Debug::dump($classNode);
 	}
 	
 	static public function loadConfig($className)
 	{
-		if($configNode = static::resolvePath("php-config/$className.config.php"))
-		{
-			if(!$configNode->MIMEType == 'application/php')
-			{
+		// try to load class PSR-0 style
+		if ($lastNsPos = strrpos($className, '\\')) {
+			$namespace = substr($className, 0, $lastNsPos);
+			$className = substr($className, $lastNsPos + 1);
+			$fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+		}
+		$fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
+		$configNode = static::resolvePath("php-config/$fileName.config.php");
+
+		if (!$configNode && empty($namespace)) {
+			$configNode = static::resolvePath("php-config/$className.config.php");
+		}
+		
+		if ($configNode) {
+			if (!$configNode->MIMEType == 'application/php') {
 				throw new Exception('Config file for "'.$className.'" is not application/php');
 			}
 			
