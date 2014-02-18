@@ -338,7 +338,7 @@ class Site
 		}
 		
 		// add to loaded class queue
-		static::$_loadedClasses[] = $className;
+		static::$_loadedClasses[] = $fullClassName;
 		
 		// load source code
 		require($classNode->RealPath);	
