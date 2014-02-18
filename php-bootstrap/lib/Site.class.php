@@ -295,6 +295,7 @@ class Site
 	}
 	
 	
+	static protected $_loadedClasses = array();
 	static public function loadClass($className)
 	{
 		$fullClassName = $className;
@@ -303,6 +304,7 @@ class Site
 		if(
 			class_exists($className, false)
 			|| interface_exists($className, false)
+			|| in_array($className, static::$_loadedClasses)
 		)
 		{
 			return;
@@ -335,6 +337,10 @@ class Site
 			throw new Exception("Class file for '$fullClassName' is not application/php");
 		}
 		
+		// add to loaded class queue
+		static::$_loadedClasses[] = $className;
+		
+		// load source code
 		require($classNode->RealPath);	
 
 		// try to load config
