@@ -109,8 +109,14 @@ class HttpProxy
 		} elseif (!empty($options['returnBody']) && !empty($options['returnHeader'])) {
 			curl_setopt($ch, CURLOPT_HEADER, true);
 		} else {
+                        $responseHeaders = array();
 			curl_setopt($ch, CURLOPT_HEADER, false);
-			curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($ch, $header) use($options) {
+			curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($ch, $header) use($options, &$responseHeaders) {
+                                list($headerKey, $headerValue) = preg_split('/:\s*/', $header, 2);
+				if ($headerValue) {
+					$responseHeaders[$headerKey] = trim($headerValue);
+				}
+
 				foreach ($options['passthruHeaders'] AS $pattern) {
 					if (preg_match($pattern, $header)) {
 						// apply header transformation
@@ -170,9 +176,10 @@ class HttpProxy
 		if (!empty($options['debug'])) {			
 			print('<h1>Response Info</h1><pre>');
 			print_r(curl_getinfo($ch));
-			print('<h1>cURL error</h1><pre>'.var_export(curl_error($ch)).'</pre>');
+                        print('</pre>');
+			print('<h1>cURL error</h1><pre>'.var_export(curl_error($ch), true).'</pre>');
 			print('<h1>Response Length</h1>'.strlen($responseBody));
-			print('</pre><h1>Response Body</h1><pre>');
+			print('<h1>Response Body</h1><pre>');
 			print(htmlspecialchars($responseBody));
 			print('</pre>');
 		} elseif (!empty($options['returnBody'])) {
@@ -190,7 +197,7 @@ class HttpProxy
 		}
 
 		if (is_callable($options['afterResponse'])) {
-			call_user_func($options['afterResponse'], $responseBody, $options, $ch);
+			call_user_func($options['afterResponse'], $responseBody, $responseHeaders, $options, $ch);
         }
 
 		curl_close($ch);
