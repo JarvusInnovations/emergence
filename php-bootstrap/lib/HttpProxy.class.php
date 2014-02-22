@@ -2,7 +2,7 @@
 
 class HttpProxy
 {
-	static public $sourceInterface = null; // string=hostname or IP, null=http hostname, false=let cURL pick
+	static public $sourceInterface = false; // string=hostname or IP, null=http hostname, false=let cURL pick
 
 	static public $defaultPassthruHeaders = array(
 		'/^HTTP\//'
