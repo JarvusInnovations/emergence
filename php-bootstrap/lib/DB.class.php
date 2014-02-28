@@ -45,7 +45,7 @@ class DB
 	
 	static public function foundRows()
 	{
-		return self::oneValue('SELECT FOUND_ROWS()');
+		return (int)self::oneValue('SELECT FOUND_ROWS()');
 	}
 	
 	
