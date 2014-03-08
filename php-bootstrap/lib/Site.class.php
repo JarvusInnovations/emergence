@@ -316,7 +316,9 @@ class Site
 				$namespace = substr($className, 0, $lastNsPos);
 				$className = substr($className, $lastNsPos + 1);
 				$fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
-			}
+			} else {
+                                $fileName = '';
+                        }
 			$fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
 			$classNode = static::resolvePath("php-classes/$fileName.php");
 		}
@@ -330,7 +332,8 @@ class Site
 
 		if(!$classNode)
 		{
-			throw new Exception("Unable to load class '$fullClassName'");
+			return;
+			//throw new Exception("Unable to load class '$fullClassName'");
 		}
 		elseif(!$classNode->MIMEType == 'application/php')
 		{
@@ -361,7 +364,9 @@ class Site
 			$namespace = substr($className, 0, $lastNsPos);
 			$className = substr($className, $lastNsPos + 1);
 			$fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
-		}
+		} else {
+                        $fileName = '';
+                }
 		$fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
 		$configNode = static::resolvePath("php-config/$fileName.config.php");
 
@@ -396,8 +401,14 @@ class Site
 		{
 			header('Status: 500 Internal Server Error');
 		}
+
+		$message = "<h1>Error</h1><p>$errstr</p><p><b>Source:</b> $errfile<br /><b>Line:</b> $errline</p>";
+
+		if (!empty($File)) {
+			$message .= "<p><b>Author:</b> ".($File->Author ? $File->Author->Username : 'unknown')."<br /><b>Timestamp:</b> ".date('Y-m-d h:i:s', $File->Timestamp)."</p>";
+		}
 			
-		die("<h1>Error</h1><p>$errstr</p><p><b>Source:</b> $errfile<br /><b>Line:</b> $errline<br /><b>Author:</b> {$File->Author->Username}<br /><b>Timestamp:</b> ".date('Y-m-d h:i:s', $File->Timestamp)."</p>");
+		die($message);
 	}
 	
 	static public function handleException($e)
@@ -535,7 +546,11 @@ class Site
 
 	static public function getConfig($key = null)
 	{
-		return $key ? static::$config[$key] : static::$config;
+		if ($key) {
+			return array_key_exists($key, static::$config) ? static::$config[$key] : null;
+		} else {
+			return static::$config;
+		}
 	}
 	
 	static public function finishRequest($exit = true)
