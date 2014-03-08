@@ -174,12 +174,12 @@ class Site
 					$resolvedNode
 					&& method_exists($resolvedNode, 'getChild')
 					&& (
-						($childNode = $resolvedNode->getChild($handle))
-						|| ($scriptHandle && $childNode = $resolvedNode->getChild($scriptHandle))
+						($scriptHandle && $childNode = $resolvedNode->getChild($scriptHandle))
+						|| ($childNode = $resolvedNode->getChild($handle))
 					)
 				)
-				|| ($childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath,array($handle))))
 				|| ($scriptHandle && $childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath,array($scriptHandle))))
+				|| ($childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath,array($handle))))
 			)
 			{
 				$resolvedNode = $childNode;
