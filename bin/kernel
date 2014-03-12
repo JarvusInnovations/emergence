@@ -116,6 +116,7 @@ else
 	console.log(util.inspect(CONFIG.services.plugins));
 	
 	fs.writeFileSync('/emergence/config.json', JSON.stringify(CONFIG, null, 4));
+	fs.chmodSync('/emergence/config.json', 0600);
 	console.log('WROTE CONFIG: /emergence/config.json');
 }
 
@@ -123,6 +124,7 @@ else
 if(!fs.existsSync('/emergence/admins.htpasswd')) {
 	console.log('Creating default administrative user: admin/admin');
 	fs.writeFileSync('/emergence/admins.htpasswd', 'admin:{SHA}0DPiKuNIrrVmD8IUCuw1hQxNqZc=');
+	fs.chmodSync('/emergence/admins.htpasswd', 0600);
 }
 
 
