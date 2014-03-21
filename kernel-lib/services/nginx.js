@@ -175,7 +175,7 @@ exports.nginx.prototype.makeConfig = function() {
 		,c = '';
 		
 	c += 'user '+me.options.user+' '+me.options.group+';\n';
-	c += 'worker_processes 1;\n';
+	c += 'worker_processes auto;\n';
 	c += 'pid '+me.options.pidPath+';\n';
 	c += 'error_log '+me.options.errorLogPath+' info;\n';
 
@@ -203,7 +203,8 @@ exports.nginx.prototype.makeConfig = function() {
 	c += '	send_timeout 10m;\n';
 
 	c += '	connection_pool_size 256;\n';
-	c += '	client_max_body_size 200M;\n';
+	c += '	client_max_body_size 200m;\n';
+	c += '	client_body_buffer_size 128k;\n';
 	c += '	client_header_buffer_size 1k;\n';
 	c += '	large_client_header_buffers 8 512k;\n';
 	c += '	request_pool_size 4k;\n';
@@ -232,6 +233,7 @@ exports.nginx.prototype.makeConfig = function() {
 	c += '	fastcgi_read_timeout 6h;\n';
 	c += '	fastcgi_buffers 32 64k;\n';
 
+	c += '	server_tokens off;\n';
 /*
 
 	c += '	server {\n';
@@ -258,11 +260,18 @@ exports.nginx.prototype.makeConfig = function() {
 		var siteCfg = '		server_name '+hostnames.join(' ')+';\n';
 		siteCfg += '		access_log '+logsDir+'/access.log main;\n';
 		siteCfg += '		error_log '+logsDir+'/error.log notice;\n';
-	
+
+
+		var phpSocketPath = me.controller.services['php'].options.socketPath;
+
+		if (phpSocketPath[0] == '/') {
+			phpSocketPath = 'unix:'+phpSocketPath;
+		}
+
 		siteCfg += '		location / {\n';
 		siteCfg += '			include '+me.options.miscConfigDir+'/fastcgi_params;\n';
 		siteCfg += '			fastcgi_param HTTPS $php_https;\n';
-		siteCfg += '			fastcgi_pass unix:'+me.controller.options.runDir+'/php-fpm/php-fpm.sock;\n';
+		siteCfg += '			fastcgi_pass '+phpSocketPath+';\n';
 		siteCfg += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
 		siteCfg += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
 		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/bootstrap.php;\n';
