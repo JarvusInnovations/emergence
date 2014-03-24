@@ -104,9 +104,12 @@ class Site
 		
 		// register exception handler
 		set_exception_handler('Site::handleException');
-		
+
 		// check virtual system for site config
 		static::loadConfig(__CLASS__);
+
+		// configure error display
+		ini_set('display_errors', static::$debug);
 		
 		// check virtual system for proxy config
 		if (class_exists('HttpProxy')) {
