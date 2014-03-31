@@ -2,6 +2,7 @@
 
 class DuplicateKeyException extends Exception { }
 class TableNotFoundException extends Exception { }
+class QueryException extends Exception { }
 
 
 class DB
@@ -518,6 +519,26 @@ class DB
 			$queryLog['error'] = static::$_mysqli->error;
 			self::finishQueryLog($queryLog);
 		}
+
+		if(Site::$production)
+		{		
+			// respond
+			$report = sprintf("<h1 style='color:red'>Database Error #%s</h1>\n", static::$_mysqli->errno);
+			$report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
+			$report .= sprintf("<h2>Query</h2>\n<p>%s</p>\n", htmlspecialchars($query));
+			$report .= sprintf("<h2>Reported</h2>\n<p>%s</p>\n", htmlspecialchars($message));
+			
+			//$report .= ErrorHandler::formatBacktrace(debug_backtrace());
+					
+			if(!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person)
+			{
+				$report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->data, true));
+			}
+
+			$report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
+		
+			Email::send(Site::$webmasterEmail, 'Database error on '.$_SERVER['HTTP_HOST'], $report);
+		}
 		
 		// get error message
 		if($query == 'connect')
@@ -534,36 +555,7 @@ class DB
 		}
 		else
 		{
-			$message = static::$_mysqli->error;
-		}
-		
-		// respond
-		$report = sprintf("<h1 style='color:red'>Database Error #%s</h1>\n", static::$_mysqli->errno);
-		$report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
-		$report .= sprintf("<h2>Query</h2>\n<p>%s</p>\n", htmlspecialchars($query));
-		$report .= sprintf("<h2>Reported</h2>\n<p>%s</p>\n", htmlspecialchars($message));
-			
-		//$report .= ErrorHandler::formatBacktrace(debug_backtrace());
-					
-		if(!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person)
-		{
-			$report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->data, true));
-		}
-
-		$report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
-		
-		if (!headers_sent()) {
-			header('HTTP/1.1 500 Internal Server Error');
-		}
-
-		if(Site::$debug)
-		{
-			die($report);
-		}
-		else
-		{
-			Email::send(Site::$webmasterEmail, 'Database error on '.$_SERVER['HTTP_HOST'], $report);
-			die('Error while communicating with database');
+			throw new QueryException(static::$_mysqli->error, static::$_mysqli->errno);
 		}
 	}
 	
