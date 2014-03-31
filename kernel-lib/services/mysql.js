@@ -286,7 +286,7 @@ exports.mysql.prototype.onSiteCreated = function(siteData) {
 	
 	sql += 'CREATE DATABASE IF NOT EXISTS `'+siteData.handle+'`;';
 	sql += 'CREATE USER \''+siteData.handle+'\'@\'localhost\' IDENTIFIED BY \''+password+'\';';
-	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, LOCK TABLES  ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
+	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, LOCK TABLES  ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
 	sql += 'FLUSH PRIVILEGES;';
 	
 	me.client.query(sql, function(error, results) {
