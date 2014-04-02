@@ -429,6 +429,10 @@ class Site
 			$report .= sprintf("<h2>Code</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getCode()));
 			$report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
 			
+			if (!empty($_SERVER['HTTP_REFERER'])) {
+				$report .= sprintf("<h2>Referrer</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['HTTP_REFERER']));
+			}
+			
 			//$report .= ErrorHandler::formatBacktrace(debug_backtrace());
 					
 			if(!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person)
