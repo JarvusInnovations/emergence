@@ -519,43 +519,21 @@ class DB
 			$queryLog['error'] = static::$_mysqli->error;
 			self::finishQueryLog($queryLog);
 		}
-
-		if(Site::$production)
-		{		
-			// respond
-			$report = sprintf("<h1 style='color:red'>Database Error #%s</h1>\n", static::$_mysqli->errno);
-			$report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
-			$report .= sprintf("<h2>Query</h2>\n<p>%s</p>\n", htmlspecialchars($query));
-			$report .= sprintf("<h2>Reported</h2>\n<p>%s</p>\n", htmlspecialchars($message));
-			
-			//$report .= ErrorHandler::formatBacktrace(debug_backtrace());
-					
-			if(!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person)
-			{
-				$report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->data, true));
-			}
-
-			$report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
 		
-			Email::send(Site::$webmasterEmail, 'Database error on '.$_SERVER['HTTP_HOST'], $report);
-		}
+		$message = sprintf("Query: %s\nReported: %s", $query, $query == 'connect' ? mysqli_connect_error() : static::$_mysqli->error);
 		
 		// get error message
-		if($query == 'connect')
+		if(static::$_mysqli->errno == 1062)
 		{
-			$message = mysqli_connect_error();
-		}
-		elseif(static::$_mysqli->errno == 1062)
-		{
-			throw new DuplicateKeyException(static::$_mysqli->error);
+			throw new DuplicateKeyException($message, static::$_mysqli->errno);
 		}
 		elseif(static::$_mysqli->errno == 1146)
 		{
-			throw new TableNotFoundException(static::$_mysqli->error);
+			throw new TableNotFoundException($message, static::$_mysqli->errno);
 		}
 		else
 		{
-			throw new QueryException(static::$_mysqli->error, static::$_mysqli->errno);
+			throw new QueryException($message, static::$_mysqli->errno);
 		}
 	}
 	

@@ -420,7 +420,27 @@ class Site
 		{
 			newrelic_notice_error(null, $e);
 		}
-		
+
+		if(static::$production)
+		{		
+			// respond
+			$report = sprintf("<h1 style='color:red'>Unhandled Exception: %s</h1>\n", get_class($e));
+			$report .= sprintf("<h2>Message</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getMessage()));
+			$report .= sprintf("<h2>Code</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getCode()));
+			$report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
+			
+			//$report .= ErrorHandler::formatBacktrace(debug_backtrace());
+					
+			if(!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person)
+			{
+				$report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->getData(), true));
+			}
+
+			$report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
+
+			Email::send(static::$webmasterEmail, 'Unhandled exception on '.$_SERVER['HTTP_HOST'], $report);
+		}
+
 		if(!headers_sent())
 		{
 			header('Status: 500 Internal Server Error');
