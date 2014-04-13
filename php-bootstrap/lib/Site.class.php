@@ -505,9 +505,9 @@ class Site
     public static function getConfig($key = null)
     {
         if ($key) {
-            return array_key_exists($key, static::$config) ? static::$config[$key] : null;
+            return array_key_exists($key, static::$_config) ? static::$_config[$key] : null;
         } else {
-            return static::$config;
+            return static::$_config;
         }
     }
 
