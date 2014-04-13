@@ -58,9 +58,13 @@ exports.ServicesController = function(sites, config) {
 		}
 		
 		me.services[name] = plugin;
-		if(plugin.options.autoStart) {
+	});
+
+	// auto-start service plugins
+	_.each(me.services, function(service, name) {
+		if(service.options.autoStart) {
 			console.log('Autostarting service: '+name);
-			plugin.start();
+			service.start();
 		}
 	});
 }

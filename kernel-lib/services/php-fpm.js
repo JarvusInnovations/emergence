@@ -168,7 +168,10 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'pm.max_children = '+(me.options.maxClients||50)+'\n';
 	c += 'pm.start_servers = 5\n';
 	c += 'pm.min_spare_servers = 1\n';
-	c += 'pm.max_spare_servers = '+(me.options.maxClients||50)/5+'\n';
+	c += 'pm.max_spare_servers = '+Math.round((me.options.maxClients||50)/5)+'\n';
+	if (me.options.statusPath) {
+		c += 'pm.status_path = '+me.options.statusPath+'\n';
+	}
 	c += 'php_admin_flag[short_open_tag]=on\n';
 	c += 'php_admin_value[apc.shm_size]=512M\n';
 	c += 'php_admin_value[apc.shm_segments]=1\n';
