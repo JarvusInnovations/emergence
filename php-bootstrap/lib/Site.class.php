@@ -3,6 +3,7 @@
 class Site
 {
     // config properties
+    public static $title = null;
     public static $debug = false;
     public static $production = false;
     public static $defaultPage = 'home.php';
@@ -75,6 +76,11 @@ class Site
 
         // check virtual system for site config
         static::loadConfig(__CLASS__);
+
+        // get site title
+        if (!static::$title) {
+            static::$title = static::getConfig('label');
+        }
 
         // configure error display
         ini_set('display_errors', static::$debug);
