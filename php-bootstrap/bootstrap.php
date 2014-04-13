@@ -12,10 +12,6 @@ require(EMERGENCE_BOOTSTRAP_DIR . '/lib/SiteCollection.class.php');
 require(EMERGENCE_BOOTSTRAP_DIR . '/lib/SiteFile.class.php');
 require(EMERGENCE_BOOTSTRAP_DIR . '/lib/HttpProxy.class.php');
 
-// load and initialize MICS-compatibility layer
-require(EMERGENCE_BOOTSTRAP_DIR . '/lib/MICS.class.php');
-MICS::initialize();
-
 // load core
 Site::initialize();
 
