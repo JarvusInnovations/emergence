@@ -4,15 +4,17 @@ class Debug
 {
     public static $log = array();
 
-    public static function dump($var, $exit = true)
+    public static function dump($var, $exit = true, $title = null)
     {
-        if (!Site::$debug) {
-            return;
-        }
+        if (Site::$debug) {
+            if ($title) {
+                print "<h2>$title</h2>";
+            }
 
-        print '<pre>';
-        print_r($var);
-        print '</pre>';
+            print '<pre>';
+            print_r($var);
+            print '</pre>';
+        }
 
         if ($exit) {
             exit();
@@ -21,15 +23,17 @@ class Debug
         }
     }
 
-    public static function dumpVar($var, $exit = true)
+    public static function dumpVar($var, $exit = true, $title = null)
     {
-        if (!Site::$debug) {
-            return;
-        }
+        if (Site::$debug) {
+            if ($title) {
+                print "<h2>$title</h2>";
+            }
 
-        print '<pre>';
-        var_export($var);
-        print '</pre>';
+            print '<pre>';
+            var_export($var);
+            print '</pre>';
+        }
 
         if ($exit) {
             exit();
