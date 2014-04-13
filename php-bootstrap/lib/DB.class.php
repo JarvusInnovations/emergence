@@ -4,62 +4,48 @@ class DuplicateKeyException extends Exception { }
 class TableNotFoundException extends Exception { }
 class QueryException extends Exception { }
 
-
 class DB
 {
-    // configurables
-    static public $TimeZone;
+    // config properties
+    public static $timeZone;
+    public static $encoding = 'UTF-8';
+    public static $charset = 'utf8';
 
-    static public $encoding = 'UTF-8';
-    static public $charset = 'utf8';
-
-    // protected static properties
+    // protected properties
     protected static $_mysqli;
     protected static $_record_cache = array();
 
-
-
-
     // public static methods
-    static public function escape($string)
+    public static function escape($string)
     {
-        if(is_array($string))
-        {
-            foreach($string AS &$sub)
-            {
+        if (is_array($string)) {
+            foreach ($string AS &$sub) {
                 $sub = self::getMysqli()->real_escape_string($sub);
             }
-        }
-        else
-        {
+        } else {
             $string = self::getMysqli()->real_escape_string($string);
         }
 
         return $string;
     }
 
-
-    static public function affectedRows()
+    public static function affectedRows()
     {
         return self::getMysqli()->affected_rows;
     }
 
-    static public function foundRows()
+    public static function foundRows()
     {
         return (int)self::oneValue('SELECT FOUND_ROWS()');
     }
 
-
-    static public function insertID()
+    public static function insertID()
     {
         return self::getMysqli()->insert_id;
     }
 
-
-    static public function nonQuery($query, $parameters = array())
+    public static function nonQuery($query, $parameters = array())
     {
-        // MICS::dump(func_get_args(), 'nonquery');
-
         $query = self::preprocessQuery($query, $parameters);
 
         // start query log
@@ -69,12 +55,9 @@ class DB
         $result = self::getMysqli()->query($query);
 
         // handle query error
-        if($result === false)
-        {
+        if ($result === false) {
             self::handleError($query, $queryLog);
-        }
-        elseif($result !== true)
-        {
+        } elseif ($result !== true) {
             $result->free();
         }
 
@@ -82,10 +65,8 @@ class DB
         self::finishQueryLog($queryLog);
     }
 
-    static public function multiQuery($query, $parameters = array())
+    public static function multiQuery($query, $parameters = array())
     {
-        // MICS::dump(func_get_args(), 'nonquery');
-
         $query = self::preprocessQuery($query, $parameters);
 
         // start query log
@@ -95,14 +76,13 @@ class DB
         $result = self::getMysqli()->multi_query($query);
 
         // handle query error
-        if($result === false)
-        {
+        if ($result === false) {
             self::handleError($query, $queryLog);
         }
 
         // free results
-        while(self::getMysqli()->more_results()) {
-            if($result = self::getMysqli()->use_result()) {
+        while (self::getMysqli()->more_results()) {
+            if ($result = self::getMysqli()->use_result()) {
                 $result->free();
             }
             self::getMysqli()->next_result();
@@ -112,7 +92,7 @@ class DB
         self::finishQueryLog($queryLog);
     }
 
-    static public function query($query, $parameters = array())
+    public static function query($query, $parameters = array())
     {
         $query = self::preprocessQuery($query, $parameters);
 
@@ -123,8 +103,7 @@ class DB
         $result = self::getMysqli()->query($query);
 
         // handle query error
-        if($result === false)
-        {
+        if ($result === false) {
             self::handleError($query, $queryLog);
         }
 
@@ -134,15 +113,13 @@ class DB
         return $result;
     }
 
-
-    static public function table($tableKey, $query, $parameters = array(), $nullKey = '')
+    public static function table($tableKey, $query, $parameters = array(), $nullKey = '')
     {
         // execute query
         $result = self::query($query, $parameters);
 
         $records = array();
-        while($record = $result->fetch_assoc())
-        {
+        while ($record = $result->fetch_assoc()) {
             $records[$record[$tableKey] ? $record[$tableKey] : $nullKey] = $record;
         }
 
@@ -152,17 +129,14 @@ class DB
         return $records;
     }
 
-
-    static public function arrayTable($tableKey, $query, $parameters = array())
+    public static function arrayTable($tableKey, $query, $parameters = array())
     {
         // execute query
         $result = self::query($query, $parameters);
 
         $records = array();
-        while($record = $result->fetch_assoc())
-        {
-            if(!array_key_exists($record[$tableKey], $records))
-            {
+        while ($record = $result->fetch_assoc()) {
+            if (!array_key_exists($record[$tableKey], $records)) {
                 $records[$record[$tableKey]] = array();
             }
 
@@ -175,15 +149,13 @@ class DB
         return $records;
     }
 
-
-    static public function valuesTable($tableKey, $valueKey, $query, $parameters = array())
+    public static function valuesTable($tableKey, $valueKey, $query, $parameters = array())
     {
         // execute query
         $result = self::query($query, $parameters);
 
         $records = array();
-        while($record = $result->fetch_assoc())
-        {
+        while ($record = $result->fetch_assoc()) {
             $records[$record[$tableKey]] = $record[$valueKey];
         }
 
@@ -193,16 +165,14 @@ class DB
         return $records;
     }
 
-    static public function allRecordsWithInstantiation($query, $classMapping, $parameters = array())
+    public static function allRecordsWithInstantiation($query, $classMapping, $parameters = array())
     {
         // execute query
         $result = self::query($query, $parameters);
 
         $records = array();
-        while($record = $result->fetch_assoc())
-        {
-            foreach($classMapping AS $key => $class)
-            {
+        while ($record = $result->fetch_assoc()) {
+            foreach ($classMapping AS $key => $class) {
                 $record[$key] = new $class($record[$key]);
             }
 
@@ -215,14 +185,13 @@ class DB
         return $records;
     }
 
-    static public function allInstances($className, $query, $parameters = array())
+    public static function allInstances($className, $query, $parameters = array())
     {
         // execute query
         $result = self::query($query, $parameters);
 
         $records = array();
-        while($record = $result->fetch_assoc())
-        {
+        while ($record = $result->fetch_assoc()) {
             $records[] = new $className($record);
         }
 
@@ -232,7 +201,7 @@ class DB
         return $records;
     }
 
-    static public function allRecords($query, $parameters = array())
+    public static function allRecords($query, $parameters = array())
     {
         // MICS::dump(array('query' => $query, 'params' => $parameters), 'allRecords');
 
@@ -240,8 +209,7 @@ class DB
         $result = self::query($query, $parameters);
 
         $records = array();
-        while($record = $result->fetch_assoc())
-        {
+        while ($record = $result->fetch_assoc()) {
             $records[] = $record;
         }
 
@@ -251,17 +219,13 @@ class DB
         return $records;
     }
 
-
-    static public function allValues($valueKey, $query, $parameters = array())
+    public static function allValues($valueKey, $query, $parameters = array())
     {
-        // MICS::dump(array('query' => $query, 'params' => $parameters), 'allRecords');
-
         // execute query
         $result = self::query($query, $parameters);
 
         $records = array();
-        while($record = $result->fetch_assoc())
-        {
+        while ($record = $result->fetch_assoc()) {
             $records[] = $record[$valueKey];
         }
 
@@ -271,18 +235,15 @@ class DB
         return $records;
     }
 
-
-    static public function clearCachedRecord($cacheKey)
+    public static function clearCachedRecord($cacheKey)
     {
         unset(self::$_record_cache[$cacheKey]);
     }
 
-    static public function oneRecordCached($cacheKey, $query, $parameters = array())
+    public static function oneRecordCached($cacheKey, $query, $parameters = array())
     {
-
         // check for cached record
-        if (array_key_exists($cacheKey, self::$_record_cache))
-        {
+        if (array_key_exists($cacheKey, self::$_record_cache)) {
             // log cache hit
             Debug::log(array(
                 'cache_hit' => true
@@ -299,8 +260,7 @@ class DB
         $result = self::query($query, $parameters);
 
         // handle query error
-        if($result === false)
-        {
+        if ($result === false) {
             self::handleError($query);
         }
 
@@ -311,8 +271,7 @@ class DB
         $result->free();
 
         // save record to cache
-        if ($cacheKey)
-        {
+        if ($cacheKey) {
             self::$_record_cache[$cacheKey] = $record;
         }
 
@@ -320,8 +279,7 @@ class DB
         return $record;
     }
 
-
-    static public function oneRecord($query, $parameters = array())
+    public static function oneRecord($query, $parameters = array())
     {
         // preprocess and execute query
         $result = self::query($query, $parameters);
@@ -336,44 +294,36 @@ class DB
         return $record;
     }
 
-
-    static public function oneValue($query, $parameters = array())
+    public static function oneValue($query, $parameters = array())
     {
         $record = self::oneRecord($query, $parameters);
 
-        if($record)
-        {
+        if ($record) {
             // return record
             return array_shift($record);
-        }
-        else
-        {
+        } else {
             return false;
         }
     }
 
-
-    static public function dump($query, $parameters = array())
+    public static function dump($query, $parameters = array())
     {
         Debug::dump($query, false);
 
-        if(count($parameters))
-        {
+        if (count($parameters)) {
             Debug::dump($parameters, false);
             Debug::dump(self::preprocessQuery($query, $parameters), 'processed');
         }
-
     }
 
-
-
-    static public function makeOrderString($order = array())
+    public static function makeOrderString($order = array())
     {
         $s = '';
 
-        foreach($order AS $field => $dir)
-        {
-            if($s!='') $s .= ',';
+        foreach ($order AS $field => $dir) {
+            if ($s!='') {
+                $s .= ',';
+            }
 
             $s .= '`'.$field.'` '.$dir;
         }
@@ -381,36 +331,26 @@ class DB
         return $s;
     }
 
-
-    static public function prepareQuery($query, $parameters = array())
+    public static function prepareQuery($query, $parameters = array())
     {
         return self::preprocessQuery($query, $parameters);
     }
 
     // protected static methods
-    static protected function preprocessQuery($query, $parameters = array())
+    protected static function preprocessQuery($query, $parameters = array())
     {
-        // MICS::dump(array('query'=>$query,'params'=>$parameters), __FUNCTION__);
-
-        if ( is_array($parameters) && count($parameters) )
-        {
+        if (is_array($parameters) && count($parameters)) {
             return vsprintf($query, $parameters);
-        }
-        elseif( isset($parameters) )
-        {
+        } elseif (isset($parameters)) {
             return sprintf($query, $parameters);
-        }
-        else
-        {
+        } else {
             return $query;
         }
     }
 
-
-    static protected function startQueryLog($query)
+    protected static function startQueryLog($query)
     {
-        if (!Site::$debug)
-        {
+        if (!Site::$debug) {
             return false;
         }
 
@@ -421,22 +361,18 @@ class DB
         );
     }
 
-
-    static protected function extendQueryLog(&$queryLog, $key, $value)
+    protected static function extendQueryLog(&$queryLog, $key, $value)
     {
-        if ($queryLog == false)
-        {
+        if ($queryLog == false) {
             return false;
         }
 
         $queryLog[$key] = $value;
     }
 
-
-    static protected function finishQueryLog(&$queryLog, $result = false)
+    protected static function finishQueryLog(&$queryLog, mysqli_result $result = null)
     {
-        if ($queryLog == false)
-        {
+        if ($queryLog == false) {
             return false;
         }
 
@@ -446,8 +382,7 @@ class DB
         $queryLog['affected_rows'] = self::getMysqli()->affected_rows;
 
         // save result information
-        if($result)
-        {
+        if ($result) {
             $queryLog['result_fields'] = $result->field_count;
             $queryLog['result_rows'] = $result->num_rows;
         }
@@ -455,54 +390,48 @@ class DB
         // build backtrace string
         $queryLog['method'] = '';
         $backtrace = debug_backtrace();
-        while($backtick = array_shift($backtrace))
-        {
+        while ($backtick = array_shift($backtrace)) {
             // skip the log routine itself
-            if ($backtick['function'] == __FUNCTION__)
-            {
+            if ($backtick['function'] == __FUNCTION__) {
                 continue;
             }
 
-            if ($backtick['class'] != __CLASS__)
-            {
+            if ($backtick['class'] != __CLASS__) {
                 break;
             }
 
             // append function
-            if($queryLog['method'] != '') $queryLog['method'] .= '/';
+            if ($queryLog['method'] != '') {
+                $queryLog['method'] .= '/';
+            }
             $queryLog['method'] .= $backtick['function'];
-
         }
 
         // append to static log
         Debug::log($queryLog);
     }
 
-
-    static public function getMysqli()
+    public static function getMysqli()
     {
-        if (!isset(self::$_mysqli))
-        {
+        if (!isset(self::$_mysqli)) {
             $config = array_merge(array(
                 'host' => 'localhost'
                 ,'port' => 3306
-            ), Site::$config['mysql']);
+            ), Site::getConfig('mysql'));
 
             // connect to mysql database
             self::$_mysqli = @new mysqli($config['host'], $config['username'], $config['password'], $config['database'], $config['port'], $config['socket']);
 
             // check for failure or connection error
-            if (mysqli_connect_error())
-            {
+            if (mysqli_connect_error()) {
                 self::handleError('connect');
             }
 
             // set timezone
-            if (isset(self::$TimeZone))
-            {
+            if (isset(self::$timeZone)) {
                 self::$_mysqli->query(sprintf(
                     'SET time_zone = "%s"'
-                    , self::$_mysqli->real_escape_string(self::$TimeZone)
+                    , self::$_mysqli->real_escape_string(self::$timeZone)
                 ));
             }
         }
@@ -510,12 +439,10 @@ class DB
         return self::$_mysqli;
     }
 
-
-    static protected function handleError($query = '', $queryLog = false)
+    protected static function handleError($query = '', $queryLog = false)
     {
         // save queryLog
-        if($queryLog)
-        {
+        if ($queryLog) {
             $queryLog['error'] = static::$_mysqli->error;
             self::finishQueryLog($queryLog);
         }
@@ -523,19 +450,12 @@ class DB
         $message = sprintf("Query: %s\nReported: %s", $query, $query == 'connect' ? mysqli_connect_error() : static::$_mysqli->error);
 
         // get error message
-        if(static::$_mysqli->errno == 1062)
-        {
+        if (static::$_mysqli->errno == 1062) {
             throw new DuplicateKeyException($message, static::$_mysqli->errno);
-        }
-        elseif(static::$_mysqli->errno == 1146)
-        {
+        } elseif (static::$_mysqli->errno == 1146) {
             throw new TableNotFoundException($message, static::$_mysqli->errno);
-        }
-        else
-        {
+        } else {
             throw new QueryException($message, static::$_mysqli->errno);
         }
     }
-
-
 }

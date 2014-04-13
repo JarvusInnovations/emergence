@@ -1,4 +1,5 @@
 <?php
+
 class EmergenceIO {
 
     /*  function export
@@ -8,16 +9,15 @@ class EmergenceIO {
      *
      *  @returns string     Server path to file
      */
-    function export($path=null,$destination=null)
+    public static function export($path=null,$destination=null)
     {
         set_time_limit(0);
 
-        if(!is_array($path) && !empty($path)) {
+        if (!is_array($path) && !empty($path)) {
                 $path = Site::splitPath($path);
         }
 
-        if(empty($path))
-        {
+        if (empty($path)) {
             $files = DB::allRecords(
                 'SELECT MAX(`ID`) as `RID`'
                 .' FROM `_e_files`'
@@ -25,37 +25,30 @@ class EmergenceIO {
                 .' GROUP BY  `Handle`,`CollectionID`'
             );
 
-            foreach($files as $file)
-            {
+            foreach ($files as $file) {
                 $SiteFile = SiteFile::getByID($file['RID'])->getData();
-                if(strpos($SiteFile['FullPath'],'_parent') !== 0 && $SiteFile['Status'] != 'Deleted')
-                {
+                if (strpos($SiteFile['FullPath'],'_parent') !== 0 && $SiteFile['Status'] != 'Deleted') {
                     $SiteFiles[$SiteFile['FullPath']] = Site::$rootPath . '/data/' . $SiteFile['ID'];
                 }
             }
-        }
-        else {
+        } else {
             throw new Exception('Sub directories not yet supported.');
         }
 
-        if(count($SiteFiles))
-        {
+        if (count($SiteFiles)) {
             $zip = new ZipArchive;
 
             $tmp = $destination?$destination:tempnam("/tmp", "emr");
 
-            if ($zip->open($tmp) === TRUE)
-            {
-                foreach($SiteFiles as $virtualPath => $realPath)
-                {
+            if ($zip->open($tmp) === TRUE) {
+                foreach ($SiteFiles as $virtualPath => $realPath) {
                     $zip->addFromString ($virtualPath,file_get_contents($realPath));
                 }
             }
             $zip->close();
 
             return $tmp;
-        }
-        else {
+        } else {
             throw new Exception('Nothing to compress found.');
         }
     }
@@ -65,11 +58,9 @@ class EmergenceIO {
      *  @params string  $inputFile          The real location of the file to import on the server.
      *  @params string  $targetDirectory    Optionally provide the Emergence virtual directory to extract to.
      */
-    function import($inputFile,$targetDirectory=null)
+    public static function import($inputFile,$targetDirectory=null)
     {
-
-        if(!$targetDirectory)
-        {
+        if (!$targetDirectory) {
             $targetDirectory = '';
         }
 
@@ -77,16 +68,13 @@ class EmergenceIO {
         $type = finfo_file($finfo, $inputFile);
         finfo_close($finfo);
 
-
-        switch($type)
-        {
+        switch ($type) {
             case 'application/zip':
                 $zip = new ZipArchive();
                 $zip->open($inputFile);
 
                 $i = 0;
-                while($i < $zip->numFiles)
-                {
+                while ($i < $zip->numFiles) {
                     $file = $zip->statIndex($i);
                     $contents = '';
                     $fp = $zip->getStream($file['name']);
@@ -101,8 +89,5 @@ class EmergenceIO {
             default:
                 throw new Exception('MIME type ' . $type . ' unsupported.');
         }
-
     }
-
 }
-

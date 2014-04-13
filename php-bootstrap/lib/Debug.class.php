@@ -2,46 +2,51 @@
 
 class Debug
 {
-    static public $log = array();
+    public static $log = array();
 
-    static public function dump($var, $exit = true)
+    public static function dump($var, $exit = true)
     {
-        if(!Site::$debug) return;
+        if (!Site::$debug) {
+            return;
+        }
 
         print '<pre>';
         print_r($var);
         print '</pre>';
 
-        if($exit)
+        if ($exit) {
             exit();
-        else
+        } else {
             return $var;
+        }
     }
 
-    static public function dumpVar($var, $exit = true)
+    public static function dumpVar($var, $exit = true)
     {
-        if(!Site::$debug) return;
+        if (!Site::$debug) {
+            return;
+        }
 
         print '<pre>';
         var_export($var);
         print '</pre>';
 
-        if($exit)
+        if ($exit) {
             exit();
-        else
+        } else {
             return $var;
+        }
     }
 
-
-    static public function logMessage($message, $source = null)
+    public static function logMessage($message, $source = null)
     {
         return static::log(array('message' => $message), $source);
     }
 
-    static public function log($entry, $source = null)
+    public static function log($entry, $source = null)
     {
         if (!Site::$debug) {
-        	return;
+            return;
         }
 
         static::$log[] = array_merge($entry, array(
@@ -54,18 +59,13 @@ class Debug
     {
         $backtrace = debug_backtrace();
 
-        while($trace = array_shift($backtrace))
-        {
-            if (!empty($trace['class']))
-            {
-                if($trace['class'] == __CLASS__)
-                {
+        while ($trace = array_shift($backtrace)) {
+            if (!empty($trace['class'])) {
+                if ($trace['class'] == __CLASS__) {
                     continue;
                 }
                 return $trace['class'];
-            }
-            elseif (!empty($trace['file']))
-            {
+            } elseif (!empty($trace['file'])) {
                 return basename($trace['file']);
             }
         }

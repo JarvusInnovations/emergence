@@ -3,75 +3,65 @@
 class Site
 {
     // config properties
-    static public $debug = false;
-    static public $production = false;
-    static public $defaultPage = 'home.php';
-    static public $autoCreateSession = true;
-    static public $listCollections = false;
-    static public $onInitialized;
-    static public $onNotFound;
-    static public $onRequestMapped;
-    static public $permittedOrigins = array();
-    static public $autoPull = true;
-    static public $skipSessionPaths = array();
+    public static $debug = false;
+    public static $production = false;
+    public static $defaultPage = 'home.php';
+    public static $autoCreateSession = true;
+    public static $listCollections = false;
+    public static $onInitialized;
+    public static $onNotFound;
+    public static $onRequestMapped;
+    public static $permittedOrigins = array();
+    public static $autoPull = true;
+    public static $skipSessionPaths = array();
 
     // public properties
-    static public $rootPath;
-    static public $webmasterEmail = 'errors@chrisrules.com';
-    static public $requestURI;
-    static public $requestPath;
-    static public $pathStack;
-    static public $resolvedPath;
+    public static $rootPath;
+    public static $webmasterEmail = 'errors@chrisrules.com';
+    public static $requestURI;
+    public static $requestPath;
+    public static $pathStack;
+    public static $resolvedPath;
 
     // protected properties
-    static protected $_rootCollections;
+    protected static $_loadedClasses = array();
+    protected static $_rootCollections;
+    protected static $_config;
 
-    static public function initialize()
+    public static function initialize()
     {
         // get site root
-        if(empty(static::$rootPath))
-        {
-            if(!empty($_SERVER['SITE_ROOT']))
+        if (empty(static::$rootPath)) {
+            if (!empty($_SERVER['SITE_ROOT'])) {
                 static::$rootPath = $_SERVER['SITE_ROOT'];
-            else
+            } else {
                 throw new Exception('No Site root detected');
+            }
         }
 
         // load config
-        if(!(static::$config = apc_fetch($_SERVER['HTTP_HOST'])))
-        {
-            if(is_readable(static::$rootPath.'/site.json'))
-            {
-                static::$config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
-                apc_store($_SERVER['HTTP_HOST'], static::$config);
-            }
-            else if(is_readable(static::$rootPath.'/Site.config.php'))
-            {
+        if (!(static::$_config = apc_fetch($_SERVER['HTTP_HOST']))) {
+            if (is_readable(static::$rootPath.'/site.json')) {
+                static::$_config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
+                apc_store($_SERVER['HTTP_HOST'], static::$_config);
+            } elseif (is_readable(static::$rootPath.'/Site.config.php')) {
                 include(static::$rootPath.'/Site.config.php');
-                apc_store($_SERVER['HTTP_HOST'], static::$config);
+                apc_store($_SERVER['HTTP_HOST'], static::$_config);
             }
         }
-
 
         // get path stack
         $path = $_SERVER['REQUEST_URI'];
 
-        if(false !== ($qPos = strpos($path,'?')))
-        {
+        if (false !== ($qPos = strpos($path, '?'))) {
             $path = substr($path, 0, $qPos);
         }
 
         static::$pathStack = static::$requestPath = static::splitPath($path);
 
-        if(!empty($_COOKIE['debugpath']))
-        {
-            MICS::dump(static::$pathStack, 'pathStack', true);
-        }
-
         // set useful transaction name for newrelic
-        if(extension_loaded('newrelic'))
-        {
-            newrelic_name_transaction (static::$config['handle'] . '/' . implode('/', site::$requestPath));
+        if (extension_loaded('newrelic')) {
+            newrelic_name_transaction (static::getConfig('handle') . '/' . implode('/', site::$requestPath));
         }
 
         // register class loader
@@ -94,40 +84,38 @@ class Site
             static::loadConfig('HttpProxy');
         }
 
-        if(is_callable(static::$onInitialized))
+        if (is_callable(static::$onInitialized)) {
             call_user_func(static::$onInitialized);
+        }
     }
 
-
-    static public function handleRequest()
+    public static function handleRequest()
     {
         // handle emergence request
-        if(static::$pathStack[0] == 'emergence')
-        {
+        if (static::$pathStack[0] == 'emergence') {
             array_shift(static::$pathStack);
             return Emergence::handleRequest();
         }
 
         // handle CORS headers
-        if(isset($_SERVER['HTTP_ORIGIN'])) {
+        if (isset($_SERVER['HTTP_ORIGIN'])) {
             $hostname = strtolower(parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST));
-            if($hostname == strtolower($_SERVER['HTTP_HOST']) || static::$permittedOrigins == '*' || in_array($hostname, static::$permittedOrigins)) {
+            if ($hostname == strtolower($_SERVER['HTTP_HOST']) || static::$permittedOrigins == '*' || in_array($hostname, static::$permittedOrigins)) {
                 header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
                 header('Access-Control-Allow-Credentials: true');
                 //header('Access-Control-Max-Age: 86400')
-            }
-            else {
+            } else {
                 header('HTTP/1.1 403 Forbidden');
                 exit();
             }
         }
 
-        if($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-            if(isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
+        if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+            if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
                 header('Access-Control-Request-Method: *');
             }
 
-            if(isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
+            if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
                 header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept');
             }
 
@@ -140,17 +128,15 @@ class Site
         static::$resolvedPath = array();
 
         // handle default page request
-        if(empty(static::$pathStack[0]) && static::$defaultPage)
-        {
+        if (empty(static::$pathStack[0]) && static::$defaultPage) {
             static::$pathStack[0] = static::$defaultPage;
         }
 
         // crawl down path stack until a handler is found
-        while(($handle = array_shift(static::$pathStack)))
-        {
-            $scriptHandle = (substr($handle,-4)=='.php') ? $handle : $handle.'.php';
+        while (($handle = array_shift(static::$pathStack))) {
+            $scriptHandle = (substr($handle, -4)=='.php') ? $handle : $handle.'.php';
 
-            if(
+            if (
                 (
                     $resolvedNode
                     && method_exists($resolvedNode, 'getChild')
@@ -159,20 +145,17 @@ class Site
                         || ($childNode = $resolvedNode->getChild($handle))
                     )
                 )
-                || ($scriptHandle && $childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath,array($scriptHandle))))
-                || ($childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath,array($handle))))
+                || ($scriptHandle && $childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath, array($scriptHandle))))
+                || ($childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath, array($handle))))
             )
             {
                 $resolvedNode = $childNode;
 
-                if(is_a($resolvedNode, 'SiteFile'))
-                {
+                if (is_a($resolvedNode, 'SiteFile')) {
                     static::$resolvedPath[] = $scriptHandle;
                     break;
                 }
-            }
-            else
-            {
+            } else {
                 $resolvedNode = false;
                 //break;
             }
@@ -181,55 +164,45 @@ class Site
         }
 
 
-        if($resolvedNode)
-        {
+        if ($resolvedNode) {
             // create session
-            if(static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php' && !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths))
-            {
+            if (static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php' && !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths)) {
                 $GLOBALS['Session'] = UserSession::getFromRequest();
             }
 
-            if(is_callable(static::$onRequestMapped))
-            {
+            if (is_callable(static::$onRequestMapped)) {
                 call_user_func(static::$onRequestMapped, $resolvedNode);
             }
 
-            if($resolvedNode->MIMEType == 'application/php')
-            {
-                function e_include($file) {
+            if ($resolvedNode->MIMEType == 'application/php') {
+                function e_include($file)
+                {
                     $file = Site::normalizePath('site-root/'.implode('/', Site::$resolvedPath).'/../'.$file);
-                    if(!$node = Site::resolvePath($file)) {
+                    if (!$node = Site::resolvePath($file)) {
                         throw new Exception('e_include failed to find in efs: '.$file);
                     }
                     require($node->RealPath);
                 }
                 require($resolvedNode->RealPath);
                 exit();
-            }
-            elseif(is_callable(array($resolvedNode, 'outputAsResponse')))
-            {
-                if(!is_a($resolvedNode, 'SiteFile') && !static::$listCollections)
-                {
+            } elseif (is_callable(array($resolvedNode, 'outputAsResponse'))) {
+                if (!is_a($resolvedNode, 'SiteFile') && !static::$listCollections) {
                     static::respondNotFound();
                 }
 
                 $resolvedNode->outputAsResponse();
-            }
-            else
-            {
+            } else {
                 static::respondNotFound();
             }
-        }
-        else
-        {
+        } else {
             static::respondNotFound();
         }
     }
 
-    static public function resolvePath($path, $checkParent = true, $checkCache = true)
+    public static function resolvePath($path, $checkParent = true, $checkCache = true)
     {
         // special case: request for root collection
-        if( is_string($path) && (empty($path) || $path == '/')) {
+        if (is_string($path) && (empty($path) || $path == '/')) {
             return new Emergence\DAV\RootCollection();
         }
 
@@ -260,19 +233,16 @@ class Site
         return $node;
     }
 
-
-    static protected $_loadedClasses = array();
-    static public function loadClass($className)
+    public static function loadClass($className)
     {
         $fullClassName = $className;
 
         // skip if already loaded
-        if(
+        if (
             class_exists($className, false)
             || interface_exists($className, false)
             || in_array($className, static::$_loadedClasses)
-        )
-        {
+        ) {
             return;
         }
 
@@ -283,26 +253,23 @@ class Site
                 $className = substr($className, $lastNsPos + 1);
                 $fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
             } else {
-                                $fileName = '';
-                        }
+                $fileName = '';
+            }
+
             $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
             $classNode = static::resolvePath("php-classes/$fileName.php");
         }
 
         // fall back to emergence legacy class format
-        if(!$classNode && empty($namespace))
-        {
+        if (!$classNode && empty($namespace)) {
             // try to load class flatly
             $classNode = static::resolvePath("php-classes/$className.class.php");
         }
 
-        if(!$classNode)
-        {
+        if (!$classNode) {
             return;
             //throw new Exception("Unable to load class '$fullClassName'");
-        }
-        elseif(!$classNode->MIMEType == 'application/php')
-        {
+        } elseif (!$classNode->MIMEType == 'application/php') {
             throw new Exception("Class file for '$fullClassName' is not application/php");
         }
 
@@ -323,7 +290,7 @@ class Site
         }
     }
 
-    static public function loadConfig($className)
+    public static function loadConfig($className)
     {
         // try to load class PSR-0 style
         if ($lastNsPos = strrpos($className, '\\')) {
@@ -331,8 +298,9 @@ class Site
             $className = substr($className, $lastNsPos + 1);
             $fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
         } else {
-                        $fileName = '';
-                }
+            $fileName = '';
+        }
+
         $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
         $configNode = static::resolvePath("php-config/$fileName.config.php");
 
@@ -349,22 +317,20 @@ class Site
         }
     }
 
-
-    static public function handleError($errno, $errstr, $errfile, $errline)
+    public static function handleError($errno, $errstr, $errfile, $errline)
     {
-        if(!(error_reporting() & $errno))
+        if (!(error_reporting() & $errno)) {
             return;
+        }
 
-        if(substr($errfile, 0, strlen(static::$rootPath)) == static::$rootPath)
-        {
+        if (substr($errfile, 0, strlen(static::$rootPath)) == static::$rootPath) {
             $fileID = substr(strrchr($errfile, '/'), 1);
             $File = SiteFile::getByID($fileID);
 
             $errfile .= ' ('.$File->Handle.')';
         }
 
-        if(!headers_sent())
-        {
+        if (!headers_sent()) {
             header('Status: 500 Internal Server Error');
         }
 
@@ -377,15 +343,13 @@ class Site
         die($message);
     }
 
-    static public function handleException($e)
+    public static function handleException($e)
     {
-        if(extension_loaded('newrelic'))
-        {
+        if (extension_loaded('newrelic')) {
             newrelic_notice_error(null, $e);
         }
 
-        if(static::$production)
-        {
+        if (static::$production) {
             // respond
             $report = sprintf("<h1 style='color:red'>Unhandled Exception: %s</h1>\n", get_class($e));
             $report .= sprintf("<h2>Message</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getMessage()));
@@ -396,10 +360,7 @@ class Site
                 $report .= sprintf("<h2>Referrer</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['HTTP_REFERER']));
             }
 
-            //$report .= ErrorHandler::formatBacktrace(debug_backtrace());
-
-            if(!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person)
-            {
+            if (!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person) {
                 $report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->getData(), true));
             }
 
@@ -408,69 +369,66 @@ class Site
             Email::send(static::$webmasterEmail, 'Unhandled exception on '.$_SERVER['HTTP_HOST'], $report);
         }
 
-        if(!headers_sent())
-        {
+        if (!headers_sent()) {
             header('Status: 500 Internal Server Error');
         }
-        die('<h1>Unhandled Exception</h1><p>'.get_class($e).': (#'.$e->getCode().') '.$e->getMessage().'</p><h1>Backtrace:</h1><pre>'.$e->getTraceAsString().'</pre><h1>Exception Dump</h1><pre>'.print_r($e,true).'</pre>');
+
+        die('<h1>Unhandled Exception</h1><p>'.get_class($e).': (#'.$e->getCode().') '.$e->getMessage().'</p><h1>Backtrace:</h1><pre>'.$e->getTraceAsString().'</pre><h1>Exception Dump</h1><pre>'.print_r($e, true).'</pre>');
     }
 
-    static public function respondNotFound($message = 'Page not found')
+    public static function respondNotFound($message = 'Page not found')
     {
-        if(is_callable(static::$onNotFound))
-        {
+        if (is_callable(static::$onNotFound)) {
             call_user_func(static::$onNotFound, $message);
-        }
-        else
-        {
+        } else {
             header('HTTP/1.0 404 Not Found');
             die($message);
         }
     }
 
-    static public function respondBadRequest($message = 'Cannot display resource')
+    public static function respondBadRequest($message = 'Cannot display resource')
     {
         header('HTTP/1.0 400 Bad Request');
         die($message);
     }
 
-    static public function respondUnauthorized($message = 'Access denied')
+    public static function respondUnauthorized($message = 'Access denied')
     {
         header('HTTP/1.0 403 Forbidden');
         die($message);
     }
 
-
-    static public function getRootCollection($handle)
+    public static function getRootCollection($handle)
     {
-        if(!empty(static::$_rootCollections[$handle]))
+        if (!empty(static::$_rootCollections[$handle])) {
             return static::$_rootCollections[$handle];
+        }
 
         return static::$_rootCollections[$handle] = SiteCollection::getOrCreateRootCollection($handle);
     }
 
-
-    static public function splitPath($path)
+    public static function splitPath($path)
     {
         return explode('/', ltrim($path, '/'));
     }
 
-    static public function redirect($path, $get = false, $hash = false)
+    public static function redirect($path, $get = false, $hash = false)
     {
-        if(is_array($path)) $path = implode('/', $path);
+        if (is_array($path)) {
+            $path = implode('/', $path);
+        }
 
-        if(preg_match('/^https?:\/\//i', $path))
+        if (preg_match('/^https?:\/\//i', $path)) {
             $url = $path;
-        else
+        } else {
             $url = ($_SERVER['HTTPS'] ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/' . ltrim($path, '/');
+        }
 
-        if($get)
-        {
+        if ($get) {
             $url .= '?' . (is_array($get) ? http_build_query($get) : $get);
         }
 
-        if($hash)
-        {
+        if ($hash) {
             $url .= '#' . $hash;
         }
 
@@ -478,45 +436,50 @@ class Site
         exit();
     }
 
-    static public function redirectPermanent($path, $get = false, $hash = false)
+    public static function redirectPermanent($path, $get = false, $hash = false)
     {
         header('HTTP/1.1 301 Moved Permanently');
         return static::redirect($path, $get, $hash);
     }
 
-    static public function getPath($index = null)
+    public static function getPath($index = null)
     {
-        if($index === null)
+        if ($index === null) {
             return static::$requestPath;
-        else
+        } else {
             return static::$requestPath[$index];
+        }
     }
 
-    static public function matchPath($index, $string)
+    public static function matchPath($index, $string)
     {
         return 0==strcasecmp(static::getPath($index), $string);
     }
 
-    static public function normalizePath($filename)
+    public static function normalizePath($filename)
     {
         $filename = str_replace('//', '/', $filename);
         $parts = explode('/', $filename);
         $out = array();
         foreach ($parts as $part) {
-            if ($part == '.') continue;
+            if ($part == '.') {
+                continue;
+            }
+
             if ($part == '..') {
                 array_pop($out);
                 continue;
             }
+
             $out[] = $part;
         }
+
         return implode('/', $out);
     }
 
-    static public function getVersionedRootUrl($path)
+    public static function getVersionedRootUrl($path)
     {
-        if(is_string($path))
-        {
+        if (is_string($path)) {
             $path = static::splitPath($path);
         }
 
@@ -526,15 +489,14 @@ class Site
 
         $Node = static::resolvePath($fsPath);
 
-        if($Node) {
+        if ($Node) {
             return $url . '?_sha1=' . $Node->SHA1;
-        }
-        else {
+        } else {
             return $url;
         }
     }
 
-    static public function getConfig($key = null)
+    public static function getConfig($key = null)
     {
         if ($key) {
             return array_key_exists($key, static::$config) ? static::$config[$key] : null;
@@ -543,7 +505,7 @@ class Site
         }
     }
 
-    static public function finishRequest($exit = true)
+    public static function finishRequest($exit = true)
     {
         if ($exit) {
             exit();

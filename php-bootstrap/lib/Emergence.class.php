@@ -2,23 +2,21 @@
 
 class Emergence
 {
-    static public function handleRequest()
+    public static function handleRequest()
     {
         if (extension_loaded('newrelic')) {
             newrelic_disable_autorum();
         }
 
-        if(empty(Site::$config['inheritance_key'])) {
+        if (!Site::getConfig('inheritance_key')) {
             Site::respondUnauthorized('Remote emergence access is disabled');
-        }
-        elseif(empty($_REQUEST['accessKey']) || $_REQUEST['accessKey'] != Site::$config['inheritance_key']) {
+        } elseif (empty($_REQUEST['accessKey']) || $_REQUEST['accessKey'] != Site::getConfig('inheritance_key')) {
             // attempt to authenticate via developer session
 
             if (!UserSession::getFromRequest()->hasAccountLevel('Developer')) {
                 Site::respondUnauthorized('Remote emergence access denied');
             }
         }
-
 
         if ($_REQUEST['remote'] == 'parent') {
             set_time_limit(600);
@@ -30,27 +28,23 @@ class Emergence
             ));
         }
 
-        if(empty(Site::$pathStack[0])) {
+        if (empty(Site::$pathStack[0])) {
             return static::handleTreeRequest();
-        }
-        elseif($node = Site::resolvePath(Site::$pathStack)) {
-            if(method_exists($node, 'outputAsResponse')) {
+        } elseif ($node = Site::resolvePath(Site::$pathStack)) {
+            if (method_exists($node, 'outputAsResponse')) {
                 $node->outputAsResponse(true);
-            }
-            elseif($node::$isCollection) {
+            } elseif (is_a($node, 'SiteCollection')) {
                 return static::handleTreeRequest($node);
-            }
-            else {
+            } else {
                 Site::respondBadRequest();
             }
-        }
-        else {
+        } else {
             header('HTTP/1.0 404 Not Found');
             die('File not found');
         }
     }
 
-    static public function handleTreeRequest($rootNode = null)
+    public static function handleTreeRequest($rootNode = null)
     {
         set_time_limit(600);
         $rootPath = $rootNode ? $rootNode->getFullPath(null, false) : null;
@@ -65,30 +59,29 @@ class Emergence
         exit();
     }
 
-    static public function buildUrl($path = array(), $params = array())
+    public static function buildUrl($path = array(), $params = array())
     {
-        $params['accessKey'] = Site::$config['parent_key'];
+        $params['accessKey'] = Site::getConfig('parent_key');
 
-        $url  = 'http://'.Site::$config['parent_hostname'].'/emergence';
+        $url  = 'http://'.Site::getConfig('parent_hostname').'/emergence';
         $url .= '/' . implode('/', $path);
         $url .= '?' . http_build_query($params);
 
         return $url;
     }
 
-    static public function resolveFileFromParent($collection, $path, $forceRemote = false, $params = array())
+    public static function resolveFileFromParent($collection, $path, $forceRemote = false, $params = array())
     {
-        if(empty(Site::$config['parent_hostname']))
+        if (!Site::getConfig('parent_hostname')) {
             return false;
+        }
 
         // get collection for parent site
-        if(is_string($collection))
-        {
+        if (is_string($collection)) {
             $collection = SiteCollection::getOrCreateRootCollection($collection, true);
         }
 
-        if(is_string($path))
-        {
+        if (is_string($path)) {
             $path = Site::splitPath($path);
         }
 
@@ -96,17 +89,15 @@ class Emergence
         $fileNode = $collection->resolvePath($path);
 
         // try to download from parent site
-        if($forceRemote || !$fileNode)
-        {
+        if ($forceRemote || !$fileNode) {
             if (!Site::$autoPull) {
                 return false;
             }
 
             $remoteURL = static::buildUrl(array_merge($collection->getFullPath(null, false), $path), $params);
-//if($forceRemote) MICS::dump($remoteURL, 'resolveFileFromParent');
+
             $cachedStatus = apc_fetch($remoteURL);
-            if($cachedStatus)
-            {
+            if ($cachedStatus) {
                 return false;
             }
 
@@ -115,13 +106,11 @@ class Emergence
             curl_setopt($ch, CURLOPT_FILE, $fp);
             curl_setopt($ch, CURLOPT_HEADER, true);
 
-            if(!curl_exec($ch))
-            {
+            if (!curl_exec($ch)) {
                 throw new Exception('Failed to query parent site for file');
             }
 
-            if(curl_errno($ch))
-            {
+            if (curl_errno($ch)) {
                 throw new Exception("curl error:".curl_error($ch));
             }
 
@@ -131,23 +120,22 @@ class Emergence
             // read and check status
             list($protocol, $status, $message) = explode(' ', trim(fgetss($fp)));
 
-            if($status != '200')
-            {
+            if ($status != '200') {
                 fclose($fp);
                 apc_store($remoteURL, (int)$status);
                 return false;
             }
 
             // read headers until a blank line is found
-            while($header = trim(fgetss($fp)))
-            {
-                if(!$header) break;
+            while ($header = trim(fgetss($fp))) {
+                if (!$header) {
+                    break;
+                }
                 list($key, $value) = preg_split('/:\s*/', $header, 2);
                 $key = strtolower($key);
 
                 // if etag found, use it to skip write if existing file matches
-                if($key == 'etag' && $fileNode && $fileNode->SHA1 == $value)
-                {
+                if ($key == 'etag' && $fileNode && $fileNode->SHA1 == $value) {
                     fclose($fp);
                     return $fileNode;
                 }
@@ -162,10 +150,11 @@ class Emergence
         return $fileNode;
     }
 
-    static public function resolveCollectionFromParent($path)
+    public static function resolveCollectionFromParent($path)
     {
-        if(empty(Site::$config['parent_hostname']))
+        if (!Site::getConfig('parent_hostname')) {
             return false;
+        }
 
         $fp = fopen('php://memory', 'w+');
         $ch = curl_init(static::buildUrl($path));
@@ -175,18 +164,15 @@ class Emergence
         $responseStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $responseType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 
-        if(!$responseText)
-        {
+        if (!$responseText) {
             throw new Exception('Failed to query parent site for collection');
         }
 
-        if(curl_errno($ch))
-        {
+        if (curl_errno($ch)) {
             throw new Exception("curl error:".curl_error($ch));
         }
 
-        if($responseStatus != 300 || $responseType != 'application/vnd.emergence.tree+json')
-        {
+        if ($responseStatus != 300 || $responseType != 'application/vnd.emergence.tree+json') {
             return false;
         }
 

@@ -2,15 +2,14 @@
 
 class File
 {
-    static public $magicPath = null;// '/usr/share/misc/magic.mgc'
+    public static $magicPath = null;// '/usr/share/misc/magic.mgc'
 
-    static public function getMIMEType($filename)
+    public static function getMIMEType($filename)
     {
         // get mime type
         $finfo = finfo_open(FILEINFO_MIME, static::$magicPath);
 
-        if(!$finfo || !($mimeInfo = finfo_file($finfo, $filename)) )
-        {
+        if (!$finfo || !($mimeInfo = finfo_file($finfo, $filename))) {
             throw new Exception('Unable to load file info');
         }
 
@@ -22,13 +21,12 @@ class File
         return $p ? substr($mimeInfo, 0, $p) : $mimeInfo;
     }
 
-    static public function getMIMETypeFromContents($fileContents)
+    public static function getMIMETypeFromContents($fileContents)
     {
         // get mime type
         $finfo = finfo_open(FILEINFO_MIME, static::$magicPath);
 
-        if(!$finfo || !($mimeInfo = finfo_buffer($finfo, $fileContents)) )
-        {
+        if (!$finfo || !($mimeInfo = finfo_buffer($finfo, $fileContents))) {
             throw new Exception('Unable to load file info');
         }
 
@@ -39,5 +37,4 @@ class File
 
         return $p ? substr($mimeInfo, 0, $p) : $mimeInfo;
     }
-
 }

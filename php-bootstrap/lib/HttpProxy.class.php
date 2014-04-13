@@ -2,9 +2,9 @@
 
 class HttpProxy
 {
-    static public $sourceInterface = false; // string=hostname or IP, null=http hostname, false=let cURL pick
-
-    static public $defaultPassthruHeaders = array(
+    // config properties
+    public static $sourceInterface = false; // string=hostname or IP, null=http hostname, false=let cURL pick
+    public static $defaultPassthruHeaders = array(
         '/^HTTP\//'
         ,'/^Content-Type:/'
         ,'/^X-Powered-By:/'
@@ -16,8 +16,7 @@ class HttpProxy
         ,'/^Last-Modified:/'
         ,'/^Author:/'
     );
-
-    static public $defaultForwardHeaders = array(
+    public static $defaultForwardHeaders = array(
         'Content-Type'
         ,'User-Agent'
         ,'Accept'
@@ -25,7 +24,7 @@ class HttpProxy
         ,'Accept-Language'
     );
 
-    static public function relayRequest($options)
+    public static function relayRequest($options)
     {
         if (is_string($options)) {
             $options = array('url' => $options);
@@ -111,7 +110,7 @@ class HttpProxy
         } else {
                         $responseHeaders = array();
             curl_setopt($ch, CURLOPT_HEADER, false);
-            curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($ch, $header) use($options, &$responseHeaders) {
+            curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $header) use($options, &$responseHeaders) {
                                 list($headerKey, $headerValue) = preg_split('/:\s*/', $header, 2);
                 if ($headerValue) {
                     $responseHeaders[$headerKey] = trim($headerValue);
@@ -154,7 +153,7 @@ class HttpProxy
         }
 
         if (!empty($options['cookies'])) {
-            $cookieStr = implode('; ', array_map(function($key, $value) {
+            $cookieStr = implode('; ', array_map(function ($key, $value) {
                 return $key.'='.urlencode($value);
             }, array_keys($options['cookies']), $options['cookies']));
 
@@ -204,5 +203,4 @@ class HttpProxy
 
         exit();
     }
-
 }
