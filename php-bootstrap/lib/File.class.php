@@ -2,42 +2,42 @@
 
 class File
 {
-	static public $magicPath = null;// '/usr/share/misc/magic.mgc'
+    static public $magicPath = null;// '/usr/share/misc/magic.mgc'
 
-	static public function getMIMEType($filename)
-	{
-		// get mime type
-		$finfo = finfo_open(FILEINFO_MIME, static::$magicPath);
-		
-		if(!$finfo || !($mimeInfo = finfo_file($finfo, $filename)) )
-		{
-			throw new Exception('Unable to load file info');
-		}
+    static public function getMIMEType($filename)
+    {
+        // get mime type
+        $finfo = finfo_open(FILEINFO_MIME, static::$magicPath);
 
-		finfo_close($finfo);
+        if(!$finfo || !($mimeInfo = finfo_file($finfo, $filename)) )
+        {
+            throw new Exception('Unable to load file info');
+        }
 
-		// split mime type
-		$p = strpos($mimeInfo, ';');
-		
-		return $p ? substr($mimeInfo, 0, $p) : $mimeInfo;
-	}
+        finfo_close($finfo);
 
-	static public function getMIMETypeFromContents($fileContents)
-	{
-		// get mime type
-		$finfo = finfo_open(FILEINFO_MIME, static::$magicPath);
-		
-		if(!$finfo || !($mimeInfo = finfo_buffer($finfo, $fileContents)) )
-		{
-			throw new Exception('Unable to load file info');
-		}
+        // split mime type
+        $p = strpos($mimeInfo, ';');
 
-		finfo_close($finfo);
+        return $p ? substr($mimeInfo, 0, $p) : $mimeInfo;
+    }
 
-		// split mime type
-		$p = strpos($mimeInfo, ';');
-		
-		return $p ? substr($mimeInfo, 0, $p) : $mimeInfo;
-	}
+    static public function getMIMETypeFromContents($fileContents)
+    {
+        // get mime type
+        $finfo = finfo_open(FILEINFO_MIME, static::$magicPath);
+
+        if(!$finfo || !($mimeInfo = finfo_buffer($finfo, $fileContents)) )
+        {
+            throw new Exception('Unable to load file info');
+        }
+
+        finfo_close($finfo);
+
+        // split mime type
+        $p = strpos($mimeInfo, ';');
+
+        return $p ? substr($mimeInfo, 0, $p) : $mimeInfo;
+    }
 
 }
