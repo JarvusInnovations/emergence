@@ -237,7 +237,7 @@ class SiteFile
 
     function put($data, $ancestorID = null)
     {
-        if ($this->Status == 'Phantom' && $this->AuthorID == $GLOBALS['Session']->PersonID) {
+        if ($this->Status == 'Phantom' && !empty($GLOBALS['Session']) && $this->AuthorID == $GLOBALS['Session']->PersonID) {
             static::saveRecordData($this->_record, $data);
             return $this->_record;
         } else {
@@ -253,7 +253,7 @@ class SiteFile
             static::$tableName
             ,$collectionID
             ,DB::escape($handle)
-            ,$GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
+            ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
             ,$ancestorID ? $ancestorID : 'NULL'
         ));
 
@@ -262,7 +262,7 @@ class SiteFile
             ,'CollectionID' => $collectionID
             ,'Handle' => $handle
             ,'Status' => 'Phantom'
-            ,'AuthorID' => $GLOBALS['Session']->PersonID
+            ,'AuthorID' => !empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : null
             ,'AncestorID' => $ancestorID
         );
     }
@@ -298,7 +298,7 @@ class SiteFile
 
     public function setName($handle)
     {
-        if ($this->Size == 0 && $this->AuthorID == $GLOBALS['Session']->PersonID && !$this->AncestorID) {
+        if ($this->Size == 0 && !empty($GLOBALS['Session']) && $this->AuthorID == $GLOBALS['Session']->PersonID && !$this->AncestorID) {
             // updating existing record only if file is empty, by the same author, and has no ancestor
             DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
                 static::$tableName
@@ -308,7 +308,7 @@ class SiteFile
         } else {
             // clone existing record
             DB::nonQuery(
-                'INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "%s", SHA1 = "%s", Size = %u, Type = "%s", AuthorID = %u, AncestorID = %u'
+                'INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "%s", SHA1 = "%s", Size = %u, Type = "%s", AuthorID = %s, AncestorID = %u'
                 ,array(
                     static::$tableName
                     ,$this->CollectionID
@@ -317,7 +317,7 @@ class SiteFile
                     ,$this->SHA1
                     ,$this->Size
                     ,$this->Type
-                    ,$GLOBALS['Session']->PersonID
+                    ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
                     ,$this->ID
                 )
             );
@@ -336,11 +336,11 @@ class SiteFile
 
     public function delete()
     {
-        DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Deleted", AuthorID = %u, AncestorID = %u', array(
+        DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Deleted", AuthorID = %s, AncestorID = %u', array(
             static::$tableName
             ,$this->CollectionID
             ,DB::escape($this->Handle)
-            ,$GLOBALS['Session']->PersonID
+            ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
             ,$this->ID
         ));
 
@@ -368,13 +368,13 @@ class SiteFile
     public static function deleteTree(SiteCollection $Collection)
     {
         DB::nonQuery(
-            'INSERT INTO `%1$s` (CollectionID, Handle, Status, AuthorID, AncestorID) SELECT f2.CollectionID, f2.Handle, "Deleted", %5$u, f2.ID FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
+            'INSERT INTO `%1$s` (CollectionID, Handle, Status, AuthorID, AncestorID) SELECT f2.CollectionID, f2.Handle, "Deleted", %5$s, f2.ID FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
             ,array(
                 static::$tableName
                 ,SiteCollection::$tableName
                 ,$Collection->PosLeft
                 ,$Collection->PosRight
-                ,$GLOBALS['Session']->PersonID
+                ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
             )
         );
     }
