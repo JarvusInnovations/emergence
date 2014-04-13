@@ -23,6 +23,7 @@ class Site
     public static $requestPath;
     public static $pathStack;
     public static $resolvedPath;
+    public static $config; // TODO: deprecate
 
     // protected properties
     protected static $_loadedClasses = array();
@@ -50,6 +51,8 @@ class Site
                 apc_store($_SERVER['HTTP_HOST'], static::$_config);
             }
         }
+
+        static::$config = static::$_config; // TODO: deprecate
 
         // get path stack
         $path = $_SERVER['REQUEST_URI'];
