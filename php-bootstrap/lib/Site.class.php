@@ -16,40 +16,18 @@ class Site
     static public $skipSessionPaths = array();
 
     // public properties
-    //static public $ID;
-    static public $Title;
     static public $rootPath;
-
     static public $webmasterEmail = 'errors@chrisrules.com';
-
     static public $requestURI;
     static public $requestPath;
     static public $pathStack;
     static public $resolvedPath;
-
-    static public $config;
-    static public $time;
-    static public $queryBreaker;
 
     // protected properties
     static protected $_rootCollections;
 
     static public function initialize()
     {
-        static::$time = microtime(true);
-
-        // resolve details from host name
-
-        // get site ID
-/*
-        if(empty(static::$ID))
-        {
-            if(!empty($_SERVER['SITE_ID']))
-                static::$ID = $_SERVER['SITE_ID'];
-            else
-                throw new Exception('No Site ID detected');
-        }
-*/
         // get site root
         if(empty(static::$rootPath))
         {
@@ -260,19 +238,6 @@ class Site
             $path = static::splitPath($path);
         }
 
-/*
-        // build cache key
-        $cacheKey = static::$config['handle'] . ':efs' . (!$checkParent ? ':local/' : '/') . join('/', $path);
-
-        if ($checkCache && false !== ($node = apc_fetch($cacheKey))) {
-            printf("--cache hit on '%s'<br>", $cacheKey);
-            //MICS::dump($node, 'cache hit: '.$cacheKey, true);
-            return $node;
-        } else {
-            printf("--cache miss on '%s'<br>", $cacheKey);
-        }
-*/
-
         $collectionHandle = array_shift($path);
 
         // get root collection
@@ -291,8 +256,6 @@ class Site
         if (!$node) {
             $node = null;
         }
-
-/*      apc_store($cacheKey, $node); */
 
         return $node;
     }
