@@ -111,13 +111,9 @@ else
 			,execPath: '/usr/local/sbin/php-fpm'
 		};
 	
-	
-	console.log('GENERATED CONFIG');
-	console.log(util.inspect(CONFIG.services.plugins));
-	
 	fs.writeFileSync('/emergence/config.json', JSON.stringify(CONFIG, null, 4));
 	fs.chmodSync('/emergence/config.json', 0600);
-	console.log('WROTE CONFIG: /emergence/config.json');
+	console.log('Generated and wrote initial config: /emergence/config.json');
 }
 
 // create default admin user
