@@ -174,6 +174,10 @@ class Site
 
 
         if ($resolvedNode) {
+            // prevent caching by default
+            header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
+            header('Pragma: no-cache');
+            
             // create session
             if (static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php' && !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths)) {
                 $GLOBALS['Session'] = UserSession::getFromRequest();
