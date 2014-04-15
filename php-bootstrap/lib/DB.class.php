@@ -370,7 +370,7 @@ class DB
         $queryLog[$key] = $value;
     }
 
-    protected static function finishQueryLog(&$queryLog, mysqli_result $result = null)
+    protected static function finishQueryLog(&$queryLog, $result = null)
     {
         if ($queryLog == false) {
             return false;
