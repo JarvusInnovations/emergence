@@ -369,6 +369,14 @@ class Site
                 $report .= sprintf("<h2>Referrer</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['HTTP_REFERER']));
             }
 
+            if (!empty($_SERVER['HTTP_USER_AGENT'])) {
+                $report .= sprintf("<h2>User Agent</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['HTTP_USER_AGENT']));
+            }
+
+            if (!empty($_SERVER['REMOTE_ADDR'])) {
+                $report .= sprintf("<h2>Remote Address</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REMOTE_ADDR']));
+            }
+
             if (!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person) {
                 $report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->getData(), true));
             }
