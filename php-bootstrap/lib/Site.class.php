@@ -24,7 +24,7 @@ class Site
     public static $requestPath;
     public static $pathStack;
     public static $resolvedPath;
-    public static $config; // TODO: deprecate
+    public static $config; // TODO: deprecated; use Site::getConfig(...)
 
     // protected properties
     protected static $_loadedClasses = array();
