@@ -395,7 +395,7 @@ class SiteCollection
             return $existingRecord['ID'];
         }
 
-        DB::nonQuery('LOCK TABLES '.static::$tableName.' WRITE');
+        DB::nonQuery('LOCK TABLES '.static::$tableName.' WRITE, '.SiteFile::$tableName.' READ');
 
         // The table lock will interfere with normal error handling, so any exceptions until the table is unlocked must be intercepted
         try {
@@ -566,6 +566,14 @@ class SiteCollection
 
     private static function _getCacheIterator($pattern)
     {
-        return extension_loaded('apcu') ? new APCIterator($pattern) : new APCIterator('user', $pattern);
+    	if (class_exists('APCIterator')) {
+	    	if (extension_loaded('apcu')) {
+		    	return new APCIterator($pattern);
+	    	} elseif (extension_loaded('apc')) {
+		    	return new APCIterator('user', $pattern);
+		    }
+    	}
+    	
+    	return array(); // if no iterator available, return an empty array
     }
 }

@@ -15,6 +15,7 @@ class Site
     public static $permittedOrigins = array();
     public static $autoPull = true;
     public static $skipSessionPaths = array();
+    public static $onSiteCreated;
 
     // public properties
     public static $rootPath;
@@ -55,13 +56,15 @@ class Site
         static::$config = static::$_config; // TODO: deprecate
 
         // get path stack
-        $path = $_SERVER['REQUEST_URI'];
+        if (!empty($_SERVER['REQUEST_URI'])) {
+            $path = $_SERVER['REQUEST_URI'];
 
-        if (false !== ($qPos = strpos($path, '?'))) {
-            $path = substr($path, 0, $qPos);
+            if (false !== ($qPos = strpos($path, '?'))) {
+                $path = substr($path, 0, $qPos);
+            }
+
+            static::$pathStack = static::$requestPath = static::splitPath($path);
         }
-
-        static::$pathStack = static::$requestPath = static::splitPath($path);
 
         // set useful transaction name for newrelic
         if (extension_loaded('newrelic')) {
@@ -95,6 +98,28 @@ class Site
 
         if (is_callable(static::$onInitialized)) {
             call_user_func(static::$onInitialized);
+        }
+    }
+
+    public static function onSiteCreated($requestData)
+    {
+        // create initial developer
+        if (!empty($requestData['create_user'])) {
+            try {
+                $userClass = User::getStaticDefaultClass();
+
+                $User = $userClass::create(array_merge($requestData['create_user'], array(
+                    'Password' => call_user_func($userClass::$passwordHasher, $requestData['create_user']['Password'])
+                    ,'AccountLevel' => 'Developer'
+                )), true);
+            } catch (Exception $e) {
+                // fail silently
+            }
+        }
+
+        // execute configured method
+        if (is_callable(static::$onSiteCreated)) {
+            call_user_func(static::$onSiteCreated, $requestData);
         }
     }
 

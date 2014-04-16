@@ -4,7 +4,8 @@ var _ = require('underscore')
 	,path = require('path')
 	,util = require('util')
 	,events = require('events')
-	,posix = require('posix');
+	,posix = require('posix')
+	,spawn = require('child_process').spawn;
 	
 
 exports.createSites = function(config) {
@@ -61,31 +62,62 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 	}
 	else if(request.method == 'POST')
 	{
-		var siteData = JSON.parse(request.content);
+		// TODO: prevent accidentally overwritting existing site -- require different VERB/PATH
+		var requestData = JSON.parse(request.content);
 		
 		// apply existing site's properties
 		if(request.path[1] && me.sites[request.path[1]])
-			_.defaults(siteData, me.sites[request.path[1]]);
+			_.defaults(requestData, me.sites[request.path[1]]);
 		
 		try
 		{
-			var cfgResult = me.writeSiteConfig(siteData)
-				,siteData = cfgResult.site;
+			var cfgResult = me.writeSiteConfig(requestData)
+				,phpProc;
 			
 			if(cfgResult.isNew)
 			{
-				me.emit('siteCreated', siteData);
-				response.writeHead(201, {'Content-Type':'application/json','Location': '/'+request.path[0]+'/'+siteData.handle});
+				// notify plugins
+				me.emit('siteCreated', cfgResult.site, requestData, {
+					databaseReady: function() {
+						// execute onSiteCreated within site's container
+						console.log('Executing Site::onSiteCreated() via php-cli');
+						phpProc = spawn('php', ['-a']);
+						
+						phpProc.stdout.on('data', function(data) { console.log('php-cli stdout: ' + data); });
+						phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
+						
+						function _phpExec(code) {
+							//console.log('php> '+code);
+							phpProc.stdin.write(code+'\n');
+						}
+						
+						_phpExec('date_default_timezone_set("UTC");');
+						_phpExec('$_SERVER["HTTP_HOST"] = "'+cfgResult.site.primary_hostname+'";');
+						_phpExec('$_SERVER["SITE_ROOT"] = "'+me.options.sitesDir+'/'+cfgResult.site.handle+'";');
+						_phpExec('require("'+path.resolve(__dirname, '../php-bootstrap/bootstrap.php')+'");');
+						_phpExec('Site::onSiteCreated(json_decode('+JSON.stringify(JSON.stringify(requestData))+', true));');
+						phpProc.stdin.end();
+						
+						phpProc.on('close', function (code) {
+							console.log('php-cli finished with code ' + code);
+							// return created response
+							response.writeHead(201, {'Content-Type':'application/json','Location': '/'+request.path[0]+'/'+cfgResult.site.handle});
+							response.end(JSON.stringify({success: code === 0, data: cfgResult.site}));
+						});
+					}
+				});
 			}
-			else
+			else {
 				response.writeHead(200, {'Content-Type':'application/json'});
+				response.end(JSON.stringify({success: true, data: cfgResult.site}));
+			}
 	
-			response.end(JSON.stringify({success: true, data: siteData}));
 		}
 		catch(error)
 		{
 			response.writeHead(400, {'Content-Type':'application/json'});
 			response.end(JSON.stringify({success: false, error: error}));
+			throw error;
 		}
 		
 		return true;
@@ -95,8 +127,9 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 };
 
 
-exports.sites.prototype.writeSiteConfig = function(siteData) {
-	var me = this;
+exports.sites.prototype.writeSiteConfig = function(requestData) {
+	var me = this,
+		siteData = _.clone(requestData);
 
 	// validate mandatory fields
 	if(!siteData.primary_hostname)
@@ -129,7 +162,8 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 	// create site directory
 	var siteDir = me.options.sitesDir+'/'+siteData.handle
 		,dataDir = siteDir + '/data'
-		,siteDataDir = siteDir + '/site-data';
+		,siteDataDir = siteDir + '/site-data'
+		,siteConfigPath = siteDir + '/site.json';
 		
 	if(!fs.existsSync(siteDir))
 	{
@@ -151,16 +185,12 @@ exports.sites.prototype.writeSiteConfig = function(siteData) {
 		
 	// write site config to file
 	this.sites[siteData.handle] = siteData;
-	var filename = siteDir+'/site.json';
-	var isNew = !fs.existsSync(filename);
-	var createUser = siteData.create_user;
-	if(createUser)
-		delete siteData.create_user;
+	
+	var isNew = !fs.existsSync(siteConfigPath);
+	
+	delete siteData.create_user;
 		
-	fs.writeFileSync(filename, JSON.stringify(siteData, null, 4));
-
-	if(createUser)
-		siteData.create_user = createUser;
+	fs.writeFileSync(siteConfigPath, JSON.stringify(siteData, null, 4));
 		
 	return {site: siteData, isNew: isNew};
 };

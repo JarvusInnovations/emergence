@@ -277,15 +277,20 @@ exports.mysql.prototype.secureInstallation = function() {
 };
 
 
-exports.mysql.prototype.onSiteCreated = function(siteData) {
+exports.mysql.prototype.onSiteCreated = function(siteData, requestData, callbacks) {
 	var me = this
 		,sql = ''
-		,password = me.controller.sites.generatePassword();
+		,dbConfig = {
+			socket: me.options.socketPath
+			,database: siteData.handle
+			,username: siteData.handle
+			,password: me.controller.sites.generatePassword()
+		};
 	
 	console.log(me.name+': creating database `'+siteData.handle+'`');
 	
 	sql += 'CREATE DATABASE IF NOT EXISTS `'+siteData.handle+'`;';
-	sql += 'CREATE USER \''+siteData.handle+'\'@\'localhost\' IDENTIFIED BY \''+password+'\';';
+	sql += 'CREATE USER \''+siteData.handle+'\'@\'localhost\' IDENTIFIED BY \''+dbConfig.password+'\';';
 	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, LOCK TABLES  ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
 	sql += 'FLUSH PRIVILEGES;';
 	
@@ -298,37 +303,21 @@ exports.mysql.prototype.onSiteCreated = function(siteData) {
 		
 		console.log(me.name+': database setup complete');
 		me.controller.sites.updateSiteConfig(siteData.handle, {
-			mysql: {
-				socket: me.options.socketPath
-				,database: siteData.handle
-				,username: siteData.handle
-				,password: password
+			mysql: dbConfig
+		});
+
+		// populate tables
+		me.createSkeletonTables(siteData, function() {
+			if (callbacks.databaseReady) {
+				callbacks.databaseReady(dbConfig, siteData, requestData);
 			}
 		});
-		
-		// generate Site.config.php
-/*
-		var siteDir = me.controller.sites.options.sitesDir+'/'+siteData.handle
-			,configFilename = siteDir+'/Site.config.php'
-			,configCode = '';
-			
-		configCode += '<?php\n\n';
-		configCode += 'Site::$databaseSocket = \''+me.options.socketPath+'\';\n';
-		configCode += 'Site::$databaseName = \''+siteData.handle+'\';\n';
-		configCode += 'Site::$databaseUsername = \''+siteData.handle+'\';\n';
-		configCode += 'Site::$databasePassword = \''+password+'\';\n';
-			
-		fs.writeFileSync(configFilename, configCode);
-*/
-		
-		// populate tables
-		me.createSkeletonTables(siteData);
 	});
 };
 
 
 
-exports.mysql.prototype.createSkeletonTables = function(siteData) {
+exports.mysql.prototype.createSkeletonTables = function(siteData, callback) {
 	var me = this
 		,sql = '';
 
@@ -365,54 +354,6 @@ exports.mysql.prototype.createSkeletonTables = function(siteData) {
 	sql += ',PRIMARY KEY (`ID`)';
 	sql += ',KEY `CollectionID` (`CollectionID`)';
 	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-
-	// Table: people
-	sql += 'CREATE TABLE `people` (';
-	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
-	sql += ',`Class` enum(\'Person\',\'User\') NOT NULL DEFAULT \'Person\'';
-	sql += ',`FirstName` varchar(255) NOT NULL';
-	sql += ',`LastName` varchar(255) NOT NULL';
-	sql += ',`Username` varchar(255) DEFAULT NULL';
-	sql += ',`Password` char(40) DEFAULT NULL';
-	sql += ',`AccountLevel` enum(\'Disabled\',\'Contact\',\'User\',\'Staff\',\'Administrator\',\'Developer\') NOT NULL DEFAULT \'User\'';
-	sql += ',`Gender` enum(\'Male\',\'Female\') DEFAULT NULL';
-	sql += ',`BirthDate` date DEFAULT NULL';
-	sql += ',`Email` varchar(255) DEFAULT NULL';
-	sql += ',`PrimaryPhotoID` int(10) unsigned DEFAULT NULL';
-	sql += ',`Phone` decimal(10,0) unsigned DEFAULT NULL';
-	sql += ',`Location` varchar(255) DEFAULT NULL';
-	sql += ',`About` text';
-	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
-	sql += ',`CreatorID` int(10) DEFAULT NULL';
-	sql += ',PRIMARY KEY (`ID`)';
-	sql += ',UNIQUE KEY `Username` (`Username`)';
-	sql += ',UNIQUE KEY `Email` (`Email`)';
-	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-
-	// Table: history_people
-	sql += 'CREATE TABLE `history_people` (';
-	sql += '`RevisionID` int(10) unsigned NOT NULL AUTO_INCREMENT';
-	sql += ',`ID` int(10) unsigned NOT NULL';
-	sql += ',`Class` enum(\'Person\',\'User\') NOT NULL DEFAULT \'Person\'';
-	sql += ',`FirstName` varchar(255) NOT NULL';
-	sql += ',`LastName` varchar(255) NOT NULL';
-	sql += ',`Username` varchar(255) DEFAULT NULL';
-	sql += ',`Password` char(40) DEFAULT NULL';
-	sql += ',`AccountLevel` enum(\'Disabled\',\'Contact\',\'User\',\'Staff\',\'Administrator\',\'Developer\') NOT NULL DEFAULT \'User\'';
-	sql += ',`Gender` enum(\'Male\',\'Female\') DEFAULT NULL';
-	sql += ',`BirthDate` date DEFAULT NULL';
-	sql += ',`Email` varchar(255) DEFAULT NULL';
-	sql += ',`PrimaryPhotoID` int(10) unsigned DEFAULT NULL';
-	sql += ',`Phone` decimal(10,0) unsigned DEFAULT NULL';
-	sql += ',`Location` varchar(255) DEFAULT NULL';
-	sql += ',`About` text';
-	sql += ',`Created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
-	sql += ',`CreatorID` int(10) DEFAULT NULL';
-	sql += ',PRIMARY KEY (`RevisionID`)';
-	sql += ',KEY `ID` (`ID`)';
-	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-
-	//console.log('running sql: '+sql);
 	
 	// run tables
 	me.client.query(sql, function(error, results) {
@@ -423,33 +364,7 @@ exports.mysql.prototype.createSkeletonTables = function(siteData) {
 		}
 		
 		console.log(me.name+': skeleton table schema setup');
-	});
-	
-	// create first developer
-	if(siteData.create_user)
-	{
-		console.log(me.name+': creating first developer...');
 		
-		me.client.query(
-			'INSERT INTO people SET Class = "User", FirstName = ?, LastName = ?, Email = ?, Username = ?, Password = SHA1(?), AccountLevel = "Developer"'
-			,[
-				siteData.create_user.FirstName
-				,siteData.create_user.LastName
-				,siteData.create_user.Email
-				,siteData.create_user.Username
-				,siteData.create_user.Password
-			]
-			,function(error, results) {
-				if(error)
-				{
-					console.log(me.name+': failed to create user `'+siteData.create_user.Username+'`: '+error);
-					return;
-				}
-				
-				console.log(me.name+': user created');
-			}
-		);
-	}
-
-
+		callback();
+	});
 };
