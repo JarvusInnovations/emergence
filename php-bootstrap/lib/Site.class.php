@@ -25,6 +25,7 @@ class Site
     public static $pathStack;
     public static $resolvedPath;
     public static $config; // TODO: deprecated; use Site::getConfig(...)
+    public static $initializeTime;
 
     // protected properties
     protected static $_loadedClasses = array();
@@ -33,6 +34,8 @@ class Site
 
     public static function initialize()
     {
+        static::$initializeTime = microtime(true);
+
         // get site root
         if (empty(static::$rootPath)) {
             if (!empty($_SERVER['SITE_ROOT'])) {
