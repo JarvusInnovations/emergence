@@ -177,6 +177,7 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += 'php_admin_value[apc.shm_segments]=1\n';
 	c += 'php_admin_value[apc.slam_defense]=0\n';
 	c += 'php_admin_value[apc.stat]='+(me.options.statScripts?'1':'0')+'\n';
+	c += 'php_admin_value[opcache.validate_timestamps]='+(me.options.statScripts?'1':'0')+'\n';
 	c += 'php_admin_value[upload_max_filesize]=200M\n';
 	c += 'php_admin_value[post_max_size]=200M\n';
 	c += 'php_admin_value[memory_limit]='+(me.options.memoryLimit ? me.options.memoryLimit : '200M')+'\n';
