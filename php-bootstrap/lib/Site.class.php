@@ -371,17 +371,22 @@ class Site
             $errfile .= ' ('.$File->Handle.')';
         }
 
+        $report = "<h1>Error</h1><p>$errstr</p><p><b>Source:</b> $errfile<br /><b>Line:</b> $errline</p>";
+
+        if (!empty($File)) {
+            $report .= "<p><b>Author:</b> ".($File->Author ? $File->Author->Username : 'unknown')."<br /><b>Timestamp:</b> ".date('Y-m-d h:i:s', $File->Timestamp)."</p>";
+        }
+
         if (!headers_sent()) {
             header('Status: 500 Internal Server Error');
         }
 
-        $message = "<h1>Error</h1><p>$errstr</p><p><b>Source:</b> $errfile<br /><b>Line:</b> $errline</p>";
-
-        if (!empty($File)) {
-            $message .= "<p><b>Author:</b> ".($File->Author ? $File->Author->Username : 'unknown')."<br /><b>Timestamp:</b> ".date('Y-m-d h:i:s', $File->Timestamp)."</p>";
+        if (static::$debug) {
+            die($report);
+        } else {
+            Email::send(static::$webmasterEmail, 'Scripting error on '.$_SERVER['HTTP_HOST'], $report);
+            die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
         }
-
-        die($message);
     }
 
     public static function handleException($e)
@@ -390,39 +395,40 @@ class Site
             newrelic_notice_error(null, $e);
         }
 
-        if (static::$production) {
-            // respond
-            $report = sprintf("<h1 style='color:red'>Unhandled Exception: %s</h1>\n", get_class($e));
-            $report .= sprintf("<h2>Message</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getMessage()));
-            $report .= sprintf("<h2>Code</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getCode()));
-            $report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
+        // respond
+        $report = sprintf("<h1 style='color:red'>Unhandled Exception: %s</h1>\n", get_class($e));
+        $report .= sprintf("<h2>Message</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getMessage()));
+        $report .= sprintf("<h2>Code</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getCode()));
+        $report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
 
-            if (!empty($_SERVER['HTTP_REFERER'])) {
-                $report .= sprintf("<h2>Referrer</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['HTTP_REFERER']));
-            }
-
-            if (!empty($_SERVER['HTTP_USER_AGENT'])) {
-                $report .= sprintf("<h2>User Agent</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['HTTP_USER_AGENT']));
-            }
-
-            if (!empty($_SERVER['REMOTE_ADDR'])) {
-                $report .= sprintf("<h2>Remote Address</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REMOTE_ADDR']));
-            }
-
-            if (!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person) {
-                $report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->getData(), true));
-            }
-
-            $report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
-
-            Email::send(static::$webmasterEmail, 'Unhandled exception on '.$_SERVER['HTTP_HOST'], $report);
+        if (!empty($_SERVER['HTTP_REFERER'])) {
+            $report .= sprintf("<h2>Referrer</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['HTTP_REFERER']));
         }
+
+        if (!empty($_SERVER['HTTP_USER_AGENT'])) {
+            $report .= sprintf("<h2>User Agent</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['HTTP_USER_AGENT']));
+        }
+
+        if (!empty($_SERVER['REMOTE_ADDR'])) {
+            $report .= sprintf("<h2>Remote Address</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REMOTE_ADDR']));
+        }
+
+        if (!empty($GLOBALS['Session']) && $GLOBALS['Session']->Person) {
+            $report .= sprintf("<h2>User</h2>\n<pre>%s</pre>\n", var_export($GLOBALS['Session']->Person->getData(), true));
+        }
+
+        $report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
 
         if (!headers_sent()) {
             header('Status: 500 Internal Server Error');
         }
 
-        die('<h1>Unhandled Exception</h1><p>'.get_class($e).': (#'.$e->getCode().') '.$e->getMessage().'</p><h1>Backtrace:</h1><pre>'.$e->getTraceAsString().'</pre><h1>Exception Dump</h1><pre>'.print_r($e, true).'</pre>');
+        if (static::$debug) {
+            die($report);
+        } else {
+            Email::send(static::$webmasterEmail, 'Unhandled exception on '.$_SERVER['HTTP_HOST'], $report);
+            die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
+        }
     }
 
     public static function respondNotFound($message = 'Page not found')
