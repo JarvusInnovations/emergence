@@ -78,7 +78,7 @@ class SiteCollection
     public static function getByID($collectionID)
     {
         $record = DB::oneRecord('SELECT * FROM `%s` WHERE ID = %u', array(static::$tableName, $collectionID));
-        return new static($record['Handle'], $record);
+        return $record ? new static($record['Handle'], $record) : null;
     }
 
     public static function getRecordByHandle($handle, $parentID = null, $remote = false, $includeDeleted = false)
