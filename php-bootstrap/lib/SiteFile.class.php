@@ -267,28 +267,31 @@ class SiteFile
         );
     }
 
-    public static function saveRecordData($record, $data, $sha1 = null)
+    public static function saveRecordData(&$record, $data, $sha1 = null)
     {
         // save file
         $filePath = static::getRealPathByID($record['ID']);
         file_put_contents($filePath, $data);
 
-        // get mime type
-        $mimeType = File::getMIMEType($filePath);
+        // update in-memory record
+        $record['SHA1'] = $sha1 ? $sha1 : sha1_file($filePath);
+        $record['Size'] = filesize($filePath);
+        $record['Type'] = File::getMIMEType($filePath);
+        $record['Status'] = 'Normal';
 
         // override MIME type by extension
         $extension = strtolower(substr(strrchr($record['Handle'], '.'), 1));
 
         if ($extension && array_key_exists($extension, static::$extensionMIMETypes)) {
-            $mimeType = static::$extensionMIMETypes[$extension];
+            $record['Type'] = static::$extensionMIMETypes[$extension];
         }
 
-        // calculate hash and update size
+        // write record to database
         DB::nonQuery('UPDATE `%s` SET SHA1 = "%s", Size = %u, Type = "%s", Status = "Normal" WHERE ID = %u', array(
             static::$tableName
-            ,$sha1 ? $sha1 : sha1_file($filePath)
-            ,filesize($filePath)
-            ,$mimeType
+            ,$record['SHA1']
+            ,$record['Size']
+            ,$record['Type']
             ,$record['ID']
         ));
 
@@ -298,7 +301,10 @@ class SiteFile
 
     public function setName($handle)
     {
-        if ($this->Size == 0 && !empty($GLOBALS['Session']) && $this->AuthorID == $GLOBALS['Session']->PersonID && !$this->AncestorID) {
+        $authorID = !empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : null;
+        $oldHandle = $this->_handle;
+            
+        if ($this->Size == 0 && $authorID && $this->AuthorID == $authorID && !$this->AncestorID) {
             // updating existing record only if file is empty, by the same author, and has no ancestor
             DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
                 static::$tableName
@@ -317,7 +323,7 @@ class SiteFile
                     ,$this->SHA1
                     ,$this->Size
                     ,$this->Type
-                    ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
+                    ,$this->AuthorID ? $this->AuthorID : 'NULL'
                     ,$this->ID
                 )
             );
@@ -328,10 +334,22 @@ class SiteFile
 
             // symlink to old data point
             symlink($this->ID, static::getRealPathByID($newID));
+            
+            // update instance
+            $this->_record['ID'] = $newID;
 
-            // invalidate cache of new path
-            apc_delete(static::getCacheKey($this->CollectionID, $handle));
+            if ($authorID != $this->AuthorID) {
+                $this->_author = null;
+            }
+
+            $this->_record['AuthorID'] = $authorID;
         }
+
+        $this->_handle = $handle;
+
+        // invalidate cache of new and old handle
+        apc_delete(static::getCacheKey($this->CollectionID, $oldHandle));
+        apc_delete(static::getCacheKey($this->CollectionID, $handle));
     }
 
     public function delete()
