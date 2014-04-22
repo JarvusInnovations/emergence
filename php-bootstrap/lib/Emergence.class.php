@@ -142,9 +142,9 @@ class Emergence
             }
 
             // write remaining buffer to file
-            $collection->createFile($path, $fp);
+            $fileRecord = $collection->createFile($path, $fp);
 
-            $fileNode = $collection->resolvePath($path);
+            $fileNode = new SiteFile($fileRecord['Handle'], $fileRecord);
         }
 
         return $fileNode;
