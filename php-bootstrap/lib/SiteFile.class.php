@@ -303,7 +303,7 @@ class SiteFile
     {
         $authorID = !empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : null;
         $oldHandle = $this->_handle;
-            
+
         if ($this->Size == 0 && $authorID && $this->AuthorID == $authorID && !$this->AncestorID) {
             // updating existing record only if file is empty, by the same author, and has no ancestor
             DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
@@ -334,7 +334,7 @@ class SiteFile
 
             // symlink to old data point
             symlink($this->ID, static::getRealPathByID($newID));
-            
+
             // update instance
             $this->_record['ID'] = $newID;
 

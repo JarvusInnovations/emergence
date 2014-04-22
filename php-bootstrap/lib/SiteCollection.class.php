@@ -451,7 +451,7 @@ class SiteCollection
                 ,$left
                 ,$right
             ));
-            
+
             $newID = DB::insertID();
         } catch (Exception $e) {
             // TODO: use `finally` structure in PHP 5.5
@@ -568,14 +568,14 @@ class SiteCollection
 
     private static function _getCacheIterator($pattern)
     {
-    	if (class_exists('APCIterator')) {
-	    	if (extension_loaded('apcu')) {
-		    	return new APCIterator($pattern);
-	    	} elseif (extension_loaded('apc')) {
-		    	return new APCIterator('user', $pattern);
-		    }
-    	}
-    	
-    	return array(); // if no iterator available, return an empty array
+        if (class_exists('APCIterator')) {
+            if (extension_loaded('apcu')) {
+                return new APCIterator($pattern);
+            } elseif (extension_loaded('apc')) {
+                return new APCIterator('user', $pattern);
+            }
+        }
+
+        return array(); // if no iterator available, return an empty array
     }
 }
