@@ -269,7 +269,7 @@ class SiteCollection
         $localNode = null;
         while ($foreignNode = array_pop($tree)) {
             $parentLocalNode = $localNode;
-            $localNode = static::getByHandle($foreignNode->Handle, $parentLocalNode?$parentLocalNode->ID:null);
+            $localNode = static::getByHandle($foreignNode->Handle, $parentLocalNode ? $parentLocalNode->ID : null);
 
             if (!$localNode) {
                 $localNode = static::create($foreignNode->Handle, $parentLocalNode);
@@ -451,6 +451,8 @@ class SiteCollection
                 ,$left
                 ,$right
             ));
+            
+            $newID = DB::insertID();
         } catch (Exception $e) {
             // TODO: use `finally` structure in PHP 5.5
             DB::nonQuery('UNLOCK TABLES');
@@ -459,7 +461,7 @@ class SiteCollection
 
         DB::nonQuery('UNLOCK TABLES');
 
-        return DB::insertID();
+        return $newID;
     }
 
     public function setName($handle)
