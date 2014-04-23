@@ -21,9 +21,9 @@ class Site
     public static $rootPath;
     public static $webmasterEmail = 'errors@chrisrules.com';
     public static $requestURI;
-    public static $requestPath;
-    public static $pathStack;
-    public static $resolvedPath;
+    public static $requestPath = array();
+    public static $pathStack = array();
+    public static $resolvedPath = array();
     public static $config; // TODO: deprecated; use Site::getConfig(...)
     public static $initializeTime;
 
