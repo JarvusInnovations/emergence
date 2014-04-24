@@ -51,4 +51,4 @@ Getting Started
 	sudo node kernel
 
 
-Visit http://serverhost:1337 in your browser
+Visit http://serverhost:9083 in your browser
