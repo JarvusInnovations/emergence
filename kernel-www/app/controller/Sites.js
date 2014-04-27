@@ -46,7 +46,6 @@ Ext.define('eMan.controller.Sites', {
 		this.createWindow = Ext.create('Ext.window.Window', {
 			title: 'Create a new site'
 			,width: 400
-			,height: 350
 			,modal: true
 			,layout: 'fit'
 			,items: this.getCreateForm()

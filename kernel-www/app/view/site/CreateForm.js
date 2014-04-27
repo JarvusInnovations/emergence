@@ -91,15 +91,13 @@ Ext.define('eMan.view.site.CreateForm', {
             })
             ,listeners: {
                 scope: this
-                ,blur: function(hostField) {
+                ,select: function(hostField) {
                     var keyField = this.getForm().findField('parent_key');
                     
                     if(hostField.getValue())
                     {
                     	if(keyField.isHidden() || !keyField.getValue())
                     	{
-	                    	keyField.show();
-	                    	
 	                    	var hostRecord = hostField.findRecordByValue(hostField.getValue());
 	                    	
 	                    	if(hostRecord && hostRecord.get('key'))
@@ -111,14 +109,13 @@ Ext.define('eMan.view.site.CreateForm', {
                     else
                     {
                     	keyField.setValue('');
-                    	keyField.hide();
                     }
                 }
             }
         },{
             fieldLabel: 'Parent Access Key'
             ,name: 'parent_key'
-            ,hidden: true
+            ,emptyText: 'Optional'
         },{
             xtype: 'fieldset'
             ,title: 'First User'
@@ -159,12 +156,4 @@ Ext.define('eMan.view.site.CreateForm', {
 
 		this.callParent(arguments);
 	}
-	
-
-	,loadRecord: function(record) {
-		this.callParent(arguments);
-		
-		this.getForm().findField('parent_key').setVisible(record.get('parent_hostname'));
-	}
-
 });
