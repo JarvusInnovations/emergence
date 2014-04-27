@@ -260,7 +260,7 @@ exports.mysql.prototype.secureInstallation = function() {
 	// delete remote roots
 	sql += 'DELETE FROM mysql.user WHERE User="root" AND Host NOT IN ("localhost", "127.0.0.1", "::1");';
 	// remove test database
-	sql += 'DROP DATABASE test;';
+	sql += 'DROP DATABASE IF EXISTS test;';
 	sql += 'DELETE FROM mysql.db WHERE Db="test" OR Db="test\\_%";';
 	// reload privs
 	sql += 'FLUSH PRIVILEGES;';
