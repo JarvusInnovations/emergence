@@ -384,7 +384,9 @@ class Site
         if (static::$debug) {
             die($report);
         } else {
-            Email::send(static::$webmasterEmail, 'Scripting error on '.$_SERVER['HTTP_HOST'], $report);
+            if (class_exists('Email')) {
+                Email::send(static::$webmasterEmail, 'Scripting error on '.$_SERVER['HTTP_HOST'], $report);
+            }
             die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
         }
     }
@@ -426,7 +428,9 @@ class Site
         if (static::$debug) {
             die($report);
         } else {
-            Email::send(static::$webmasterEmail, 'Unhandled exception on '.$_SERVER['HTTP_HOST'], $report);
+            if (class_exists('Email')) {
+                Email::send(static::$webmasterEmail, 'Unhandled exception on '.$_SERVER['HTTP_HOST'], $report);
+            }
             die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
         }
     }
