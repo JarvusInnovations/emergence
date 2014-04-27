@@ -400,7 +400,11 @@ class SiteCollection
         // The table lock will interfere with normal error handling, so any exceptions until the table is unlocked must be intercepted
         try {
             // determine new node's position
-            $left = $parentCollection ? $parentCollection->PosRight : DB::oneValue('SELECT IFNULL(MAX(`PosRight`)+1,1) FROM `%s`', static::$tableName);
+            if ($parentCollection) {
+                $left = DB::oneValue('SELECT PosRight FROM `%s` WHERE ID = %u', array(static::$tableName, $parentCollection->ID));
+            } else {
+                $left = DB::oneValue('SELECT IFNULL(MAX(PosRight)+1, 1) FROM `%s`', static::$tableName);
+            }
             $right = $left + 1;
 
             if ($parentCollection) {
@@ -419,26 +423,6 @@ class SiteCollection
                         ,$left
                     )
                 );
-
-                // update nodes cached in memory
-                $staleParent = $parentCollection;
-                while ($staleParent) {
-                    $staleParent->_record['PosRight'] += 2;
-                    $staleParent = $staleParent->_parent;
-                }
-
-                // clear cache of bumped collections
-                foreach (static::_getCacheIterator('|^' . Site::getConfig('handle') . ':efs:col/|') AS $cachedCollection) {
-                    if (
-                        $cachedCollection['value']
-                        && (
-                            $cachedCollection['value']['PosRight'] >= $left
-                            || $cachedCollection['value']['PosLeft'] > $left
-                        )
-                    ) {
-                        apc_delete($cachedCollection['key']);
-                    }
-                }
             }
 
             // create record
