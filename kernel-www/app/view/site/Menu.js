@@ -3,7 +3,7 @@ Ext.define('eMan.view.site.Menu', {
     ,alias: 'widget.sitemenu'
 
     ,items: [{
-        text: 'Created inheriting site'
+        text: 'Create inheriting site'
         ,action: 'create-inheriting'
         //,icon: '/img/icons/fugue/blue-document.png' 
     }]
