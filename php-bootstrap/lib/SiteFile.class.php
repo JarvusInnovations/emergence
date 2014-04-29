@@ -130,15 +130,24 @@ class SiteFile
 
     public static function getTree(SiteCollection $Collection)
     {
+        DB::nonQuery('LOCK TABLES '.static::$tableName.' f1 READ, '.static::$tableName.' f2 READ, '.SiteCollection::$tableName.' collections READ');
+
+        $positions = DB::oneRecord('SELECT PosLeft, PosRight FROM `%s` collections WHERE ID = %u', array(
+            SiteCollection::$tableName
+            ,$Collection->ID
+        ));
+
         $fileResults = DB::query(
             'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
             ,array(
                 static::$tableName
                 ,SiteCollection::$tableName
-                ,$Collection->PosLeft
-                ,$Collection->PosRight
+                ,$positions['PosLeft']
+                ,$positions['PosRight']
             )
         );
+
+        DB::nonQuery('UNLOCK TABLES');
 
         $children = array();
         while ($record = $fileResults->fetch_assoc()) {
@@ -385,16 +394,25 @@ class SiteFile
      */
     public static function deleteTree(SiteCollection $Collection)
     {
+        DB::nonQuery('LOCK TABLES '.static::$tableName.' WRITE, '.static::$tableName.' AS f1 READ, '.static::$tableName.' AS f2 READ, '.SiteCollection::$tableName.' AS collections READ');
+
+        $positions = DB::oneRecord('SELECT PosLeft, PosRight FROM `%s` collections WHERE ID = %u', array(
+            SiteCollection::$tableName
+            ,$Collection->ID
+        ));
+
         DB::nonQuery(
             'INSERT INTO `%1$s` (CollectionID, Handle, Status, AuthorID, AncestorID) SELECT f2.CollectionID, f2.Handle, "Deleted", %5$s, f2.ID FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
             ,array(
                 static::$tableName
                 ,SiteCollection::$tableName
-                ,$Collection->PosLeft
-                ,$Collection->PosRight
+                ,$positions['PosLeft']
+                ,$positions['PosRight']
                 ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
             )
         );
+
+        DB::nonQuery('UNLOCK TABLES');
     }
 
     public function outputAsResponse($includeAuthor = false)

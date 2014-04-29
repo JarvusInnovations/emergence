@@ -51,10 +51,6 @@ class SiteCollection
                     $this->_parent = $this->ParentID ? static::getByID($this->ParentID) : null;
                 }
                 return $this->_parent;
-            case 'PosLeft':
-                return $this->_record['PosLeft'];
-            case 'PosRight':
-                return $this->_record['PosRight'];
             case 'FullPath':
                 return implode('/',$this->getFullPath());
         }
@@ -123,14 +119,23 @@ class SiteCollection
 
     public function getCollectionsTree()
     {
+        DB::nonQuery('LOCK TABLES '.static::$tableName.' READ');
+
+        $positions = DB::oneRecord('SELECT PosLeft, PosRight FROM `%s` WHERE ID = %u', array(
+            static::$tableName
+            ,$this->ID
+        ));
+
         $collectionResults = DB::query(
             'SELECT * FROM `%1$s` WHERE PosLeft BETWEEN %2$u AND %3$u AND Status = "Normal"'
             ,array(
                 static::$tableName
-                ,$this->PosLeft
-                ,$this->PosRight
+                ,$positions['PosLeft']
+                ,$positions['PosRight']
             )
         );
+
+        DB::nonQuery('UNLOCK TABLES');
 
         $children = array();
         while ($record = $collectionResults->fetch_assoc()) {
@@ -480,12 +485,21 @@ class SiteCollection
     {
         // FIXME: check if status/handle unique combo already exists
 
+        DB::nonQuery('LOCK TABLES '.static::$tableName.' WRITE');
+
+        $positions = DB::oneRecord('SELECT PosLeft, PosRight FROM `%s` WHERE ID = %u', array(
+            static::$tableName
+            ,$this->ID
+        ));
+
         // mark collection and all subcollections as deleted
         DB::nonQuery('UPDATE `%s` SET Status = "Deleted" WHERE PosLeft BETWEEN %u AND %u', array(
             static::$tableName
-            ,$this->PosLeft
-            ,$this->PosRight
+            ,$positions['PosLeft']
+            ,$positions['PosRight']
         ));
+
+        DB::nonQuery('UNLOCK TABLES');
 
         // delete all files
         SiteFile::deleteTree($this);
