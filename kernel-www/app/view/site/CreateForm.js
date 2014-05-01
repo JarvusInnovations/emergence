@@ -80,6 +80,7 @@ Ext.define('eMan.view.site.CreateForm', {
             ,xtype: 'combo'
             ,name: 'parent_hostname'
             ,allowBlank: true
+            ,autoSelect: false
             ,emptyText: 'Optional'
             ,displayField: 'hostname'
             ,valueField: 'hostname'
