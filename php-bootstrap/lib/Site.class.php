@@ -112,9 +112,10 @@ class Site
                 $userClass = User::getStaticDefaultClass();
 
                 $User = $userClass::create(array_merge($requestData['create_user'], array(
-                    'Password' => call_user_func($userClass::$passwordHasher, $requestData['create_user']['Password'])
-                    ,'AccountLevel' => 'Developer'
-                )), true);
+                    'AccountLevel' => 'Developer'
+                )));
+                $User->setClearPassword($requestData['create_user']['Password']);
+                $User->save();
             } catch (Exception $e) {
                 // fail silently
             }
