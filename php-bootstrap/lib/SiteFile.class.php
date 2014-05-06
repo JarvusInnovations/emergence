@@ -287,7 +287,7 @@ class SiteFile
         $record['Size'] = filesize($filePath);
         $record['Type'] = File::getMIMEType($filePath);
         $record['Status'] = 'Normal';
-        $record['Timestamp'] = time();
+        $record['Timestamp'] = date('Y-m-d H:i:s');
 
         // override MIME type by extension
         $extension = strtolower(substr(strrchr($record['Handle'], '.'), 1));
@@ -297,7 +297,7 @@ class SiteFile
         }
 
         // write record to database
-        DB::nonQuery('UPDATE `%s` SET SHA1 = "%s", Size = %u, Type = "%s", Timestamp = FROM_UNIXTIME(%u), Status = "Normal" WHERE ID = %u', array(
+        DB::nonQuery('UPDATE `%s` SET SHA1 = "%s", Size = %u, Type = "%s", Timestamp = "%s", Status = "Normal" WHERE ID = %u', array(
             static::$tableName
             ,$record['SHA1']
             ,$record['Size']
