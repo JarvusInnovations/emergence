@@ -93,9 +93,10 @@ class HttpProxy
         }
 
         if (isset($options['timeout'])) {
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
             curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeout']);
         }
+
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, isset($options['timeoutConnect']) ? $options['timeoutConnect'] : 5);
 
         if (!empty($options['debug'])) {
             curl_setopt($ch, CURLOPT_VERBOSE, true);
