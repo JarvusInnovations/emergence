@@ -8,12 +8,12 @@ class Debug
     {
         if (Site::$debug) {
             if ($title) {
-                print "<h2>$title</h2>";
+                print "<h2>$title</h2>\n";
             }
 
-            print '<pre>';
-            print_r($var);
-            print '</pre>';
+            print "<pre>\n";
+            var_export($var);
+            print "\n</pre>\n\n";
         }
 
         if ($exit) {
@@ -27,12 +27,12 @@ class Debug
     {
         if (Site::$debug) {
             if ($title) {
-                print "<h2>$title</h2>";
+                print "<h2>$title</h2>\n";
             }
 
-            print '<pre>';
+            print "<pre>\n";
             var_export($var);
-            print '</pre>';
+            print "\n</pre>\n\n";
         }
 
         if ($exit) {
