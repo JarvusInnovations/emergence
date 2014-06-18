@@ -16,6 +16,8 @@ class Site
     public static $autoPull = true;
     public static $skipSessionPaths = array();
     public static $onSiteCreated;
+    public static $onBeforeScriptExecute;
+    public static $onBeforeStaticResponse;
 
     // public properties
     public static $rootPath;
@@ -225,11 +227,20 @@ class Site
                     }
                     require($node->RealPath);
                 }
+
+                if (is_callable(static::$onBeforeScriptExecute)) {
+                    call_user_func(static::$onBeforeScriptExecute, $resolvedNode);
+                }
+
                 require($resolvedNode->RealPath);
                 exit();
             } elseif (is_callable(array($resolvedNode, 'outputAsResponse'))) {
                 if (!is_a($resolvedNode, 'SiteFile') && !static::$listCollections) {
                     static::respondNotFound();
+                }
+
+                if (is_callable(static::$onBeforeStaticResponse)) {
+                    call_user_func(static::$onBeforeStaticResponse, $resolvedNode);
                 }
 
                 $resolvedNode->outputAsResponse();
