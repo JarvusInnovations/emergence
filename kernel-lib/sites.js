@@ -81,7 +81,7 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 					databaseReady: function() {
 						// execute onSiteCreated within site's container
 						console.log('Executing Site::onSiteCreated() via php-cli');
-						phpProc = spawn('php', ['-a']);
+						phpProc = spawn('php', ['-a'], { uid: me.options.dataUID, gid: me.options.dataGID });
 						
 						phpProc.stdout.on('data', function(data) { console.log('php-cli stdout: ' + data); });
 						phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
