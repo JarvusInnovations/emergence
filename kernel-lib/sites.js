@@ -95,7 +95,7 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 						_phpExec('$_SERVER["HTTP_HOST"] = "'+cfgResult.site.primary_hostname+'";');
 						_phpExec('$_SERVER["SITE_ROOT"] = "'+me.options.sitesDir+'/'+cfgResult.site.handle+'";');
 						_phpExec('require("'+path.resolve(__dirname, '../php-bootstrap/bootstrap.php')+'");');
-						_phpExec('Site::onSiteCreated(json_decode('+JSON.stringify(JSON.stringify(requestData))+', true));');
+						_phpExec('Site::onSiteCreated(json_decode(\''+JSON.stringify(requestData).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\', true));');
 						phpProc.stdin.end();
 						
 						phpProc.on('close', function (code) {
