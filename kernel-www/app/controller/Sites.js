@@ -1,8 +1,9 @@
 Ext.define('eMan.controller.Sites', {
 	extend: 'Ext.app.Controller'
+	,requires: ['Ext.Ajax']
 
 	,views: ['site.Grid', 'site.CreateForm', 'site.Menu']
-	,stores: ['Sites']
+	,stores: ['Sites','Skeletons']
 	,models: ['Site']
 	
 	,refs: [{
@@ -18,22 +19,46 @@ Ext.define('eMan.controller.Sites', {
 	}]
 
 	,init: function() {
+	    var me = this
+	        ,skeletonsStore = me.getSkeletonsStore();
+
 		this.control({
 			'sitegrid': {
-				itemcontextmenu: this.onSiteContextMenu
+				itemcontextmenu: me.onSiteContextMenu
 			}
 			,'sitegrid button[action=create]': {
-				click: this.onCreateClick
+				click: me.onCreateClick
 			}
             ,'sitemenu > menuitem[action=create-inheriting]': {
-                click: this.onCreateInheritingClick     
+                click: me.onCreateInheritingClick     
             }
 			,'sitecreate button[action=save]': {
-				click: this.createSite
+				click: me.createSite
 			}
 			,'sitecreate button[action=cancel]': {
-				click: this.cancelCreateSite
+				click: me.cancelCreateSite
 			}
+		});
+
+		// load and check that at least skeleton-v1 is in the store
+		skeletonsStore.load(function(records) {
+    		if (!records.length) {
+        		skeletonsStore.add({hostname: 'skeleton.emr.ge', key: '8U6kydil36bl3vlJ'});
+                skeletonsStore.sync();
+    		}
+    		
+    		// download latest
+    		Ext.Ajax.request({
+        		method: 'GET'
+        		,url: 'http://emr.ge/skeletons.json'
+        		,success: function(response) {
+        		    var data = Ext.decode(response.responseText, true);
+        		    if (data) {
+            		    skeletonsStore.loadData(data);
+            		    skeletonsStore.sync();
+        		    }
+        		}
+    		});
 		});
 	}
 	

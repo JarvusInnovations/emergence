@@ -53,7 +53,7 @@ Ext.define('eMan.view.site.CreateForm', {
                 scope: this
                 ,focus: function(priField) {
                     var handleField = this.getForm().findField('handle')
-		    	,defaultSuffix = eMan.app.serverConfig.defaultSuffix;;
+                        ,defaultSuffix = eMan.app.serverConfig.defaultSuffix;;
                     
                     if(!priField.getValue() && handleField.getValue() && defaultSuffix)
                     {
@@ -75,21 +75,32 @@ Ext.define('eMan.view.site.CreateForm', {
         },{
             fieldLabel: 'Alt. Hostnames'
             ,name: 'hostnames'
+            ,listeners: {
+                scope: this
+                ,focus: function(secField) {
+                    var handleField = this.getForm().findField('handle')
+                        ,defaultSuffix = eMan.app.serverConfig.defaultSuffix
+                        ,defaultHostname = defaultSuffix && (handleField.getValue() + '.' + defaultSuffix)
+                        ,altHostnames = secField.getValue().split(/\s*,\s*/);
+                        
+                    if (defaultHostname && !secField.defaultAdded && !Ext.Array.contains(altHostnames, defaultHostname)) {
+                        altHostnames.push(defaultHostname);
+                        secField.setValue(altHostnames.join(', '));
+                        secField.defaultAdded = true;
+                    }
+                }
+            }
         },{
             fieldLabel: 'Parent Site'
             ,xtype: 'combo'
             ,name: 'parent_hostname'
-            ,allowBlank: true
+            ,allowBlank: false
             ,autoSelect: false
-            ,emptyText: 'Optional'
+            ,emptyText: 'Select or enter hostname'
             ,displayField: 'hostname'
             ,valueField: 'hostname'
-            ,store: new Ext.data.Store({
-            	fields: ['hostname', 'key']
-            	,data: [
-            		{hostname: 'skeleton.emr.ge', key: '8U6kydil36bl3vlJ'}
-            	]
-            })
+            ,store: 'Skeletons'
+            ,queryMode: 'local'
             ,listeners: {
                 scope: this
                 ,select: function(hostField) {
@@ -97,15 +108,12 @@ Ext.define('eMan.view.site.CreateForm', {
                     
                     if(hostField.getValue())
                     {
-                    	if(keyField.isHidden() || !keyField.getValue())
-                    	{
-	                    	var hostRecord = hostField.findRecordByValue(hostField.getValue());
-	                    	
-	                    	if(hostRecord && hostRecord.get('key'))
-	                    		keyField.setValue(hostRecord.get('key'));
-	                    	else
-	                    		keyField.focus();
-	                    }
+                    	var hostRecord = hostField.findRecordByValue(hostField.getValue());
+                    	
+                    	if(hostRecord && hostRecord.get('key'))
+                    		keyField.setValue(hostRecord.get('key'));
+                    	else
+                    		keyField.focus();
                     }
                     else
                     {
@@ -116,7 +124,7 @@ Ext.define('eMan.view.site.CreateForm', {
         },{
             fieldLabel: 'Parent Access Key'
             ,name: 'parent_key'
-            ,emptyText: 'Optional'
+            ,allowBlank: false
         },{
             xtype: 'fieldset'
             ,title: 'First User'
