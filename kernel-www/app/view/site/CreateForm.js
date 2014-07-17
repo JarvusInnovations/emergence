@@ -81,7 +81,7 @@ Ext.define('eMan.view.site.CreateForm', {
                     var handleField = this.getForm().findField('handle')
                         ,defaultSuffix = eMan.app.serverConfig.defaultSuffix
                         ,defaultHostname = defaultSuffix && (handleField.getValue() + '.' + defaultSuffix)
-                        ,altHostnames = secField.getValue().split(/\s*,\s*/);
+                        ,altHostnames = Ext.Array.clean(secField.getValue().split(/\s*,\s*/));
                         
                     if (defaultHostname && !secField.defaultAdded && !Ext.Array.contains(altHostnames, defaultHostname)) {
                         altHostnames.push(defaultHostname);
