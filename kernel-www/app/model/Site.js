@@ -2,7 +2,8 @@ Ext.define('eMan.model.Site', {
 	extend: 'Ext.data.Model'
 
 	,fields: [
-		{name: 'handle', type: 'string'}
+		{name: 'id', persist: false}
+		,{name: 'handle', type: 'string'}
 		,{name: 'primary_hostname', type: 'string'}
 		,{name: 'hostnames'}
 		,{name: 'label', type: 'string', useNull: true}
