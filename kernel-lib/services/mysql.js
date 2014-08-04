@@ -23,7 +23,8 @@ exports.mysql = function(name, controller, options) {
 	me.options.pidPath = me.options.pidPath || me.options.runDir + '/mysqld.pid';
 	me.options.socketPath = me.options.socketPath || me.options.runDir + '/mysqld.sock';
 	me.options.dataDir = me.options.dataDir || controller.options.dataDir + '/mysql';
-	me.options.errorLogPath = me.options.errorLogPath || controller.options.logsDir + '/mysql/mysqld.err';
+	me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/mysql';
+	me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/mysqld.err';
 	me.options.managerUser = me.options.managerUser || 'emergence';
 	me.options.managerPassword = me.options.managerPassword || '';
 	
@@ -70,6 +71,15 @@ exports.mysql.prototype.start = function(firstRun) {
 	
 	// write configuration file
 	this.writeConfig();
+
+	// init logs directory if needed
+	if(!fs.existsSync(me.options.logsDir))
+	{
+		console.log(me.name+': initializing new run directory');
+		fs.mkdirSync(me.options.logsDir, 0775);
+		exec('chown -R mysql:mysql '+me.options.logsDir);
+	}
+	
 	
 	// init run directory if needed
 	if(!fs.existsSync(me.options.runDir))
