@@ -89,6 +89,14 @@ else
 			,managerUser: 'root'
 			,managerPassword: sitesLib.generatePassword()
 		};
+	else if(fs.existsSync('/usr/bin/mysqld_safe'))
+		CONFIG.services.plugins.sql = {
+			type: 'mysql'
+			,autoStart: true
+			,execPath: '/usr/bin/mysqld_safe'
+			,managerUser: 'root'
+			,managerPassword: sitesLib.generatePassword()
+		};
 	
 	
 	// detect php-fpm
@@ -109,6 +117,12 @@ else
 			type: 'php-fpm'
 			,autoStart: true
 			,execPath: '/usr/local/sbin/php-fpm'
+		};
+	else if(fs.existsSync('/usr/sbin/php-fpm'))
+		CONFIG.services.plugins.php = {
+			type: 'php-fpm'
+			,autoStart: true
+			,execPath: '/usr/sbin/php-fpm'
 		};
 	
 	fs.writeFileSync('/emergence/config.json', JSON.stringify(CONFIG, null, 4));
