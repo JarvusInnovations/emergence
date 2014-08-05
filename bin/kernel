@@ -89,15 +89,16 @@ else
 			,managerUser: 'root'
 			,managerPassword: sitesLib.generatePassword()
 		};
-	else if(fs.existsSync('/usr/bin/mysqld_safe'))
-		CONFIG.services.plugins.sql = {
-			type: 'mysql'
-			,autoStart: true
-			,execPath: '/usr/bin/mysqld_safe'
-			,managerUser: 'root'
-			,managerPassword: sitesLib.generatePassword()
-		};
 	
+	// detect mysqld in CentOS		
+    else if(fs.existsSync('/usr/libexec/mysqld'))
+        CONFIG.services.plugins.sql = {
+                type: 'mysql'
+                ,autoStart: true
+                ,execPath: '/usr/libexec/mysqld'
+                ,managerUser: 'root'
+                ,managerPassword: sitesLib.generatePassword()
+        };
 	
 	// detect php-fpm
 	if(fs.existsSync('/usr/bin/php-fpm'))
