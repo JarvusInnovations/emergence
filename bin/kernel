@@ -93,11 +93,11 @@ else
 	// detect mysqld in CentOS		
     else if(fs.existsSync('/usr/libexec/mysqld'))
         CONFIG.services.plugins.sql = {
-                type: 'mysql'
-                ,autoStart: true
-                ,execPath: '/usr/libexec/mysqld'
-                ,managerUser: 'root'
-                ,managerPassword: sitesLib.generatePassword()
+            type: 'mysql'
+            ,autoStart: true
+            ,execPath: '/usr/libexec/mysqld'
+            ,managerUser: 'root'
+            ,managerPassword: sitesLib.generatePassword()
         };
 	
 	// detect php-fpm
