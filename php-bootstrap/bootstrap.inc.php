@@ -11,11 +11,3 @@ require(EMERGENCE_BOOTSTRAP_DIR . '/lib/Site.class.php');
 require(EMERGENCE_BOOTSTRAP_DIR . '/lib/SiteCollection.class.php');
 require(EMERGENCE_BOOTSTRAP_DIR . '/lib/SiteFile.class.php');
 require(EMERGENCE_BOOTSTRAP_DIR . '/lib/HttpProxy.class.php');
-
-// load core
-Site::initialize();
-
-// dispatch request
-if (php_sapi_name() != 'cli') {
-    Site::handleRequest();
-}
