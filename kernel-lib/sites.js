@@ -92,9 +92,8 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 						}
 						
 						_phpExec('date_default_timezone_set("UTC");');
-						_phpExec('$_SERVER["HTTP_HOST"] = "'+cfgResult.site.primary_hostname+'";');
-						_phpExec('$_SERVER["SITE_ROOT"] = "'+me.options.sitesDir+'/'+cfgResult.site.handle+'";');
-						_phpExec('require("'+path.resolve(__dirname, '../php-bootstrap/bootstrap.php')+'");');
+						_phpExec('require("'+path.resolve(__dirname, '../php-bootstrap/bootstrap.inc.php')+'");');
+						_phpExec('Site::initialize("'+me.options.sitesDir+'/'+cfgResult.site.handle+'", "'+cfgResult.site.primary_hostname+'");');
 						_phpExec('Site::onSiteCreated(json_decode(\''+JSON.stringify(requestData).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\', true));');
 						phpProc.stdin.end();
 						
