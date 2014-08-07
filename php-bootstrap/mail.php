@@ -9,6 +9,7 @@ if (!$hostname || !$recipient || !$sender || !$queueId) {
 }
 
 // get hostmap
+// TODO: have the kernel maintain this file
 $hostmapPath = '/emergence/services/hostmap.inc.php';
 if (is_readable($hostmapPath)) {
     $hostmap = require($hostmapPath);
@@ -39,6 +40,7 @@ if (is_readable($hostmapPath)) {
 
 
 // map hostname to handle
+// TODO: move this to a static Site method getHandleFromHostname, have initialize use it if hostname isn't provided (and swap initialize param order)
 $siteHandle = null;
 foreach ($hostmap AS $pattern => $patternHandle) {
     if (preg_match($pattern, $hostname)) {
@@ -58,36 +60,6 @@ require('bootstrap.inc.php');
 Site::$debug = true;
 Site::initialize("/emergence/sites/$siteHandle", $hostname);
 
+
+// delegate remainder of request to email router
 Emergence\Mail\Router::handleMessage($hostname, $recipient, $sender, $queueId);
-
-// pre-configure 
-
-// load core
-//Site::initialize();
-
-// dispatch request
-//if (php_sapi_name() != 'cli') {
-//    Site::handleRequest();
-//}
-
-
-/*
-// read log email
-$fp = fopen('php://stdin', 'r');
-$flog = fopen('/tmp/php-mail-'.exec('whoami').'.log', 'a');
-
-fwrite($flog, "\n\nReceiving new email, args = ".json_encode($argv)."\n");
-
-while (!feof($fp)) {
-        $line = trim(fgets($fp));
-
-        fwrite($flog, "Read line: $line\n");
-}
-
-fclose($fp);
-fclose($flog);
-
-echo "Routed to emergence handler mail/data-dropbox/sapphire/10-import.php\n";
-//echo "Failed to route";
-//exit(69); // 75=TEMPFAIL, 69=UNAVAILABLE
-*/
