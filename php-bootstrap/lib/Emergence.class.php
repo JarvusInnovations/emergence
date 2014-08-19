@@ -56,7 +56,7 @@ class Emergence
         $fileConditions = array();
 
         // process excludes
-        if (!empty($_REQUEST['exclude'])) {
+        if (!empty($_REQUEST['exclude']) && method_exists('Emergence_FS', 'getNodesFromPattern')) {
             $excludes = is_array($_REQUEST['exclude']) ? $_REQUEST['exclude'] : array($_REQUEST['exclude']);
 
             $excludedCollections = array();
