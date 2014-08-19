@@ -19,9 +19,13 @@ class Emergence
         }
 
         if ($_REQUEST['remote'] == 'parent') {
-            set_time_limit(600);
+            set_time_limit(1800);
+            $remoteParams = array();
+            if (!empty($_REQUEST['exclude'])) {
+                $remoteParams['exclude'] = $_REQUEST['exclude'];
+            }
             HttpProxy::relayRequest(array(
-                'url' => static::buildUrl(Site::$pathStack)
+                'url' => static::buildUrl(Site::$pathStack, $remoteParams)
                 ,'autoAppend' => false
                 ,'autoQuery' => false
                 ,'timeout' => 500
@@ -46,9 +50,38 @@ class Emergence
 
     public static function handleTreeRequest($rootNode = null)
     {
-        set_time_limit(600);
+        set_time_limit(1800);
         $rootPath = $rootNode ? $rootNode->getFullPath(null, false) : null;
-        $files = Emergence_FS::getTreeFiles($rootPath);
+        $collectionConditions = array();
+        $fileConditions = array();
+
+        // process excludes
+        if (!empty($_REQUEST['exclude'])) {
+            $excludes = is_array($_REQUEST['exclude']) ? $_REQUEST['exclude'] : array($_REQUEST['exclude']);
+
+            $excludedCollections = array();
+            $excludedFiles = array();
+
+            foreach (Emergence_FS::getNodesFromPattern($excludes) AS $node) {
+                if ($node->Class == 'SiteCollection') {
+                    $excludedCollections[] = $node->ID;
+                } else {
+                    $excludedFiles[] = $node->ID;
+                }
+            }
+ 
+            if (count($excludedCollections)) {
+                $collectionConditions['excludeTrees'] = $excludedCollections;
+            }
+            
+            if (count($excludedFiles)) {
+                $fileConditions[] = 'ID NOT IN ('.implode(',', $excludedFiles).')';
+            }
+        }
+
+
+        // get files
+        $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions);
 
         header('HTTP/1.1 300 Multiple Choices');
         header('Content-Type: application/vnd.emergence.tree+json');
