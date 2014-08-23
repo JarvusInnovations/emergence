@@ -219,7 +219,7 @@ exports.mysql.prototype.makeConfig = function() {
 	c += 'port 						= 3306\n';
 	c += 'socket 					= '+me.options.socketPath+'\n';
 	c += 'pid-file 					= '+me.options.pidPath+'\n';
-	c += 'log-error 				= '+me.options.errorLogPath+'\n';
+//	c += 'log-error 				= '+me.options.errorLogPath+'\n'; // disabled due to http://bugs.mysql.com/bug.php?id=65592 -- errors output to STDIN will usually go into emergence-kernel's log
 	c += 'basedir 					= /usr\n';
 	c += 'datadir 					= '+me.options.dataDir+'\n';
 	c += 'skip-external-locking\n';
