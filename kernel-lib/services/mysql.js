@@ -75,7 +75,7 @@ exports.mysql.prototype.start = function(firstRun) {
 	// init logs directory if needed
 	if(!fs.existsSync(me.options.logsDir))
 	{
-		console.log(me.name+': initializing new run directory');
+		console.log(me.name+': initializing new log directory');
 		fs.mkdirSync(me.options.logsDir, 0775);
 		exec('chown -R mysql:mysql '+me.options.logsDir);
 	}
