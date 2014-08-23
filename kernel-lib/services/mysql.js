@@ -223,7 +223,7 @@ exports.mysql.prototype.makeConfig = function() {
 	c += 'basedir 					= /usr\n';
 	c += 'datadir 					= '+me.options.dataDir+'\n';
 	c += 'skip-external-locking\n';
-	c += 'key_buffer 				= 16M\n';
+	c += 'key_buffer_size 				= 16M\n';
 	c += 'max_allowed_packet 		= 1M\n';
 	c += 'table_cache 				= 64\n';
 	c += 'sort_buffer_size 			= 512K\n';
