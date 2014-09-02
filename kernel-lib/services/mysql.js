@@ -280,8 +280,12 @@ exports.mysql.prototype.secureInstallation = function() {
 		port: me.options.socketPath
 		,user: 'root'
 		,password: ''
-	}).query(sql, function() {
-		console.log(me.name+': securing complete, mysql ready');
+	}).query(sql, function(error) {
+		if (error) {
+			console.log(me.name+': failed to secure installation: ' + error);
+		} else {
+			console.log(me.name+': securing complete, mysql ready: '+sql);
+		}
 	});
 
 };
