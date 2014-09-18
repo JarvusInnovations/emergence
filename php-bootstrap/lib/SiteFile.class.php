@@ -243,19 +243,35 @@ class SiteFile
             static::saveRecordData($record, $data);
         }
 
+        // fire event
+        $collectionClass = static::$collectionClass;
+        $path = $collectionClass::getByID($collectionID)->getFullPath(null, false);
+        $path[] = $handle;
+        static::fireFileEvent($path, 'fileWrite', array(
+            'record' => $record
+        ));
+
         return $record;
     }
 
     function put($data, $ancestorID = null)
     {
+        $record = null;
+
         if ($this->Status == 'Phantom' && !empty($GLOBALS['Session']) && $this->AuthorID == $GLOBALS['Session']->PersonID) {
             static::saveRecordData($this->_record, $data);
-            return $this->_record;
+            $record = $this->_record;
         } else {
-            $newRecord = static::createPhantom($this->CollectionID, $this->Handle, $ancestorID ? $ancestorID : $this->ID);
-            static::saveRecordData($newRecord, $data);
-            return $newRecord;
+            $record = static::createPhantom($this->CollectionID, $this->Handle, $ancestorID ? $ancestorID : $this->ID);
+            static::saveRecordData($record, $data);
         }
+
+        // fire event
+        static::fireFileEvent($this->getFullPath(null, false), 'fileWrite', array(
+            'record' => $record
+        ));
+
+        return $result;
     }
 
     public static function createPhantom($collectionID, $handle, $ancestorID = null)
@@ -484,5 +500,14 @@ class SiteFile
         $data['Class'] = $this->Class;
         $data['FullPath'] = $this->FullPath;
         return $data;
+    }
+
+    public static function fireFileEvent($path, $event, $payload = array())
+    {
+        if (!class_exists('Emergence\\EventBus')) {
+            return;
+        }
+
+        return \Emergence\EventBus::fireEvent($event, array_merge(array('Emergence', 'FS'), $path), $payload);
     }
 }
