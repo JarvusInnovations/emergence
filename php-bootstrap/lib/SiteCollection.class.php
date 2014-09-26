@@ -56,6 +56,11 @@ class SiteCollection
         }
     }
 
+    public function __isset($name)
+    {
+        return $this->__get($name) !== null;
+    }
+
     public static function getCacheKey($handle, $parentID = null, $remote = false)
     {
         // build cache key and query conditions
