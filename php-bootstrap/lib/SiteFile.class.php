@@ -92,6 +92,11 @@ class SiteFile
         }
     }
 
+    public function __isset($name)
+    {
+        return $this->__get($name) !== null;
+    }
+
     public static function getCacheKey($collectionID, $handle)
     {
         return sprintf('%s:efs:file/%u/%s', Site::getConfig('handle'), $collectionID, $handle);
