@@ -20,6 +20,7 @@ class Site
     public static $onBeforeStaticResponse;
 
     // public properties
+    public static $hostname;
     public static $rootPath;
     public static $webmasterEmail = 'errors@chrisrules.com';
     public static $requestURI;
@@ -34,27 +35,32 @@ class Site
     protected static $_rootCollections;
     protected static $_config;
 
-    public static function initialize()
+    public static function initialize($rootPath, $hostname)
     {
         static::$initializeTime = microtime(true);
 
         // get site root
-        if (empty(static::$rootPath)) {
-            if (!empty($_SERVER['SITE_ROOT'])) {
-                static::$rootPath = $_SERVER['SITE_ROOT'];
-            } else {
-                throw new Exception('No Site root detected');
-            }
+        if ($rootPath) {
+            static::$rootPath = $rootPath;
+        } elseif (!static::$rootPath) {
+            throw new Exception('No site root detected');
+        }
+
+        // get hostname
+        if ($hostname) {
+            static::$hostname = $hostname;
+        } elseif (!static::$hostname) {
+            throw new Exception('No hostname detected');
         }
 
         // load config
-        if (!(static::$_config = apc_fetch($_SERVER['HTTP_HOST']))) {
+        if (!(static::$_config = apc_fetch(static::$hostname))) {
             if (is_readable(static::$rootPath.'/site.json')) {
                 static::$_config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
-                apc_store($_SERVER['HTTP_HOST'], static::$_config);
+                apc_store(static::$hostname, static::$_config);
             } elseif (is_readable(static::$rootPath.'/Site.config.php')) {
                 include(static::$rootPath.'/Site.config.php');
-                apc_store($_SERVER['HTTP_HOST'], static::$_config);
+                apc_store(static::$hostname, static::$_config);
             }
         }
 
@@ -140,7 +146,7 @@ class Site
         // handle CORS headers
         if (isset($_SERVER['HTTP_ORIGIN'])) {
             $hostname = strtolower(parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST));
-            if ($hostname == strtolower($_SERVER['HTTP_HOST']) || static::$permittedOrigins == '*' || in_array($hostname, static::$permittedOrigins)) {
+            if ($hostname == strtolower(static::$hostname) || static::$permittedOrigins == '*' || in_array($hostname, static::$permittedOrigins)) {
                 header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
                 header('Access-Control-Allow-Credentials: true');
                 //header('Access-Control-Max-Age: 86400')
@@ -400,7 +406,7 @@ class Site
             die($report);
         } else {
             if (class_exists('Email')) {
-                Email::send(static::$webmasterEmail, 'Scripting error on '.$_SERVER['HTTP_HOST'], $report);
+                Email::send(static::$webmasterEmail, 'Scripting error on '.static::$hostname, $report);
             }
             die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
         }
@@ -427,7 +433,7 @@ class Site
             die($report);
         } else {
             if (class_exists('Email')) {
-                Email::send(static::$webmasterEmail, 'Unhandled exception on '.$_SERVER['HTTP_HOST'], $report);
+                Email::send(static::$webmasterEmail, 'Unhandled exception on '.static::$hostname, $report);
             }
             die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
         }
@@ -507,7 +513,7 @@ class Site
         if (preg_match('/^https?:\/\//i', $path)) {
             $url = $path;
         } else {
-            $url = ($_SERVER['HTTPS'] ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/' . ltrim($path, '/');
+            $url = ($_SERVER['HTTPS'] ? 'https' : 'http') . '://' . static::$hostname . '/' . ltrim($path, '/');
         }
 
         if ($get) {

@@ -274,7 +274,7 @@ exports.nginx.prototype.makeConfig = function() {
 		siteCfg += '			fastcgi_pass '+phpSocketPath+';\n';
 		siteCfg += '			fastcgi_param PATH_INFO $fastcgi_script_name;\n';
 		siteCfg += '			fastcgi_param SITE_ROOT '+siteDir+';\n';
-		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/bootstrap.php;\n';
+		siteCfg += '			fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/web.php;\n';
 		siteCfg += '		}\n';
 
 
