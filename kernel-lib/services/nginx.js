@@ -293,6 +293,7 @@ exports.nginx.prototype.makeConfig = function() {
 			c += '		set $php_https on;\n';
 			
 			c += '		ssl on;\n';
+			c += '		ssl_protocols TLSv1 TLSv1.1 TLSv1.2;\n';
 			c += '		ssl_certificate '+site.ssl.certificate+';\n';
 			c += '		ssl_certificate_key '+site.ssl.certificate_key+';\n';
 
