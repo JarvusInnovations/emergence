@@ -20,6 +20,8 @@ exports.server = function(paths, config) {
 	me.options = options || {};
 	me.options.host = me.options.host || '0.0.0.0';
 	me.options.port = me.options.port || 9083;
+	me.options.sslKey = me.options.sslKey || null;
+	me.options.sslCert = me.options.sslCert || null;
 	me.options.staticDir = me.options.staticDir || path.resolve(__dirname, '../kernel-www');
 	
 	// initialize state
@@ -28,7 +30,8 @@ util.inherits(exports.server, events.EventEmitter);
 
 
 exports.server.prototype.start = function() {
-	var me = this;
+	var me = this,
+		protocol;
 
 	// create HTTP authentication module
 	var http_auth = require('http-auth')({
@@ -38,9 +41,23 @@ exports.server.prototype.start = function() {
 
 	// create static fileserver
 	me.fileServer = new static.Server(me.options.staticDir);
-	
+
 	// start control server
-	http.createServer(function(request, response) {
+	if (me.options.sslKey && me.options.sslCert) {
+		require('https').createServer({
+			key: fs.readFileSync(me.options.sslKey),
+			cert: fs.readFileSync(me.options.sslCert)
+		}, _handleRequest).listen(me.options.port, me.options.host);
+
+		protocol = 'https';
+	} else {
+		require('http').createServer(_handleRequest).listen(me.options.port, me.options.host);
+
+		protocol = 'http';
+	}
+
+
+	function _handleRequest(request, response) {
 
 		http_auth.apply(request, response, function(username) {
 			request.content = '';
@@ -82,8 +99,10 @@ exports.server.prototype.start = function() {
 
 		});
 		
-	}).listen(me.options.port, me.options.host);
-	console.log('Management server listening on http://'+me.options.host+':'+me.options.port);
+	}
+
+
+	console.log('Management server listening on '+protocol+'://'+me.options.host+':'+me.options.port);
 
 };
 

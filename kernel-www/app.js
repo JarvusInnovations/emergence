@@ -2,7 +2,7 @@
 Ext.Loader.setConfig({
 	enabled:true
 	,paths:{
-		Ext: 'http://cdn.sencha.com/ext/gpl/4.2.0/src'
+		Ext: '//extjs.cachefly.net/ext/gpl/5.0.0/src'
 	}
 });
 
