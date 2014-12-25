@@ -35,7 +35,7 @@ class Site
     protected static $_rootCollections;
     protected static $_config;
 
-    public static function initialize($rootPath, $hostname)
+    public static function initialize($rootPath, $hostname = null)
     {
         static::$initializeTime = microtime(true);
 
@@ -46,25 +46,29 @@ class Site
             throw new Exception('No site root detected');
         }
 
-        // get hostname
-        if ($hostname) {
-            static::$hostname = $hostname;
-        } elseif (!static::$hostname) {
-            throw new Exception('No hostname detected');
-        }
-
         // load config
-        if (!(static::$_config = apc_fetch(static::$hostname))) {
+        if (!(static::$_config = apc_fetch(static::$rootPath))) {
             if (is_readable(static::$rootPath.'/site.json')) {
                 static::$_config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
-                apc_store(static::$hostname, static::$_config);
+                apc_store(static::$rootPath, static::$_config);
             } elseif (is_readable(static::$rootPath.'/Site.config.php')) {
                 include(static::$rootPath.'/Site.config.php');
-                apc_store(static::$hostname, static::$_config);
+                apc_store(static::$rootPath, static::$_config);
             }
         }
 
         static::$config = static::$_config; // TODO: deprecate
+
+        // get hostname
+        if ($hostname) {
+            static::$hostname = $hostname;
+        } elseif (!static::$hostname) {
+            if (!empty(static::$config['primary_hostname'])) {
+                static::$hostname = static::$config['primary_hostname'];
+            } else {
+                throw new Exception('No hostname detected');
+            }
+        }
 
         // get path stack
         if (!empty($_SERVER['REQUEST_URI'])) {
