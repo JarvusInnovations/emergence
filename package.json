@@ -11,7 +11,8 @@
 		"posix": "*"
 	},
 	"bin": {
-		"emergence-kernel": "./bin/kernel"
+		"emergence-kernel": "./bin/kernel",
+		"emergence-shell": "./bin/shell"
 	},
 	"repository": {
 		"type": "git",

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+die () {
+    echo >&2 "$@"
+    exit 1
+}
+
+
+# switch to www-data user
+sudo su -l www-data
+
+
+# determine location of this script
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+
+# get site directory
+[ "$#" -eq 1 ] || die "Usage: emergence-kernel site-handle"
+
+siteHandle=$1
+siteDir="/emergence/sites/$siteHandle"
+
+[ -d "$siteDir" ] || die "Site '$siteHandle' not found at '$siteDir'"
+
+
+# generate auto_prepend_file at temp path
+autoPrependScript=$(mktemp);
+
+echo "<?php" > $autoPrependScript
+echo "require('`dirname $DIR`/php-bootstrap/bootstrap.inc.php');" >> $autoPrependScript
+echo "Site::initialize('$siteDir');" >> $autoPrependScript
+
+
+# execute interactive shell
+php -d auto_prepend_file=$autoPrependScript -a
+
+
+# clean up
+rm $autoPrependScript;
