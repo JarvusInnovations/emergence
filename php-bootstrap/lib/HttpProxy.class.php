@@ -180,6 +180,10 @@ class HttpProxy
             print(htmlspecialchars($responseBody));
             print('</pre>');
         } elseif (!empty($options['returnBody'])) {
+            if (is_callable($options['afterResponse'])) {
+                call_user_func($options['afterResponse'], $responseBody, $responseHeaders, $options, $ch);
+            }
+
             curl_close($ch);
             return $responseBody;
         } elseif ($responseBody !== false) {
