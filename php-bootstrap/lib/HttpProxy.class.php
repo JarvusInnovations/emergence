@@ -47,6 +47,10 @@ class HttpProxy
             $options['interface'] = isset(static::$sourceInterface) ? static::$sourceInterface : $_SERVER['HTTP_HOST'];
         }
 
+        if (!isset($options['method'])) {
+            $options['method'] = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
+        }
+
         if (!isset($options['debug'])) {
             $options['debug'] = static::$debugMode;
         }
@@ -79,14 +83,14 @@ class HttpProxy
         // initialize and configure cURL
         $ch = curl_init();
 
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        if ($options['method'] == 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
-        } elseif ($_SERVER['REQUEST_METHOD'] == 'PUT') {
+        } elseif ($options['method'] == 'PUT') {
             curl_setopt($ch, CURLOPT_PUT, true);
             curl_setopt($ch, CURLOPT_INFILE, fopen('php://input', 'r'));
-        } elseif ($_SERVER['REQUEST_METHOD'] != 'GET') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
+        } elseif ($options['method'] != 'GET') {
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $options['method']);
         }
 
         if (isset($options['timeout'])) {
