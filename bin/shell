@@ -6,10 +6,6 @@ die () {
 }
 
 
-# switch to www-data user
-sudo su -l www-data
-
-
 # determine location of this script
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
@@ -37,8 +33,13 @@ echo "require('`dirname $DIR`/php-bootstrap/bootstrap.inc.php');" >> $autoPrepen
 echo "Site::initialize('$siteDir');" >> $autoPrependScript
 
 
+# give www-data access to script
+chgrp www-data $autoPrependScript
+chmod g+r $autoPrependScript
+
+
 # execute interactive shell
-php -d auto_prepend_file=$autoPrependScript -a
+sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -a
 
 
 # clean up
