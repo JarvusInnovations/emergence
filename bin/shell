@@ -39,7 +39,7 @@ chmod g+r $autoPrependScript
 
 
 # execute interactive shell
-sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -a
+TERM=dumb sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -a
 
 
 # clean up
