@@ -99,6 +99,9 @@ class HttpProxy
 
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, isset($options['timeoutConnect']) ? $options['timeoutConnect'] : 5);
 
+        // process response headers
+        $responseHeaders = null;
+
         if (!empty($options['debug'])) {
             curl_setopt($ch, CURLOPT_VERBOSE, true);
             curl_setopt($ch, CURLOPT_HEADER, true);
@@ -110,11 +113,11 @@ class HttpProxy
         } elseif (!empty($options['returnBody']) && !empty($options['returnHeader'])) {
             curl_setopt($ch, CURLOPT_HEADER, true);
         } else {
-                        $responseHeaders = array();
+            $responseHeaders = array();
             curl_setopt($ch, CURLOPT_HEADER, false);
             curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $header) use($options, &$responseHeaders) {
-                                list($headerKey, $headerValue) = preg_split('/:\s*/', $header, 2);
-                if ($headerValue) {
+                @list($headerKey, $headerValue) = preg_split('/:\s*/', $header, 2);
+                if ($headerKey && $headerValue) {
                     $responseHeaders[$headerKey] = trim($headerValue);
                 }
 

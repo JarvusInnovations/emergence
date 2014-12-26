@@ -445,9 +445,15 @@ class Site
 
     protected static function _getRequestReport()
     {
-        $report = sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
+        $report = '';
 
-        $report .= sprintf("<h2>Request Method</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_METHOD']));
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $report .= sprintf("<h2>URI</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_URI']));
+        }
+
+        if (isset($_SERVER['REQUEST_METHOD'])) {
+            $report .= sprintf("<h2>Request Method</h2>\n<p>%s</p>\n", htmlspecialchars($_SERVER['REQUEST_METHOD']));
+        }
 
         if ($requestBody = file_get_contents('php://input')) {
             $report .= sprintf("<h2>Request Body</h2>\n<p>%s</p>\n", htmlspecialchars($requestBody));
