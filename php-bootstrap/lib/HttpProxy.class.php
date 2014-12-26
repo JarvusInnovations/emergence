@@ -110,8 +110,6 @@ class HttpProxy
             print('<h1>Options</h1><pre>');
             print_r($options);
             print('</pre>');
-        } elseif (!empty($options['returnBody']) && !empty($options['returnHeader'])) {
-            curl_setopt($ch, CURLOPT_HEADER, true);
         } else {
             $responseHeaders = array();
             curl_setopt($ch, CURLOPT_HEADER, false);
@@ -134,7 +132,7 @@ class HttpProxy
 
                         if (!empty($options['debug'])) {
                             print("<p>Response Header: $header</p>");
-                        } else {
+                        } elseif(empty($options['returnResponse'])) {
                             header($header);
                         }
 
@@ -186,13 +184,14 @@ class HttpProxy
             print('<h1>Response Body</h1><pre>');
             print(htmlspecialchars($responseBody));
             print('</pre>');
-        } elseif (!empty($options['returnBody'])) {
-            if (is_callable($options['afterResponse'])) {
-                call_user_func($options['afterResponse'], $responseBody, $responseHeaders, $options, $ch);
-            }
-
+        } elseif (!empty($options['returnResponse'])) {
+            $curlInfo = curl_getinfo($ch);
             curl_close($ch);
-            return $responseBody;
+            return array(
+                'headers' => $responseHeaders,
+                'body' => $responseBody,
+                'info' => $curlInfo
+            );
         } elseif ($responseBody !== false) {
             header('Content-Length: '.strlen($responseBody));
             print($responseBody);
