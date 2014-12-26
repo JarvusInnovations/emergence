@@ -3,6 +3,7 @@
 class HttpProxy
 {
     // config properties
+    public static $debugMode = false;
     public static $sourceInterface = false; // string=hostname or IP, null=http hostname, false=let cURL pick
     public static $defaultPassthruHeaders = array(
         '/^HTTP\//'
@@ -46,6 +47,10 @@ class HttpProxy
             $options['interface'] = isset(static::$sourceInterface) ? static::$sourceInterface : $_SERVER['HTTP_HOST'];
         }
 
+        if (!isset($options['debug'])) {
+            $options['debug'] = static::$debugMode;
+        }
+
         // build URL
         $baseUrl = $options['url'];
         if (!empty(Site::$pathStack) && (!isset($options['autoAppend']) || $options['autoAppend'] != false)) {
@@ -68,14 +73,6 @@ class HttpProxy
 
             if (!empty($_SERVER[$headerKey])) {
                 $options['headers'][] = $header . ': ' . $_SERVER[$headerKey];
-            }
-        }
-
-        if (!empty($_GET['proxy-debug'])) {
-            if ($_GET['proxy-debug'] == 1) {
-                $options['debug'] = true;
-            } else {
-                $_GET['proxy-debug']--;
             }
         }
 
