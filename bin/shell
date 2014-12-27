@@ -38,8 +38,14 @@ chgrp www-data $autoPrependScript
 chmod g+r $autoPrependScript
 
 
+# set TERM=dumb if it's not set
+if [ -n "$TERM" ] && [ "$TERM" = unknown ] ; then
+  TERM=dumb
+fi
+
+
 # execute interactive shell
-TERM=dumb sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -a
+TERM=$TERM sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -a
 
 
 # clean up
