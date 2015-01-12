@@ -367,7 +367,7 @@ class Site
         $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
         $configNode = static::resolvePath("php-config/$fileName.config.php");
 
-        if (!$configNode && empty($namespace)) {
+        if (!$configNode && empty($namespace) && $fileName != $className) {
             $configNode = static::resolvePath("php-config/$className.config.php");
         }
 
