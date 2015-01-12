@@ -45,7 +45,7 @@ fi
 
 
 # execute interactive shell
-TERM=$TERM sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -a
+TERM=$TERM sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -d apc.enable_cli=on -a
 
 
 # clean up
