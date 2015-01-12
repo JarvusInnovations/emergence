@@ -81,7 +81,7 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 					databaseReady: function() {
 						// execute onSiteCreated within site's container
 						console.log('Executing Site::onSiteCreated() via php-cli');
-						phpProc = spawn('php', ['-a'], { uid: me.options.dataUID, gid: me.options.dataGID });
+						phpProc = spawn('emergence-shell', [cfgResult.site.handle]);
 						
 						phpProc.stdout.on('data', function(data) { console.log('php-cli stdout: ' + data); });
 						phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
@@ -90,10 +90,7 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 							//console.log('php> '+code);
 							phpProc.stdin.write(code+'\n');
 						}
-						
-						_phpExec('date_default_timezone_set("UTC");');
-						_phpExec('require("'+path.resolve(__dirname, '../php-bootstrap/bootstrap.inc.php')+'");');
-						_phpExec('Site::initialize("'+me.options.sitesDir+'/'+cfgResult.site.handle+'", "'+cfgResult.site.primary_hostname+'");');
+
 						_phpExec('Site::onSiteCreated(json_decode(\''+JSON.stringify(requestData).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\', true));');
 						phpProc.stdin.end();
 						
