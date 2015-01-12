@@ -76,4 +76,27 @@ class Debug
 
         return basename($_SERVER['SCRIPT_NAME']);
     }
+
+    protected static $_traceHandle;
+    public static function writeTrace($message, $data = array())
+    {
+        if (!static::$_traceHandle) {
+            $filePath = Site::$rootPath . '/site-data/trace-logs/';
+            $dateStamp = date('Y-m-d-His');
+            $increment = 1;
+
+            if (!is_dir($filePath)) {
+                mkdir($filePath, 0777, true);
+            }
+
+            do {
+                $fileName = $dateStamp . '.' . $increment . '.log';
+                $increment++;
+            } while(file_exists($filePath . $fileName));
+
+            static::$_traceHandle = fopen($filePath . $fileName, 'w');
+        }
+
+        fwrite(static::$_traceHandle, round(microtime(true)*1000) . "\t$message\t" . json_encode($data) . "\n");
+    }
 }
