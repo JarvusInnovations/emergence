@@ -99,7 +99,7 @@ class SiteFile
 
     public static function getCacheKey($collectionID, $handle)
     {
-        return sprintf('%s:efs:file/%u/%s', Site::getConfig('handle'), $collectionID, $handle);
+        return sprintf('efs:file/%u/%s', $collectionID, $handle);
     }
 
     public static function getByID($fileID)
@@ -119,7 +119,7 @@ class SiteFile
     {
         $cacheKey = static::getCacheKey($collectionID, $handle);
 
-        if (false === ($record = apc_fetch($cacheKey))) {
+        if (false === ($record = Cache::fetch($cacheKey))) {
             $record = DB::oneRecord(
                 'SELECT * FROM `%s` WHERE CollectionID = %u AND Handle = "%s" ORDER BY ID DESC LIMIT 1'
                 ,array(
@@ -129,7 +129,7 @@ class SiteFile
                 )
             );
 
-            apc_store($cacheKey, $record);
+            Cache::store($cacheKey, $record);
         }
 
         return $record ? new static($record['Handle'], $record) : null;
@@ -330,7 +330,7 @@ class SiteFile
         ));
 
         // invalidate cache
-        apc_delete(static::getCacheKey($record['CollectionID'], $record['Handle']));
+        Cache::delete(static::getCacheKey($record['CollectionID'], $record['Handle']));
     }
 
     public function setName($handle)
@@ -382,8 +382,8 @@ class SiteFile
         $this->_handle = $handle;
 
         // invalidate cache of new and old handle
-        apc_delete(static::getCacheKey($this->CollectionID, $oldHandle));
-        apc_delete(static::getCacheKey($this->CollectionID, $handle));
+        Cache::delete(static::getCacheKey($this->CollectionID, $oldHandle));
+        Cache::delete(static::getCacheKey($this->CollectionID, $handle));
     }
 
     public function delete()
@@ -397,7 +397,7 @@ class SiteFile
         ));
 
         // invalidate cache
-        apc_delete(static::getCacheKey($this->CollectionID, $this->Handle));
+        Cache::delete(static::getCacheKey($this->CollectionID, $this->Handle));
     }
 
     public function destroyRecord()
@@ -408,7 +408,7 @@ class SiteFile
         ));
 
         // invalidate cache
-        apc_delete(static::getCacheKey($this->CollectionID, $this->Handle));
+        Cache::delete(static::getCacheKey($this->CollectionID, $this->Handle));
     }
 
     /**

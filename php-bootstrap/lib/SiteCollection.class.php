@@ -64,7 +64,7 @@ class SiteCollection
     public static function getCacheKey($handle, $parentID = null, $remote = false)
     {
         // build cache key and query conditions
-        $cacheKey = Site::getConfig('handle') . ':efs:col';
+        $cacheKey = 'efs:col';
 
         if ($parentID) {
             $cacheKey .= sprintf('/%u/', $parentID);
@@ -104,7 +104,7 @@ class SiteCollection
         }
 
         // attempt to get from cache
-        if (false !== ($record = apc_fetch($cacheKey))) {
+        if (false !== ($record = Cache::fetch($cacheKey))) {
             return $record;
         }
 
@@ -117,7 +117,7 @@ class SiteCollection
             )
         );
 
-        apc_store($cacheKey, $record);
+        Cache::store($cacheKey, $record);
 
         return $record;
     }
@@ -380,7 +380,7 @@ class SiteCollection
     public static function createRecord($handle, $parentCollection = null, $remote = false)
     {
         // clear cache of not-found or deleted record
-        apc_delete(static::getCacheKey($handle, $parentCollection ? $parentCollection->ID : null, $remote));
+        Cache::delete(static::getCacheKey($handle, $parentCollection ? $parentCollection->ID : null, $remote));
 
         // check for existing deleted node
         $existingRecord = DB::oneRecord(
@@ -460,8 +460,8 @@ class SiteCollection
 
     public function setName($handle)
     {
-        apc_delete(static::getCacheKey($this->Handle, $this->ParentID, $this->Site == 'Remote'));
-        apc_delete(static::getCacheKey($handle, $this->ParentID, $this->Site == 'Remote'));
+        Cache::delete(static::getCacheKey($this->Handle, $this->ParentID, $this->Site == 'Remote'));
+        Cache::delete(static::getCacheKey($handle, $this->ParentID, $this->Site == 'Remote'));
 
         DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
             static::$tableName
@@ -472,7 +472,7 @@ class SiteCollection
 
     public function setStatus($status)
     {
-        apc_delete(static::getCacheKey($this->Handle, $this->ParentID, $this->Site == 'Remote'));
+        Cache::delete(static::getCacheKey($this->Handle, $this->ParentID, $this->Site == 'Remote'));
 
         DB::nonQuery('UPDATE `%s` SET Status = "%s" WHERE ID = %u', array(
             static::$tableName
@@ -519,12 +519,12 @@ class SiteCollection
             $key = static::getCacheKey($record['Handle'], $record['ParentID'], $record['Site'] == 'Remote');
         }
 
-        apc_delete($key);
+        Cache::delete($key);
 
         // iterate child collections
         $childCollectionsKey = static::getCacheKey('.*', $record['ID'], $record['Site'] == 'Remote');
 
-        foreach (static::_getCacheIterator('|^'.$childCollectionsKey.'|') AS $childCollection) {
+        foreach (CacheIterator::getIterator('|^'.$childCollectionsKey.'|') AS $childCollection) {
             if ($childCollection['value']) {
                 static::clearCacheTree($childCollection['value'], $childCollection['key']);
             }
@@ -533,9 +533,9 @@ class SiteCollection
         // iterate child files
         $childFilesKey = SiteFile::getCacheKey($record['ID'], '.*');
 
-        foreach (static::_getCacheIterator('|^'.$childFilesKey.'|') AS $childFile) {
+        foreach (CacheIterator::getIterator('|^'.$childFilesKey.'|') AS $childFile) {
             if ($childFile['value']) {
-                apc_delete($childFile['key']);
+                Cache::delete($childFile['key']);
             }
         }
     }
@@ -567,18 +567,5 @@ class SiteCollection
         }
 
         return $collection;
-    }
-
-    private static function _getCacheIterator($pattern)
-    {
-        if (class_exists('APCIterator')) {
-            if (extension_loaded('apcu')) {
-                return new APCIterator($pattern);
-            } elseif (extension_loaded('apc')) {
-                return new APCIterator('user', $pattern);
-            }
-        }
-
-        return array(); // if no iterator available, return an empty array
     }
 }
