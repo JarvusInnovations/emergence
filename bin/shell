@@ -17,7 +17,7 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 
 # get site directory
-[ "$#" -eq 1 ] || die "Usage: emergence-kernel site-handle"
+[ -n "$1" ] || die "Usage: emergence-kernel site-handle"
 
 siteHandle=$1
 siteDir="/emergence/sites/$siteHandle"
@@ -44,8 +44,17 @@ if [ -n "$TERM" ] && [ "$TERM" = unknown ] ; then
 fi
 
 
+# determine code source
+if [ -n "$2" ]
+then
+    INPUT_ARGS="-f $2"
+else
+    INPUT_ARGS="-a"
+fi
+
+
 # execute interactive shell
-TERM=$TERM sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -d apc.enable_cli=on -a
+TERM=$TERM sudo -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -d apc.enable_cli=on $INPUT_ARGS
 
 
 # clean up
