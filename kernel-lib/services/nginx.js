@@ -257,8 +257,7 @@ exports.nginx.prototype.makeConfig = function() {
 		if(!fs.existsSync(logsDir))
 			fs.mkdirSync(logsDir, 0775);
 
-		var siteCfg = '		server_name '+hostnames.join(' ')+';\n';
-		siteCfg += '		access_log '+logsDir+'/access.log main;\n';
+		var siteCfg = '		access_log '+logsDir+'/access.log main;\n';
 		siteCfg += '		error_log '+logsDir+'/error.log notice;\n';
 
 
@@ -282,23 +281,36 @@ exports.nginx.prototype.makeConfig = function() {
 		// append config
 		c += '	server {\n';
 		c += '		listen '+me.options.bindHost+':'+me.options.bindPort+';\n';
+		c += '		server_name '+hostnames.join(' ')+';\n';
 		c += '		set $php_https "";\n';
 		c +=            siteCfg;
 		c += '	}\n';
 		
 		if(site.ssl)
 		{
-			c += '	server {\n';
-			c += '		listen '+me.options.bindHost+':443;\n';
-			c += '		set $php_https on;\n';
+			var sslHostnames;
 			
-			c += '		ssl on;\n';
-			c += '		ssl_protocols TLSv1 TLSv1.1 TLSv1.2;\n';
-			c += '		ssl_certificate '+site.ssl.certificate+';\n';
-			c += '		ssl_certificate_key '+site.ssl.certificate_key+';\n';
+			if (site.ssl.hostnames) {
+				sslHostnames = site.ssl.hostnames;
+			} else {
+				sslHostnames = {};
+				sslHostnames[site.primary_hostname] = site.ssl;
+			}
 
-			c +=            siteCfg;
-			c += '	}\n';
+			for (var sslHostname in sslHostnames) {
+				c += '	server {\n';
+				c += '		listen '+me.options.bindHost+':443;\n';
+				c += '		server_name '+sslHostname+';\n';
+				c += '		set $php_https on;\n';
+
+				c += '		ssl on;\n';
+				c += '		ssl_protocols TLSv1 TLSv1.1 TLSv1.2;\n';
+				c += '		ssl_certificate '+sslHostnames[sslHostname].certificate+';\n';
+				c += '		ssl_certificate_key '+sslHostnames[sslHostname].certificate_key+';\n';
+
+				c +=        siteCfg;
+				c += '	}\n';
+			}
 		}
 	});
 	
