@@ -160,16 +160,21 @@ class Site
             }
         }
 
+        // handle CORS preflight
         if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
             if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
+                $isCORS = true;
                 header('Access-Control-Request-Method: *');
             }
 
             if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
+                $isCORS = true;
                 header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept');
             }
 
-            exit();
+            if ($isCORS) {
+                exit();
+            }
         }
 
         // try to resolve URL in site-root
