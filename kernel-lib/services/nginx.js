@@ -7,7 +7,7 @@ function nginx(name, controller, options) {
     var me = this;
 
     // call parent constructor
-    exports.nginx.super_.apply(me, arguments);
+    nginx.super_.apply(me, arguments);
 
     // default options
     me.options.bootstrapDir  = me.options.bootstrapDir  || path.resolve(__dirname, '../../php-bootstrap');
@@ -50,7 +50,7 @@ function nginx(name, controller, options) {
     }
 
     // listen for site creation
-    controller.sites.on('siteCreated', me.restart.bind(me));
+    controller.sites.on('siteCreated', me.onSiteCreated);
 }
 
 util.inherits(nginx, require('./abstract.js').AbstractService);
@@ -73,33 +73,12 @@ nginx.prototype.start = function () {
     me.proc.on('exit', function (code) {
 
         if (code !== 0) {
-            me.status = 'offline';
-            me.exitCode = code;
-            me.pid = null;
             console.log(me.name + ': exited with code: ' + code);
         }
 
-        // look for pid
-        if (fs.existsSync(me.options.pidPath)) {
-            me.pid = parseInt(fs.readFileSync(me.options.pidPath));
-            console.log(me.name + ': found new PID: ' + me.pid);
-            me.status = 'online';
-        } else {
-            console.log(me.name + ': failed to find pid after launching, waiting 1000ms and trying again...');
-            setTimeout(function () {
-
-                if (fs.existsSync(me.options.pidPath)) {
-                    me.pid = parseInt(fs.readFileSync(me.options.pidPath));
-                    console.log(me.name + ': found new PID: ' + me.pid);
-                    me.status = 'online';
-                }
-                else {
-                    console.log(me.name + ': failed to find pid after launching');
-                    me.status = 'unknown';
-                    me.pid = null;
-                }
-            }, 1000);
-        }
+        me.status = 'offline';
+        me.exitCode = code;
+        me.pid = null;
     });
 
     me.proc.stdout.on('data', function (data) {
@@ -112,10 +91,11 @@ nginx.prototype.start = function () {
         if (/^execvp\(\)/.test(data)) {
             console.log('Failed to start child process.');
             me.status = 'offline';
+            me.pid = null;
         }
     });
 
-    this.status = 'online';
+    me.status = 'online';
 
     return true;
 };
@@ -123,8 +103,8 @@ nginx.prototype.start = function () {
 nginx.prototype.stop = function () {
     var me = this;
 
-    if (me.pid !== null) {
-        return;
+    if (me.pid === null) {
+        return false;
     }
 
     try {
@@ -135,26 +115,21 @@ nginx.prototype.stop = function () {
 
     me.status = 'offline';
     me.pid = null;
+
+    return true;
 };
 
 nginx.prototype.restart = function () {
     var me = this;
 
-    if (!me.pid) {
-        return false;
-    }
+    console.log(me + ': restarting');
 
-    this.writeConfig();
-
-    try {
-        process.kill(me.pid, 'SIGHUP');
+    if (me.isRunning()) {
+        me.stop();
+        me.start();
+    } else {
+        me.start();
     }
-    catch (error) {
-        console.log(me.name + ': failed to restart process: ' + error);
-        return false;
-    }
-
-    console.log(me.name + ': reloaded config for process ' + me.pid);
 
     return true;
 };
@@ -172,7 +147,7 @@ nginx.prototype.makeConfig = function () {
         siteDir,
         logsDir,
         phpSocketPath,
-        siteCfg = '',
+        siteCfg,
         sslHostnames,
         sslHostname;
 
@@ -247,6 +222,7 @@ nginx.prototype.makeConfig = function () {
 
     for (handle in me.controller.sites.sites) {
         site = me.controller.sites.sites[handle];
+        siteCfg = '';
 
         // process hostnames
         hostnames = site.hostnames.slice();
@@ -318,6 +294,18 @@ nginx.prototype.makeConfig = function () {
     c += '}\n';
 
     return c;
+};
+
+nginx.prototype.onSiteCreated = function onSiteCreated() {
+    console.log(this.name + ': reloading config');
+
+    this.writeConfig();
+
+    if (this.proc) {
+        this.proc.kill('SIGHUP');
+    } else {
+        this.restart();
+    }
 };
 
 exports.nginx = nginx;

@@ -68,21 +68,12 @@ phpFpm.prototype.start = function () {
     me.proc.on('exit', function (code) {
 
         if (code !== 0) {
-            me.status = 'offline';
-            me.exitCode = code;
             console.log(me.name + ': exited with code: ' + code);
         }
 
-        // look for pid
-        if (fs.existsSync(me.options.pidPath)) {
-            me.pid = parseInt(fs.readFileSync(me.options.pidPath));
-            console.log(me.name + ': found new PID: ' + me.pid);
-            me.status = 'online';
-        } else {
-            console.log(me.name + ': failed to find pid after launching');
-            me.status = 'unknown';
-            me.pid = null;
-        }
+        me.status = 'offline';
+        me.exitCode = code;
+        me.pid = null;
     });
 
     me.proc.stdout.on('data', function (data) {

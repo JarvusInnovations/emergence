@@ -110,10 +110,12 @@ mysql.prototype.start = function (firstRun) {
     me.proc.on('exit', function (code) {
 
         if (code !== 0) {
-            me.status = 'offline';
-            me.exitCode = code;
             console.log(me.name + ': exited with code: ' + code);
         }
+
+        me.pid = null;
+        me.status = 'offline';
+        me.exitCode = code;
     });
 
     me.proc.stdout.on('data', function (data) {
