@@ -67,9 +67,9 @@ exports.ServicesController = function(sites, config) {
 			service.start();
 		}
 	});
-}
-util.inherits(exports.ServicesController, events.EventEmitter);
+};
 
+util.inherits(exports.ServicesController, events.EventEmitter);
 
 exports.ServicesController.prototype.handleRequest = function(request, response, server) {
 	var me = this;
@@ -94,7 +94,7 @@ exports.ServicesController.prototype.handleRequest = function(request, response,
 };
 
 exports.ServicesController.prototype.handleServiceRequest = function(request, response, server) {
-	var me = this
+	var me = this,
 		service = me.services[request.path[1]];
 		
 	if(!service) {

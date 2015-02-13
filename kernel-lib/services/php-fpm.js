@@ -3,11 +3,7 @@ var fs    = require('fs'),
     util  = require('util'),
     spawn = require('child_process').spawn;
 
-exports.createService = function (name, controller, options) {
-    return new exports.phpFpm(name, controller, options);
-};
-
-exports.phpFpm = function (name, controller, options) {
+function phpFpm(name, controller, options) {
     var me = this;
 
     // call parent constructor
@@ -40,14 +36,22 @@ exports.phpFpm = function (name, controller, options) {
     if (fs.existsSync(me.options.pidPath)) {
         me.pid = parseInt(fs.readFileSync(me.options.pidPath));
         console.log(me.name + ': found existing PID: ' + me.pid);
-        me.status = 'online';
+
+        if (me.isRunning()) {
+            me.status = 'online';
+        } else {
+            me.status = 'offline';
+            me.pid = null;
+            console.log(me.name + ': deleting stale PID file');
+            fs.unlink(me.options.pidPath);
+        }
     }
-
 }
-util.inherits(exports.phpFpm, require('./abstract.js').AbstractService);
+
+util.inherits(phpFpm, require('./abstract.js').AbstractService);
 
 
-exports.phpFpm.prototype.start = function () {
+phpFpm.prototype.start = function () {
     var me = this;
 
     console.log(me.name + ': spawning daemon: ' + me.options.execPath);
@@ -100,13 +104,12 @@ exports.phpFpm.prototype.start = function () {
 }
 
 
-exports.phpFpm.prototype.stop = function () {
+phpFpm.prototype.stop = function () {
     var me = this;
 
     if (!me.pid) {
         return false;
     }
-
 
     try {
         process.kill(me.pid, 'SIGQUIT');
@@ -122,7 +125,7 @@ exports.phpFpm.prototype.stop = function () {
 }
 
 
-exports.phpFpm.prototype.restart = function () {
+phpFpm.prototype.restart = function () {
     var me = this;
 
     if (!me.pid) {
@@ -145,11 +148,11 @@ exports.phpFpm.prototype.restart = function () {
 }
 
 
-exports.phpFpm.prototype.writeConfig = function () {
+phpFpm.prototype.writeConfig = function () {
     fs.writeFileSync(this.options.configPath, this.makeConfig());
 };
 
-exports.phpFpm.prototype.makeConfig = function () {
+phpFpm.prototype.makeConfig = function () {
     var me = this,
         c = '';
 
@@ -185,4 +188,10 @@ exports.phpFpm.prototype.makeConfig = function () {
     c += 'php_admin_value[date.timezone]=America/New_York\n';
 
     return c;
+};
+
+exports.phpFpm = phpFpm;
+
+exports.createService = function createService(name, controller, options) {
+    return new phpFpm(name, controller, options);
 };

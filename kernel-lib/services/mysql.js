@@ -4,15 +4,11 @@ var fs    = require('fs'),
     spawn = require('child_process').spawn,
     exec  = require('child_process').exec;
 
-exports.createService = function (name, controller, options) {
-    return new exports.mysql(name, controller, options);
-};
-
-exports.mysql = function (name, controller, options) {
+function mysql(name, controller, options) {
     var me = this;
 
     // call parent constructor
-    exports.mysql.super_.apply(me, arguments);
+    mysql.super_.apply(me, arguments);
 
     // default options
     me.options.configPath      = me.options.configPath      || controller.options.configDir + '/my.cnf';
@@ -27,12 +23,12 @@ exports.mysql = function (name, controller, options) {
     me.options.managerUser     = me.options.managerUser     || 'emergence';
     me.options.managerPassword = me.options.managerPassword || '';
 
-    // check for existing mysqld process
+    // check for existing master process
     if (fs.existsSync(me.options.pidPath)) {
         me.pid = parseInt(fs.readFileSync(me.options.pidPath));
-        console.log(me.name + ': found existing PID: ' + me.pid + ', checking /proc/' + me.pid);
+        console.log(me.name + ': found existing PID: ' + me.pid);
 
-        if (fs.existsSync('/proc/' + me.pid)) {
+        if (me.isRunning()) {
             me.status = 'online';
 
             // instantiate MySQL client
@@ -41,20 +37,21 @@ exports.mysql = function (name, controller, options) {
                 user:     me.options.managerUser,
                 password: me.options.managerPassword
             });
-        }
-        else {
-            console.log(me.name + ': process ' + me.pid + ' not found, deleting .pid file');
-            fs.unlinkSync(me.options.pidPath);
+        } else {
+            me.status = 'offline';
+            me.pid = null;
+            console.log(me.name + ': deleting stale PID file');
+            fs.unlink(me.options.pidPath);
         }
     }
 
     // listen for site creation
-    controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
-};
+    controller.sites.on('siteCreated', me.onSiteCreated.bind(me));
+}
 
-util.inherits(exports.mysql, require('./abstract.js').AbstractService);
+util.inherits(mysql, require('./abstract.js').AbstractService);
 
-exports.mysql.prototype.start = function (firstRun) {
+mysql.prototype.start = function (firstRun) {
     var me = this;
 
     if (me.pid) {
@@ -141,7 +138,7 @@ exports.mysql.prototype.start = function (firstRun) {
     return true;
 };
 
-exports.mysql.prototype.stop = function () {
+mysql.prototype.stop = function () {
     var me = this;
 
     if (!me.pid) {
@@ -169,7 +166,7 @@ exports.mysql.prototype.stop = function () {
     return true;
 };
 
-exports.mysql.prototype.restart = function () {
+mysql.prototype.restart = function () {
     var me = this;
 
     if (!me.stop()) {
@@ -192,12 +189,12 @@ exports.mysql.prototype.restart = function () {
     return me.start();
 };
 
-exports.mysql.prototype.writeConfig = function () {
+mysql.prototype.writeConfig = function () {
     fs.writeFileSync(this.options.configPath, this.makeConfig());
 };
 
 
-exports.mysql.prototype.makeConfig = function () {
+mysql.prototype.makeConfig = function () {
     var me = this,
         c = '';
 
@@ -245,7 +242,7 @@ exports.mysql.prototype.makeConfig = function () {
     return c;
 };
 
-exports.mysql.prototype.secureInstallation = function () {
+mysql.prototype.secureInstallation = function () {
 
     var me = this,
         sql = '';
@@ -279,7 +276,7 @@ exports.mysql.prototype.secureInstallation = function () {
 
 };
 
-exports.mysql.prototype.onSiteCreated = function (siteData, requestData, callbacks) {
+mysql.prototype.onSiteCreated = function (siteData, requestData, callbacks) {
     var me = this,
         sql = '',
         dbConfig = {
@@ -317,7 +314,7 @@ exports.mysql.prototype.onSiteCreated = function (siteData, requestData, callbac
 };
 
 
-exports.mysql.prototype.createSkeletonTables = function (siteData, callback) {
+mysql.prototype.createSkeletonTables = function (siteData, callback) {
     var me = this,
         sql = '';
 
@@ -366,4 +363,10 @@ exports.mysql.prototype.createSkeletonTables = function (siteData, callback) {
 
         callback();
     });
+};
+
+exports.mysql = mysql;
+
+exports.createService = function createService(name, controller, options) {
+    return new mysql(name, controller, options);
 };
