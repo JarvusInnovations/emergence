@@ -63,7 +63,7 @@ class HttpProxy
 
         // get cookies
         if (!isset($options['cookies'])) {
-            $options['cookies'] = $_COOKIE;
+            $options['cookies'] = $_SERVER['HTTP_COOKIE'];
         }
 
         // add query string
@@ -156,9 +156,13 @@ class HttpProxy
         }
 
         if (!empty($options['cookies'])) {
-            $cookieStr = implode('; ', array_map(function ($key, $value) {
-                return $key.'='.urlencode($value);
-            }, array_keys($options['cookies']), $options['cookies']));
+            if (is_string($options['cookies'])) {
+                $cookieStr = $options['cookies'];
+            } else {
+                $cookieStr = implode('; ', array_map(function ($key, $value) {
+                    return $key.'='.urlencode($value);
+                }, array_keys($options['cookies']), $options['cookies']));
+            }
 
             curl_setopt($ch, CURLOPT_COOKIE, $cookieStr);
         }
