@@ -393,9 +393,9 @@ class Site
             $vfsPath = isset($pathCache[$id]) ? $pathCache[$id] : $pathCache[$id] = implode('/', SiteFile::getByID($id)->getFullPath());
 
             if ($linkify) {
-                return '<a href="/develop#/' . $vfsPath . '" target="_blank">' . $vfsPath . '</a>';
+                return '<a href="/develop#/' . $vfsPath . '" target="_blank">' . $vfsPath . '</a> (' . $matches[0] . ')';
             } else {
-                return $vfsPath . ' (' . explode('', $matches) . ')';
+                return $vfsPath . ' (' . $matches[0] . ')';
             }
         }, $str);
     }
