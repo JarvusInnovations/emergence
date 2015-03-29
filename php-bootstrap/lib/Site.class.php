@@ -95,6 +95,9 @@ class Site
         // register exception handler
         set_exception_handler('Site::handleException');
 
+        // register fatal error handler
+        register_shutdown_function('Site::handleFatalError');
+
         // check virtual system for site config
         static::loadConfig(__CLASS__);
 
@@ -380,6 +383,23 @@ class Site
         }
     }
 
+    public static function virtualizePaths($str, $linkify = false)
+    {
+        $pathCache = [];
+        $regex = '/' . preg_quote(static::$rootPath . '/' . SiteFile::$dataPath, '/') . '\/(\\d+)/um';
+
+        return preg_replace_callback($regex, function ($matches) use ($pathCache, $linkify) {
+            $id = $matches[1];
+            $vfsPath = isset($pathCache[$id]) ? $pathCache[$id] : $pathCache[$id] = implode('/', SiteFile::getByID($id)->getFullPath());
+
+            if ($linkify) {
+                return '<a href="/develop#/' . $vfsPath . '" target="_blank">' . $vfsPath . '</a>';
+            } else {
+                return $vfsPath . ' (' . explode('', $matches) . ')';
+            }
+        }, $str);
+    }
+
     public static function handleError($errno, $errstr, $errfile, $errline)
     {
         if (!(error_reporting() & $errno)) {
@@ -401,6 +421,7 @@ class Site
 
         $report .= static::_getRequestReport();
         $report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
+        $report = static::virtualizePaths($report, UserSession::getFromRequest()->hasAccountLevel('Developer'));
 
         if (!headers_sent()) {
             header('Status: 500 Internal Server Error');
@@ -416,7 +437,7 @@ class Site
         }
     }
 
-    public static function handleException($e)
+    public static function handleException($e, $output_backtrace = true)
     {
         if (extension_loaded('newrelic')) {
             newrelic_notice_error(null, $e);
@@ -427,11 +448,16 @@ class Site
         $report .= sprintf("<h2>Message</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getMessage()));
         $report .= sprintf("<h2>Code</h2>\n<pre>%s</pre>\n", htmlspecialchars($e->getCode()));
         $report .= static::_getRequestReport();
-        $report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
+        // the backtrace will be garbage if this came from the fatal error handler
+        if ($output_backtrace) {
+            $report .= sprintf("<h2>Backtrace</h2>\n<pre>%s</pre>\n", htmlspecialchars(print_r(debug_backtrace(), true)));
+        }
 
         if (!headers_sent()) {
             header('Status: 500 Internal Server Error');
         }
+
+        $report = static::virtualizePaths($report, UserSession::getFromRequest()->hasAccountLevel('Developer'));
 
         if (static::$debug) {
             die($report);
@@ -440,6 +466,33 @@ class Site
                 Email::send(static::$webmasterEmail, 'Unhandled exception on '.static::$hostname, $report);
             }
             die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
+        }
+    }
+
+    public static function handleFatalError()
+    {
+        if($lastError = error_get_last()) {
+            $filePath = $lastError['file'];
+
+            // TODO: If the file is in the EMERGENCE_BOOTSTRAP_DIR or the DAV location, link the user to documentation on how to repair core Emergence files
+
+            $SiteFile = SiteFile::getByID(substr($filePath, strrpos($filePath, '/') + 1));
+            $fileContents = file($SiteFile->getRealPath());
+            $vfsPath = implode('/', $SiteFile->getFullPath());
+
+            // For non-developers, create an exception based on the fatal error and pass it to handleException
+            if (!UserSession::getFromRequest()->hasAccountLevel('Developer')) {
+                ob_clean();
+                self::handleException(new Exception('Fatal Error: ' . $lastError['message'] . ' in ' . $vfsPath . ' on line ' . $lastError['line'], $lastError['type']), false);
+            }
+
+            $outputBuffer = str_replace($filePath, $vfsPath, ob_get_clean());
+            printf('<button><a href="/develop#/%s" target="_blank">Open %1$s with Emergence Editor</a></button><br><hr>', $vfsPath);
+            print $outputBuffer;
+
+            if (!headers_sent()) {
+                header('Status: 500 Internal Server Error');
+            }
         }
     }
 
