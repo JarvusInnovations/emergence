@@ -477,17 +477,20 @@ class Site
             // TODO: If the file is in the EMERGENCE_BOOTSTRAP_DIR or the DAV location, link the user to documentation on how to repair core Emergence files
 
             $SiteFile = SiteFile::getByID(substr($filePath, strrpos($filePath, '/') + 1));
-            $fileContents = file($SiteFile->getRealPath());
             $vfsPath = implode('/', $SiteFile->getFullPath());
 
             // For non-developers, create an exception based on the fatal error and pass it to handleException
             if (!UserSession::getFromRequest()->hasAccountLevel('Developer')) {
                 ob_clean();
                 self::handleException(new Exception('Fatal Error: ' . $lastError['message'] . ' in ' . $vfsPath . ' on line ' . $lastError['line'], $lastError['type']), false);
+            } else {
+                $fileContents = file($SiteFile->getRealPath());
+                $fileContents[$lastError['line']-1] = rtrim($fileContents[$lastError['line']-1]) . ' //' . $lastError['message'];
             }
 
             $outputBuffer = str_replace($filePath, $vfsPath, ob_get_clean());
-            printf('<button><a href="/develop#/%s" target="_blank">Open %1$s with Emergence Editor</a></button><br><hr>', $vfsPath);
+            printf('<button><a href="/develop#/%s" target="_blank">Open %1$s in Emergence Editor</a></button><br><hr>', $vfsPath);
+            highlight_string(implode("\n", $fileContents));
             print $outputBuffer;
 
             if (!headers_sent()) {
