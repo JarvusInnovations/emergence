@@ -35,20 +35,8 @@ Requirements
 
 Installation
 --------------
-	mkdir /emergence
-	cd /emergence
-	git clone git@github.com:JarvusInnovations/Emergence.git
-	cd kernel
-	npm install underscore node-static mysql
-	cp kernel.config.json.SAMPLE kernel.config.json
-	
-Edit kernel.config.json, insert MySQL manageUser & managePassword and optionally set IPs for management and web servers. MySQL manage user must have global privileges to SELECT, INSERT, UPDATE, DELETE, CREATE, RELOAD, SHOW DATABASES, CREATE USER, and GRANT;
+See http://emr.ge/docs
 
-
-Getting Started
-------------------
-	cd /emergence/kernel
-	sudo node kernel
 
 
 Visit http://serverhost:9083 in your browser
