@@ -104,13 +104,22 @@ class SiteFile
 
     public static function getByID($fileID)
     {
-        $record = DB::oneRecord(
-            'SELECT * FROM `%s` WHERE ID = %u'
-            ,array(
-                static::$tableName
-                ,$fileID
-            )
-        );
+        $cacheKey = 'efs:file:' . $fileID;
+
+        if (false === ($record = Cache::fetch($cacheKey))) {
+            $record = DB::oneRecord(
+                'SELECT * FROM `%s` WHERE ID = %u'
+                ,array(
+                    static::$tableName
+                    ,$fileID
+                )
+            );
+
+            // don't cache the temporary "Phantom" records created as placeholders during write
+            if ($record['Status'] != 'Phantom') {
+                Cache::store($cacheKey, $record);
+            }
+        }
 
         return $record ? new static($record['Handle'], $record) : null;
     }

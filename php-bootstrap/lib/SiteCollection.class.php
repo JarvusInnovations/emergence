@@ -78,7 +78,20 @@ class SiteCollection
 
     public static function getByID($collectionID)
     {
-        $record = DB::oneRecord('SELECT * FROM `%s` WHERE ID = %u', array(static::$tableName, $collectionID));
+        $cacheKey = 'efs:col:' . $collectionID;
+
+        if (false === ($record = Cache::fetch($cacheKey))) {
+            $record = DB::oneRecord(
+                'SELECT * FROM `%s` WHERE ID = %u'
+                ,array(
+                    static::$tableName
+                    ,$collectionID
+                )
+            );
+
+            Cache::store($cacheKey, $record);
+        }
+
         return $record ? new static($record['Handle'], $record) : null;
     }
 
