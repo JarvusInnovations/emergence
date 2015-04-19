@@ -51,7 +51,7 @@ class Emergence_FS
         if ($path) {
             $collections = static::getCollectionLayers($path, $localOnly);
 
-            if(!$collections['local'] && !$collections['remote']) {
+            if(empty($collections['local']) && empty($collections['remote'])) {
                 return array();
             }
 
@@ -60,7 +60,7 @@ class Emergence_FS
 
             // calculate position conditions
             $positionConditions = array();
-            if ($collections['local']) {
+            if (!empty($collections['local'])) {
                 $positions = DB::oneRecord('SELECT PosLeft, PosRight FROM `%s` WHERE ID = %u', array(
                     SiteCollection::$tableName
                     ,$collections['local']->ID
@@ -69,7 +69,7 @@ class Emergence_FS
                 $positionConditions[] = sprintf('PosLeft BETWEEN %u AND %u', $positions['PosLeft'], $positions['PosRight']);
             }
 
-            if ($collections['remote']) {
+            if (!empty($collections['remote'])) {
                 $positions = DB::oneRecord('SELECT PosLeft, PosRight FROM `%s` WHERE ID = %u', array(
                     SiteCollection::$tableName
                     ,$collections['remote']->ID
@@ -387,7 +387,7 @@ class Emergence_FS
                 continue;
             }
 
-            if ($collectionInfo['ParentID'] && $destinationCollectionsTree[$collectionInfo['ParentID']]) {
+            if ($collectionInfo['ParentID'] && isset($destinationCollectionsTree[$collectionInfo['ParentID']])) {
                 $collectionInfo['_path'] = $destinationCollectionsTree[$collectionInfo['ParentID']]['_path'] . '/' . $collectionInfo['Handle'];
                 $localDestinationCollectionsMap[$collectionInfo['_path']] = &$collectionInfo;
             } else {
@@ -451,7 +451,7 @@ class Emergence_FS
                 continue;
             }
 
-            $existingNode = $destinationFilesMap[$path];
+            $existingNode = isset($destinationFilesMap[$path]) ? $destinationFilesMap[$path] : null;
 
             // calculate hash for incoming file
             $sha1 = sha1_file($node->getRealPath());
@@ -543,7 +543,7 @@ class Emergence_FS
 
 
         return array(
-            'directoriesAnalyzed' => $directoriesAnalyzed
+            'collectionsAnalyzed' => $collectionsAnalyzed
             ,'filesAnalyzed' => $filesAnalyzed
             ,'filesUpdated' => $filesUpdated
             ,'pathsExcluded' => $pathsExcluded
