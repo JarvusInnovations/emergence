@@ -44,7 +44,7 @@ class DB
         return self::getMysqli()->insert_id;
     }
 
-    public static function nonQuery($query, $parameters = array())
+    public static function nonQuery($query, $parameters = null)
     {
         $query = self::preprocessQuery($query, $parameters);
 
@@ -65,7 +65,7 @@ class DB
         self::finishQueryLog($queryLog);
     }
 
-    public static function multiQuery($query, $parameters = array())
+    public static function multiQuery($query, $parameters = null)
     {
         $query = self::preprocessQuery($query, $parameters);
 
@@ -92,7 +92,7 @@ class DB
         self::finishQueryLog($queryLog);
     }
 
-    public static function query($query, $parameters = array())
+    public static function query($query, $parameters = null)
     {
         $query = self::preprocessQuery($query, $parameters);
 
@@ -113,7 +113,7 @@ class DB
         return $result;
     }
 
-    public static function table($tableKey, $query, $parameters = array(), $nullKey = '')
+    public static function table($tableKey, $query, $parameters = null, $nullKey = '')
     {
         // execute query
         $result = self::query($query, $parameters);
@@ -129,7 +129,7 @@ class DB
         return $records;
     }
 
-    public static function arrayTable($tableKey, $query, $parameters = array())
+    public static function arrayTable($tableKey, $query, $parameters = null)
     {
         // execute query
         $result = self::query($query, $parameters);
@@ -149,7 +149,7 @@ class DB
         return $records;
     }
 
-    public static function valuesTable($tableKey, $valueKey, $query, $parameters = array())
+    public static function valuesTable($tableKey, $valueKey, $query, $parameters = null)
     {
         // execute query
         $result = self::query($query, $parameters);
@@ -165,7 +165,7 @@ class DB
         return $records;
     }
 
-    public static function allRecordsWithInstantiation($query, $classMapping, $parameters = array())
+    public static function allRecordsWithInstantiation($query, $classMapping, $parameters = null)
     {
         // execute query
         $result = self::query($query, $parameters);
@@ -185,7 +185,7 @@ class DB
         return $records;
     }
 
-    public static function allInstances($className, $query, $parameters = array())
+    public static function allInstances($className, $query, $parameters = null)
     {
         // execute query
         $result = self::query($query, $parameters);
@@ -201,7 +201,7 @@ class DB
         return $records;
     }
 
-    public static function allRecords($query, $parameters = array())
+    public static function allRecords($query, $parameters = null)
     {
         // MICS::dump(array('query' => $query, 'params' => $parameters), 'allRecords');
 
@@ -219,7 +219,7 @@ class DB
         return $records;
     }
 
-    public static function allValues($valueKey, $query, $parameters = array())
+    public static function allValues($valueKey, $query, $parameters = null)
     {
         // execute query
         $result = self::query($query, $parameters);
@@ -240,7 +240,7 @@ class DB
         unset(self::$_record_cache[$cacheKey]);
     }
 
-    public static function oneRecordCached($cacheKey, $query, $parameters = array())
+    public static function oneRecordCached($cacheKey, $query, $parameters = null)
     {
         // check for cached record
         if (array_key_exists($cacheKey, self::$_record_cache)) {
@@ -279,7 +279,7 @@ class DB
         return $record;
     }
 
-    public static function oneRecord($query, $parameters = array())
+    public static function oneRecord($query, $parameters = null)
     {
         // preprocess and execute query
         $result = self::query($query, $parameters);
@@ -294,7 +294,7 @@ class DB
         return $record;
     }
 
-    public static function oneValue($query, $parameters = array())
+    public static function oneValue($query, $parameters = null)
     {
         $record = self::oneRecord($query, $parameters);
 
@@ -306,7 +306,7 @@ class DB
         }
     }
 
-    public static function dump($query, $parameters = array())
+    public static function dump($query, $parameters = null)
     {
         Debug::dump($query, false);
 
@@ -331,13 +331,13 @@ class DB
         return $s;
     }
 
-    public static function prepareQuery($query, $parameters = array())
+    public static function prepareQuery($query, $parameters = null)
     {
         return self::preprocessQuery($query, $parameters);
     }
 
     // protected static methods
-    protected static function preprocessQuery($query, $parameters = array())
+    protected static function preprocessQuery($query, $parameters = null)
     {
         if (is_array($parameters) && count($parameters)) {
             return vsprintf($query, $parameters);
