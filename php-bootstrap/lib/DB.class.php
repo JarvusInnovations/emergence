@@ -339,13 +339,15 @@ class DB
     // protected static methods
     protected static function preprocessQuery($query, $parameters = null)
     {
-        if (is_array($parameters) && count($parameters)) {
-            return vsprintf($query, $parameters);
-        } elseif (isset($parameters)) {
-            return sprintf($query, $parameters);
-        } else {
+        if (empty($parameters)) {
             return $query;
         }
+
+        if (is_array($parameters)) {
+            return vsprintf($query, $parameters);
+        }
+
+        return sprintf($query, $parameters);
     }
 
     protected static function startQueryLog($query)
