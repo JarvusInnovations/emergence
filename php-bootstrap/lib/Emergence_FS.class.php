@@ -237,6 +237,7 @@ class Emergence_FS
         $options = array_merge(array(
             'localOnly' => false
             ,'dataPath' => $destinationPath . '/.emergence'
+            ,'exclude' => array()
             ,'transferDelete' => true
         ), $options);
 
@@ -249,10 +250,17 @@ class Emergence_FS
             throw new Exception("Destination \"$destinationPath\" is not writable");
         }
 
+        if (!empty($options['exclude']) && is_string($options['exclude'])) {
+            $options['exclude'] = array($options['exclude']);
+        }
+
+        $prefixLen = strlen($sourcePath);
         $tree = static::getTree($sourcePath, $options['localOnly'], $options['transferDelete']);
+        $includedCollectionIDs = array();
+        $collectionsExcluded = 0;
 
         // build relative paths and create directories
-        foreach ($tree AS &$node) {
+        foreach ($tree AS $collectionID => &$node) {
 
             if ($node['ParentID'] && $tree[$node['ParentID']]) {
                 $node['_path'] = $tree[$node['ParentID']]['_path'] . '/' . $node['Handle'];
@@ -260,9 +268,22 @@ class Emergence_FS
                 $node['_path'] = $destinationPath;
             }
 
-            if ($node['Status'] == 'Normal' && !is_dir($node['_path'])) {
+            $relPath = substr($node['_path'], $prefixLen);
+
+            if ($node['Status'] != 'Normal') {
+                continue;
+            }
+
+            if (static::matchesExclude($relPath, $options['exclude'])) {
+                $collectionsExcluded++;
+                continue;
+            }
+
+            if (!is_dir($node['_path'])) {
                 mkdir($node['_path'], 0777, true);
             }
+
+            $includedCollectionIDs[] = $collectionID;
         }
 
         // read file state from emergence data
@@ -278,6 +299,7 @@ class Emergence_FS
 
         // get files
         $filesAnalyzed = 0;
+        $filesExcluded = 0;
         $filesWritten = array();
         $filesDeleted = array();
 
@@ -287,13 +309,19 @@ class Emergence_FS
                 ,array(
                     SiteFile::$tableName
                     ,$mark
-                    ,join(',', array_keys($tree))
+                    ,join(',', $includedCollectionIDs)
                 )
             );
 
             // copy each
             while ($fileRow = $fileResult->fetch_assoc()) {
                 $dst = $tree[$fileRow['CollectionID']]['_path'].'/'.$fileRow['Handle'];
+                $relPath = substr($dst, $prefixLen);
+
+                if (static::matchesExclude($relPath, $options['exclude'])) {
+                    $filesExcluded++;
+                    continue;
+                }
 
                 if ($fileRow['Status'] == 'Normal' && $tree[$fileRow['CollectionID']]['Status'] != 'Deleted' && ($tree[$fileRow['CollectionID']]['Site'] == 'Local' || !in_array($dst, $filesWritten))) {
                     copy(Site::$rootPath . '/' . SiteFile::$dataPath . '/' . $fileRow['ID'], $dst);
@@ -321,9 +349,12 @@ class Emergence_FS
         }
 
         return array(
-            'analyzed' => $filesAnalyzed
-            ,'written' => count($filesWritten)
-            ,'deleted' => count($filesDeleted)
+            'collectionsExcluded' => $collectionsExcluded,
+            'collectionsAnalyzed' => count($includedCollectionIDs),
+            'filesExcluded' => $filesExcluded,
+            'filesAnalyzed' => $filesAnalyzed,
+            'filesWritten' => count($filesWritten),
+            'filesDeleted' => count($filesDeleted)
         );
     }
 
@@ -423,13 +454,9 @@ class Emergence_FS
                 Debug::dump(array('tmpPath' => $tmpPath, 'destPath' => $path), false, 'iterating node');
             }
 
-            if (!empty($options['exclude'])) {
-                foreach ($options['exclude'] AS $excludePattern) {
-                    if (preg_match($excludePattern, $relPath)) {
-                        $pathsExcluded++;
-                        continue 2;
-                    }
-                }
+            if (static::matchesExclude($relPath, $options['exclude'])) {
+                $pathsExcluded++;
+                continue;
             }
 
             // handle directory
@@ -481,16 +508,11 @@ class Emergence_FS
         if ($options['transferDelete']) {
             // delete local collections
             foreach ($localDestinationCollectionsMap AS $path => $collectionInfo) {
+                $relPath = substr($path, strlen($destinationPath));
 
                 // skip excluded paths
-                if (!empty($options['exclude'])) {
-                    $relPath = substr($path, strlen($destinationPath));
-
-                    foreach ($options['exclude'] AS $excludePattern) {
-                        if (preg_match($excludePattern, $relPath)) {
-                            continue 2;
-                        }
-                    }
+                if (static::matchesExclude($relPath, $options['exclude'])) {
+                    continue;
                 }
 
                 DB::nonQuery(
@@ -513,15 +535,11 @@ class Emergence_FS
                     continue;
                 }
 
-                // skip excluded paths
-                if (!empty($options['exclude'])) {
-                    $relPath = substr($path, strlen($destinationPath));
+                $relPath = substr($path, strlen($destinationPath));
 
-                    foreach ($options['exclude'] AS $excludePattern) {
-                        if (preg_match($excludePattern, $relPath)) {
-                            continue 2;
-                        }
-                    }
+                // skip excluded paths
+                if (static::matchesExclude($relPath, $options['exclude'])) {
+                    continue;
                 }
 
                 DB::nonQuery(
@@ -689,5 +707,18 @@ class Emergence_FS
         }
 
         return $matchedNodes;
+    }
+
+    public static function matchesExclude($relPath, array $excludes)
+    {
+        if ($excludes) {
+            foreach ($excludes AS $excludePattern) {
+                if (preg_match($excludePattern, $relPath)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
