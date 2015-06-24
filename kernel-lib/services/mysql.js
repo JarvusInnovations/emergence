@@ -238,20 +238,21 @@ exports.mysql.prototype.makeConfig = function() {
 	else
 		c += 'skip-networking\n';
 
-	c += 'log-bin					= mysqld-bin\n'
-	c += 'server-id 				= 1\n'
+	c += 'log-bin					= mysqld-bin\n';
+	c += 'expire_logs_days				= 2\n';
+	c += 'server-id 				= 1\n';
 
-	c += 'tmpdir 					= /tmp/\n'
+	c += 'tmpdir 					= /tmp/\n';
 	
-	c += 'innodb_buffer_pool_size = 16M\n'
-	c += 'innodb_additional_mem_pool_size = 2M\n'
-	c += 'innodb_data_file_path = ibdata1:10M:autoextend:max:128M\n'
-	c += 'innodb_log_file_size = 5M\n'
-	c += 'innodb_log_buffer_size = 8M\n'
-	c += 'innodb_log_files_in_group=2\n'
-	c += 'innodb_flush_log_at_trx_commit = 1\n'
-	c += 'innodb_lock_wait_timeout = 50\n'
-	c += 'innodb_file_per_table\n'
+	c += 'innodb_buffer_pool_size = 16M\n';
+	c += 'innodb_additional_mem_pool_size = 2M\n';
+	c += 'innodb_data_file_path = ibdata1:10M:autoextend:max:128M\n';
+	c += 'innodb_log_file_size = 5M\n';
+	c += 'innodb_log_buffer_size = 8M\n';
+	c += 'innodb_log_files_in_group=2\n';
+	c += 'innodb_flush_log_at_trx_commit = 1\n';
+	c += 'innodb_lock_wait_timeout = 50\n';
+	c += 'innodb_file_per_table\n';
 
 	return c;
 };
