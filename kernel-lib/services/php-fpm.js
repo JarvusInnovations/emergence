@@ -160,6 +160,9 @@ exports.phpFpm.prototype.makeConfig = function() {
 	c += '[global]\n';
 	c += 'pid = '+me.options.pidPath+'\n';
 	c += 'error_log = '+me.options.errorLogPath+'\n';
+	c += 'emergency_restart_threshold = 10\n';
+	c += 'emergency_restart_interval = 1m\n';
+	c += 'process_control_timeout = 10s\n';
 	c += '[www]\n';
 	c += 'user = '+me.options.user+'\n';
 	c += 'group = '+me.options.group+'\n';
