@@ -5,7 +5,8 @@ var _ = require('underscore')
 	,util = require('util')
 	,events = require('events')
 	,posix = require('posix')
-	,spawn = require('child_process').spawn;
+	,spawn = require('child_process').spawn
+	,hostile = require('hostile');
 	
 
 exports.createSites = function(config) {
@@ -63,19 +64,81 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 	else if(request.method == 'POST')
 	{
 		// TODO: prevent accidentally overwritting existing site -- require different VERB/PATH
-		var requestData = JSON.parse(request.content);
-		
-		// apply existing site's properties
-		if(request.path[1] && me.sites[request.path[1]])
+		var requestData, cfgResult, phpProc, phpProcInitialized;
+
+		if (request.headers['content-type'] == 'application/json') {
+			requestData = JSON.parse(request.content);
+		} else {
+			requestData = request.content;
+		}
+
+		// handle post to an individual site
+		if (request.path[1]) {
+			if (!me.sites[request.path[1]]) {
+				console.error('Site not found: ' + request.path[1]);
+				response.writeHead(404, {'Content-Type':'application/json'});
+				response.end(JSON.stringify({success: false, message: 'Site not found'}));
+				return;
+			}
+
+			if (request.path[2]) {
+				if (request.path[2] == 'php-shell') {
+					response.writeHead(200, {'Content-Type':'text/plain'});
+
+					console.log('Executing shell post for ' + request.path[1] + ':');
+					console.log(requestData);
+
+					phpProc = spawn('emergence-shell', [request.path[1]]);
+					phpProcInitialized = false;
+
+					phpProc.stderr.on('data', function(data) {
+						console.log('php-cli stderr: ' + data);
+					});
+
+					phpProc.stdout.on('data', function(data) {
+						console.log('php-cli stdout: ' + data);
+
+						// skip first chunk from PHP process
+						if (!phpProcInitialized) {
+							phpProcInitialized = true;
+							return;
+						}
+
+						response.write(data);
+					});
+
+					phpProc.stdin.write(requestData+'\n');
+					phpProc.stdin.end();
+
+					phpProc.on('close', function (code) {
+						console.log('php-cli finished with code ' + code);
+						response.end();
+					});
+
+					return true;
+				} else {
+					console.error('Unhandled site sub-resource: ' + request.path[2]);
+					response.writeHead(404, {'Content-Type':'application/json'});
+					response.end(JSON.stringify({success: false, message: 'Site resource not found'}));
+					return;
+				}
+			}
+
+			// apply existing site's properties in
 			_.defaults(requestData, me.sites[request.path[1]]);
-		
+		}
+
+		// create new site
 		try
 		{
-			var cfgResult = me.writeSiteConfig(requestData)
-				,phpProc;
+			cfgResult = me.writeSiteConfig(requestData);
 			
 			if(cfgResult.isNew)
 			{
+				// write primary hostname to /etc/hosts
+				hostile.set('127.0.0.1', cfgResult.site.primary_hostname);
+				console.log('added ' + cfgResult.site.primary_hostname + ' to /etc/hosts');
+
 				// notify plugins
 				me.emit('siteCreated', cfgResult.site, requestData, {
 					databaseReady: function() {
