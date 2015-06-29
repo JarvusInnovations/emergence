@@ -303,7 +303,7 @@ class Emergence_FS
         $filesWritten = array();
         $filesDeleted = array();
 
-        if (count($tree)) {
+        if (count($includedCollectionIDs)) {
             $fileResult = DB::query(
                 'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE ID > %2$u AND CollectionID IN (%3$s) AND Status != "Phantom" GROUP BY f1.CollectionID, f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 USING (ID)'
                 ,array(
