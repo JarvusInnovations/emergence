@@ -228,22 +228,19 @@ class Site
                 call_user_func(static::$onRequestMapped, $resolvedNode);
             }
 
+            // switch collection result to its _index.php if found
+            if (
+                is_a($resolvedNode, 'SiteCollection') &&
+                (
+                    ($indexNode = $resolvedNode->getChild('_index.php')) ||
+                    ($indexNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath, array('_index.php'))))
+                )
+            ) {
+                $resolvedNode = $indexNode;
+            }
+
             if ($resolvedNode->MIMEType == 'application/php') {
-                function e_include($file)
-                {
-                    $file = Site::normalizePath('site-root/'.implode('/', Site::$resolvedPath).'/../'.$file);
-                    if (!$node = Site::resolvePath($file)) {
-                        throw new Exception('e_include failed to find in efs: '.$file);
-                    }
-                    require($node->RealPath);
-                }
-
-                if (is_callable(static::$onBeforeScriptExecute)) {
-                    call_user_func(static::$onBeforeScriptExecute, $resolvedNode);
-                }
-
-                require($resolvedNode->RealPath);
-                exit();
+                static::executeScript($resolvedNode);
             } elseif (is_callable(array($resolvedNode, 'outputAsResponse'))) {
                 if (!is_a($resolvedNode, 'SiteFile') && !static::$listCollections) {
                     static::respondNotFound();
@@ -259,6 +256,28 @@ class Site
             }
         } else {
             static::respondNotFound();
+        }
+    }
+
+    public static function executeScript(SiteFile $_SCRIPT_NODE, $_SCRIPT_EXIT = true)
+    {
+        function e_include($_INCLUDE_FILE)
+        {
+            $_INCLUDE_PATH = Site::normalizePath('site-root/'.implode('/', Site::$resolvedPath).'/../'.$file);
+            if (!$_INCLUDE_NODE = Site::resolvePath($_INCLUDE_PATH)) {
+                throw new Exception('e_include failed to find in efs: '.$_INCLUDE_PATH);
+            }
+            require($_INCLUDE_NODE->RealPath);
+        }
+
+        if (is_callable(static::$onBeforeScriptExecute)) {
+            call_user_func(static::$onBeforeScriptExecute, $_SCRIPT_NODE);
+        }
+
+        require($_SCRIPT_NODE->RealPath);
+
+        if ($_SCRIPT_EXIT) {
+            exit();
         }
     }
 
@@ -482,10 +501,26 @@ class Site
     {
         if (is_callable(static::$onNotFound)) {
             call_user_func(static::$onNotFound, $message);
-        } else {
-            header('HTTP/1.0 404 Not Found');
-            die($message);
         }
+
+        $notFoundStack = static::$requestPath;
+        array_unshift($notFoundStack, 'site-root');
+
+        $notFoundNode = null;
+        while (count($notFoundStack)) {
+            if ($notFoundNode = static::resolvePath(array_merge($notFoundStack, array('_notfound.php')))) {
+                break;
+            }
+
+            array_pop($notFoundStack);
+        }
+
+        if ($notFoundNode) {
+            static::executeScript($notFoundNode);
+        }
+
+        header('HTTP/1.0 404 Not Found');
+        die($message);
     }
 
     public static function respondBadRequest($message = 'Cannot display resource')
