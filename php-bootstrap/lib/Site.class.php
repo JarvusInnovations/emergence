@@ -235,6 +235,7 @@ class Site
             }
 
             if ($resolvedNode->MIMEType == 'application/php') {
+                // TODO: execute _all.php handlers, cache the list of them for the containing collection
                 static::executeScript($resolvedNode);
             } elseif (is_callable(array($resolvedNode, 'outputAsResponse'))) {
                 if (!is_a($resolvedNode, 'SiteFile') && !static::$listCollections) {
@@ -501,6 +502,7 @@ class Site
         $notFoundStack = array_filter(static::$requestPath);
         array_unshift($notFoundStack, 'site-root');
 
+        // TODO: cache list of _notfound handlers for given containing collection
         $notFoundNode = null;
         while (count($notFoundStack)) { // last iteration is when site-root is all that's left
             if ($notFoundNode = static::resolvePath(array_merge($notFoundStack, array('_notfound.php')))) {
