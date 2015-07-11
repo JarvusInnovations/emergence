@@ -494,20 +494,20 @@ class Site
             call_user_func(static::$onNotFound, $message);
         }
 
-        $notFoundStack = static::$requestPath;
+        $notFoundStack = array_filter(static::$requestPath);
         array_unshift($notFoundStack, 'site-root');
 
         $notFoundNode = null;
-        while (count($notFoundStack)) {
+        while (count($notFoundStack)) { // last iteration is when site-root is all that's left
             if ($notFoundNode = static::resolvePath(array_merge($notFoundStack, array('_notfound.php')))) {
-                break;
+                // calculate pathStack relative to each handler
+                static::$pathStack = array_slice(static::$requestPath, count($notFoundStack) - 1);
+
+                // false so execution continues if handler doesn't terminate
+                static::executeScript($notFoundNode, false);
             }
 
             array_pop($notFoundStack);
-        }
-
-        if ($notFoundNode) {
-            static::executeScript($notFoundNode);
         }
 
         header('HTTP/1.0 404 Not Found');
