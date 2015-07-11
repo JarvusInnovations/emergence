@@ -261,15 +261,6 @@ class Site
 
     public static function executeScript(SiteFile $_SCRIPT_NODE, $_SCRIPT_EXIT = true)
     {
-        function e_include($_INCLUDE_FILE)
-        {
-            $_INCLUDE_PATH = Site::normalizePath('site-root/'.implode('/', Site::$resolvedPath).'/../'.$file);
-            if (!$_INCLUDE_NODE = Site::resolvePath($_INCLUDE_PATH)) {
-                throw new Exception('e_include failed to find in efs: '.$_INCLUDE_PATH);
-            }
-            require($_INCLUDE_NODE->RealPath);
-        }
-
         if (is_callable(static::$onBeforeScriptExecute)) {
             call_user_func(static::$onBeforeScriptExecute, $_SCRIPT_NODE);
         }
