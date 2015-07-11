@@ -218,11 +218,6 @@ class Site
             // prevent caching by default
             header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
             header('Pragma: no-cache');
-            
-            // create session
-            if (static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php' && !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths)) {
-                $GLOBALS['Session'] = UserSession::getFromRequest();
-            }
 
             if (is_callable(static::$onRequestMapped)) {
                 call_user_func(static::$onRequestMapped, $resolvedNode);
@@ -261,6 +256,15 @@ class Site
 
     public static function executeScript(SiteFile $_SCRIPT_NODE, $_SCRIPT_EXIT = true)
     {
+        // create session
+        if (
+            empty($GLOBALS['Session']) &&
+            static::$autoCreateSession &&
+            !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths)
+        ) {
+            $GLOBALS['Session'] = UserSession::getFromRequest();
+        }
+
         if (is_callable(static::$onBeforeScriptExecute)) {
             call_user_func(static::$onBeforeScriptExecute, $_SCRIPT_NODE);
         }
