@@ -504,8 +504,9 @@ class Site
         $notFoundNode = null;
         while (count($notFoundStack)) { // last iteration is when site-root is all that's left
             if ($notFoundNode = static::resolvePath(array_merge($notFoundStack, array('_notfound.php')))) {
-                // calculate pathStack relative to each handler
+                // calculate pathStack and resolvedPath relative to each handler
                 static::$pathStack = array_slice(static::$requestPath, count($notFoundStack) - 1);
+                static::$resolvedPath = array_slice(static::$requestPath, 0, count($notFoundStack) - 1);
 
                 // false so execution continues if handler doesn't terminate
                 static::executeScript($notFoundNode, false);
