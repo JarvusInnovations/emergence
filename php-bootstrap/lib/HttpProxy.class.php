@@ -114,6 +114,7 @@ class HttpProxy
             $responseHeaders = array();
             curl_setopt($ch, CURLOPT_HEADER, false);
             curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $header) use($options, &$responseHeaders) {
+                $headerLength = strlen($header);
                 @list($headerKey, $headerValue) = preg_split('/:\s*/', $header, 2);
                 if ($headerKey && $headerValue) {
                     $responseHeaders[$headerKey] = trim($headerValue);
@@ -126,7 +127,7 @@ class HttpProxy
                             $header = call_user_func($options['headerTransformer'], $header);
 
                             if ($header === false) {
-                                return 0;
+                                break;
                             }
                         }
 
@@ -136,11 +137,11 @@ class HttpProxy
                             header($header);
                         }
 
-                        return strlen($header);
+                        break;
                     }
                 }
 
-                return strlen($header);
+                return $headerLength;
             });
         }
 
