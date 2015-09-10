@@ -8,7 +8,7 @@
 		"mysql": "0.9.x",
 		"node-static": "0.6.x",
 		"http-auth": "1.2.7",
-		"posix": "*"
+		"posix": "JarvusInnovations/node-posix#master"
 	},
 	"bin": {
 		"emergence-kernel": "./bin/kernel",
