@@ -4,17 +4,17 @@ var _ = require('underscore')
 	,util = require('util')
 	,spawn = require('child_process').spawn
 	,exec = require('child_process').exec;
-	
+
 exports.createService = function(name, controller, options) {
 	return new exports.mysql(name, controller, options);
 };
 
 exports.mysql = function(name, controller, options) {
 	var me = this;
-	
+
 	// call parent constructor
 	exports.mysql.super_.apply(me, arguments);
-	
+
 	// default options
 	me.options.configPath = me.options.configPath || controller.options.configDir + '/my.cnf';
 	me.options.execPath = me.options.execPath || '/usr/sbin/mysqld';
@@ -27,14 +27,14 @@ exports.mysql = function(name, controller, options) {
 	me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/mysqld.err';
 	me.options.managerUser = me.options.managerUser || 'emergence';
 	me.options.managerPassword = me.options.managerPassword || '';
-	
+
 
 	// check for existing mysqld process
 	if(fs.existsSync(me.options.pidPath))
 	{
 		me.pid = parseInt(fs.readFileSync(me.options.pidPath));
 		console.log(me.name+': found existing PID: '+me.pid+', checking /proc/'+me.pid);
-		
+
 		if(fs.existsSync('/proc/'+me.pid))
 		{
 			me.status = 'online';
@@ -52,7 +52,7 @@ exports.mysql = function(name, controller, options) {
 			fs.unlinkSync(me.options.pidPath);
 		}
 	}
-	
+
 	// listen for site creation
 	controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
 };
@@ -62,13 +62,13 @@ util.inherits(exports.mysql, require('./abstract.js').AbstractService);
 
 exports.mysql.prototype.start = function(firstRun) {
 	var me = this;
-	
+
 	if(me.pid)
 	{
 		console.log(me.name+': mysql already runnig with PID '+me.pid);
 		return false;
 	}
-	
+
 	// write configuration file
 	this.writeConfig();
 
@@ -79,8 +79,8 @@ exports.mysql.prototype.start = function(firstRun) {
 		fs.mkdirSync(me.options.logsDir, 0775);
 		exec('chown -R mysql:mysql '+me.options.logsDir);
 	}
-	
-	
+
+
 	// init run directory if needed
 	if(!fs.existsSync(me.options.runDir))
 	{
@@ -88,22 +88,22 @@ exports.mysql.prototype.start = function(firstRun) {
 		fs.mkdirSync(me.options.runDir, 0775);
 		exec('chown -R mysql:mysql '+me.options.runDir);
 	}
-	
+
 	// init data directory if needed
 	if(!fs.existsSync(me.options.dataDir))
 	{
 		console.log(me.name+': initializing new data directory...');
 		fs.mkdirSync(me.options.dataDir, 0775);
 		exec('chown -R mysql:mysql '+me.options.dataDir);
-		
+
 		exec('mysql_install_db --datadir='+me.options.dataDir, function(error, stdout, stderr) {
 			me.start(true);
 		});
-		
+
 		me.status = 'configuring';
 		return true; // not really started, we have to try again after mysql_install_db is done
 	}
-	
+
 	// instantiate MySQL client
 	me.client = require('mysql').createClient({
 		port: me.options.socketPath
@@ -116,12 +116,12 @@ exports.mysql.prototype.start = function(firstRun) {
 	me.proc = spawn(me.options.execPath, ['--defaults-file='+me.options.configPath, '--console'], {detached: true});
 	me.pid = me.proc.pid;
 	me.status = 'online';
-	
+
 	console.log(me.name+': spawned mysqld with pid '+me.pid);
-	
+
 	// add listeners to process
 	me.proc.on('exit', function (code) {
-	
+
 		if (code !== 0)
 		{
 			me.status = 'offline';
@@ -129,27 +129,27 @@ exports.mysql.prototype.start = function(firstRun) {
 			console.log(me.name+': exited with code: '+code);
 		}
 	});
-	
+
 	me.proc.stdout.on('data', function (data) {
 		console.log(me.name+': stdout:\n\t' + data.toString().replace(/\n/g,'\n\t'));
 	});
-	
+
 	me.proc.stderr.on('data', function (data) {
 		console.log(me.name+': stderr:\n\t' + data.toString().replace(/\n/g,'\n\t'));
-		
+
 		if (/^execvp\(\)/.test(data))
 		{
 			console.log('Failed to start child process.');
 			me.status = 'offline';
 		}
-		
+
 		if(/ready for connections/.test(data))
 		{
 			if(firstRun)
 				me.secureInstallation();
 		}
-  	});
-	
+	});
+
 	return true;
 }
 
@@ -159,14 +159,14 @@ exports.mysql.prototype.stop = function() {
 
 	if(!me.pid)
 		return false;
-		
+
 	// disconnect client
 	if(me.client && me.client.connected)
 	{
 		me.client.end();
 		console.log(me.name+': mysql client disconnected');
 	}
-		
+
 	try
 	{
 		console.log(me.name+': sending sigterm to '+me.pid);
@@ -177,7 +177,7 @@ exports.mysql.prototype.stop = function() {
 		console.log(me.name+': failed to stop process: '+error);
 		return false;
 	}
-	
+
 	me.status = 'offline';
 	me.pid = null;
 	return true;
@@ -185,10 +185,10 @@ exports.mysql.prototype.stop = function() {
 
 exports.mysql.prototype.restart = function() {
 	var me = this;
-	
+
 	if(!me.stop())
 		return false;
-	
+
 	// wait for pid to disappear before attempting start
 	process.stdout.write(me.name+': waiting for shutdown');
 	while(fs.existsSync(me.options.pidPath))
@@ -201,7 +201,7 @@ exports.mysql.prototype.restart = function() {
 		}
 	}
 	process.stdout.write('\n');
-	
+
 	return me.start();
 };
 
@@ -212,7 +212,7 @@ exports.mysql.prototype.writeConfig = function() {
 exports.mysql.prototype.makeConfig = function() {
 	var me = this
 		,c = '';
-		
+
 	c += '[mysqld]\n';
 	c += 'character-set-server		= utf8\n';
 	c += 'user 						= mysql\n';
@@ -243,7 +243,7 @@ exports.mysql.prototype.makeConfig = function() {
 	c += 'server-id 				= 1\n';
 
 	c += 'tmpdir 					= /tmp/\n';
-	
+
 	c += 'innodb_buffer_pool_size = 16M\n';
 	c += 'innodb_additional_mem_pool_size = 2M\n';
 	c += 'innodb_data_file_path = ibdata1:10M:autoextend:max:128M\n';
@@ -253,6 +253,8 @@ exports.mysql.prototype.makeConfig = function() {
 	c += 'innodb_flush_log_at_trx_commit = 1\n';
 	c += 'innodb_lock_wait_timeout = 50\n';
 	c += 'innodb_file_per_table\n';
+	c += 'max_binlog_size  = 100M\n';
+	c += 'binlog_format    = row\n';
 
 	return c;
 };
@@ -261,9 +263,9 @@ exports.mysql.prototype.secureInstallation = function() {
 
 	var me = this
 		,sql = '';
-	
+
 	console.log(me.name+': securing installation...');
-	
+
 	// set root password
 	sql += 'UPDATE mysql.user SET Password=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
 	// remove anonymous users
@@ -275,7 +277,7 @@ exports.mysql.prototype.secureInstallation = function() {
 	sql += 'DELETE FROM mysql.db WHERE Db="test" OR Db="test\\_%";';
 	// reload privs
 	sql += 'FLUSH PRIVILEGES;';
-	
+
 	// open a temporary connection to the new non-secured installation
 	require('mysql').createClient({
 		port: me.options.socketPath
@@ -301,21 +303,21 @@ exports.mysql.prototype.onSiteCreated = function(siteData, requestData, callback
 			,username: siteData.handle
 			,password: me.controller.sites.generatePassword()
 		};
-	
+
 	console.log(me.name+': creating database `'+siteData.handle+'`');
-	
+
 	sql += 'CREATE DATABASE IF NOT EXISTS `'+siteData.handle+'`;';
 	sql += 'CREATE USER \''+siteData.handle+'\'@\'localhost\' IDENTIFIED BY \''+dbConfig.password+'\';';
-	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, LOCK TABLES  ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
+	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, LOCK TABLES, REPLICATION SLAVE, REPLICATION CLIENT ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
 	sql += 'FLUSH PRIVILEGES;';
-	
+
 	me.client.query(sql, function(error, results) {
 		if(error)
 		{
 			console.log(me.name+': failed to setup database `'+siteData.handle+'`: '+error);
 			return;
 		}
-		
+
 		console.log(me.name+': database setup complete');
 		me.controller.sites.updateSiteConfig(siteData.handle, {
 			mysql: dbConfig
@@ -337,7 +339,7 @@ exports.mysql.prototype.createSkeletonTables = function(siteData, callback) {
 		,sql = '';
 
 	sql += 'USE `'+siteData.handle+'`;';
-	
+
 	// Table: _e_file_collections
 	sql += 'CREATE TABLE `_e_file_collections` (';
 	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
@@ -353,7 +355,7 @@ exports.mysql.prototype.createSkeletonTables = function(siteData, callback) {
 	sql += ',UNIQUE KEY `PosLeft` (`PosLeft`)';
 	sql += ',UNIQUE KEY `SiteCollection` (`Site`,`ParentID`,`Handle`,`Status`)';
 	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-	
+
 	// Table: _e_files
 	sql += 'CREATE TABLE `_e_files` (';
 	sql += '`ID` int(10) unsigned NOT NULL AUTO_INCREMENT';
@@ -369,7 +371,7 @@ exports.mysql.prototype.createSkeletonTables = function(siteData, callback) {
 	sql += ',PRIMARY KEY (`ID`)';
 	sql += ',KEY `CollectionID` (`CollectionID`)';
 	sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
-	
+
 	// run tables
 	me.client.query(sql, function(error, results) {
 		if(error)
@@ -377,9 +379,9 @@ exports.mysql.prototype.createSkeletonTables = function(siteData, callback) {
 			console.log(me.name+': failed to setup skeleton tables on `'+siteData.handle+'`: '+error);
 			return;
 		}
-		
+
 		console.log(me.name+': skeleton table schema setup');
-		
+
 		callback();
 	});
 };
