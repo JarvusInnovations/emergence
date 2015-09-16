@@ -50,7 +50,7 @@ exports.mysql = function(name, controller, options) {
 		{
 			console.log(me.name+': process '+me.pid + ' not found, deleting .pid file');
 			fs.unlinkSync(me.options.pidPath);
-		}
+		}1
 	}
 
 	// listen for site creation
@@ -253,7 +253,6 @@ exports.mysql.prototype.makeConfig = function() {
 	c += 'innodb_flush_log_at_trx_commit = 1\n';
 	c += 'innodb_lock_wait_timeout = 50\n';
 	c += 'innodb_file_per_table\n';
-	c += 'expire_logs_days = 10\n';
 	c += 'max_binlog_size  = 100M\n';
 	c += 'binlog_format    = row\n';
 
