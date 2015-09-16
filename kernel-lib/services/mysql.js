@@ -50,7 +50,7 @@ exports.mysql = function(name, controller, options) {
 		{
 			console.log(me.name+': process '+me.pid + ' not found, deleting .pid file');
 			fs.unlinkSync(me.options.pidPath);
-		}1
+		}
 	}
 
 	// listen for site creation
