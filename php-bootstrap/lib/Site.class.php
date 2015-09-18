@@ -216,32 +216,25 @@ class Site
             // prevent caching by default
             header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
             header('Pragma: no-cache');
-            
-            // create session
-            if (static::$autoCreateSession && $resolvedNode->MIMEType == 'application/php' && !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths)) {
-                $GLOBALS['Session'] = UserSession::getFromRequest();
-            }
 
             if (is_callable(static::$onRequestMapped)) {
                 call_user_func(static::$onRequestMapped, $resolvedNode);
             }
 
+            // switch collection result to its _index.php if found
+            if (
+                is_a($resolvedNode, 'SiteCollection') &&
+                (
+                    ($indexNode = $resolvedNode->getChild('_index.php')) ||
+                    ($indexNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath, array('_index.php'))))
+                )
+            ) {
+                $resolvedNode = $indexNode;
+            }
+
             if ($resolvedNode->MIMEType == 'application/php') {
-                function e_include($file)
-                {
-                    $file = Site::normalizePath('site-root/'.implode('/', Site::$resolvedPath).'/../'.$file);
-                    if (!$node = Site::resolvePath($file)) {
-                        throw new Exception('e_include failed to find in efs: '.$file);
-                    }
-                    require($node->RealPath);
-                }
-
-                if (is_callable(static::$onBeforeScriptExecute)) {
-                    call_user_func(static::$onBeforeScriptExecute, $resolvedNode);
-                }
-
-                require($resolvedNode->RealPath);
-                exit();
+                // TODO: execute _all.php handlers, cache the list of them for the containing collection
+                static::executeScript($resolvedNode);
             } elseif (is_callable(array($resolvedNode, 'outputAsResponse'))) {
                 if (!is_a($resolvedNode, 'SiteFile') && !static::$listCollections) {
                     static::respondNotFound();
@@ -257,6 +250,28 @@ class Site
             }
         } else {
             static::respondNotFound();
+        }
+    }
+
+    public static function executeScript(SiteFile $_SCRIPT_NODE, $_SCRIPT_EXIT = true)
+    {
+        // create session
+        if (
+            empty($GLOBALS['Session']) &&
+            static::$autoCreateSession &&
+            !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths)
+        ) {
+            $GLOBALS['Session'] = UserSession::getFromRequest();
+        }
+
+        if (is_callable(static::$onBeforeScriptExecute)) {
+            call_user_func(static::$onBeforeScriptExecute, $_SCRIPT_NODE);
+        }
+
+        require($_SCRIPT_NODE->RealPath);
+
+        if ($_SCRIPT_EXIT) {
+            exit();
         }
     }
 
@@ -480,10 +495,28 @@ class Site
     {
         if (is_callable(static::$onNotFound)) {
             call_user_func(static::$onNotFound, $message);
-        } else {
-            header('HTTP/1.0 404 Not Found');
-            die($message);
         }
+
+        $notFoundStack = array_filter(static::$requestPath);
+        array_unshift($notFoundStack, 'site-root');
+
+        // TODO: cache list of _notfound handlers for given containing collection
+        $notFoundNode = null;
+        while (count($notFoundStack)) { // last iteration is when site-root is all that's left
+            if ($notFoundNode = static::resolvePath(array_merge($notFoundStack, array('_notfound.php')))) {
+                // calculate pathStack and resolvedPath relative to each handler
+                static::$pathStack = array_slice(static::$requestPath, count($notFoundStack) - 1);
+                static::$resolvedPath = array_slice(static::$requestPath, 0, count($notFoundStack) - 1);
+
+                // false so execution continues if handler doesn't terminate
+                static::executeScript($notFoundNode, false);
+            }
+
+            array_pop($notFoundStack);
+        }
+
+        header('HTTP/1.0 404 Not Found');
+        die($message);
     }
 
     public static function respondBadRequest($message = 'Cannot display resource')
