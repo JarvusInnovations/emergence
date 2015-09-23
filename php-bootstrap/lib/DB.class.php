@@ -424,6 +424,8 @@ class DB
             // connect to mysql database
             self::$_mysqli = @new mysqli($config['host'], $config['username'], $config['password'], $config['database'], $config['port'], $config['socket']);
 
+            self::$_mysqli->set_charset('utf8');
+
             // check for failure or connection error
             if (mysqli_connect_error()) {
                 self::handleError('connect');
