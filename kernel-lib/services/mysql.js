@@ -308,7 +308,7 @@ exports.mysql.prototype.onSiteCreated = function(siteData, requestData, callback
 
 	sql += 'CREATE DATABASE IF NOT EXISTS `'+siteData.handle+'`;';
 	sql += 'CREATE USER \''+siteData.handle+'\'@\'localhost\' IDENTIFIED BY \''+dbConfig.password+'\';';
-	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, LOCK TABLES, REPLICATION SLAVE, REPLICATION CLIENT ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
+	sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, LOCK TABLES ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
 	sql += 'FLUSH PRIVILEGES;';
 
 	me.client.query(sql, function(error, results) {
