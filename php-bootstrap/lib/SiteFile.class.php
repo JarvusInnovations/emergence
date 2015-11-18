@@ -396,6 +396,13 @@ class SiteFile
         // invalidate cache of new and old handle
         Cache::delete(static::getCacheKey($this->CollectionID, $oldHandle));
         Cache::delete(static::getCacheKey($this->CollectionID, $handle));
+
+        // fire event
+        static::fireFileEvent($this->getFullPath(null, false), 'fileRename', array(
+            'record' => $this->_record,
+            'oldHandle' => $oldHandle,
+            'newHandle' => $handle
+        ));
     }
 
     public function delete()
@@ -410,6 +417,11 @@ class SiteFile
 
         // invalidate cache
         Cache::delete(static::getCacheKey($this->CollectionID, $this->Handle));
+
+        // fire event
+        static::fireFileEvent($this->getFullPath(null, false), 'fileDelete', array(
+            'record' => $this->_record
+        ));
     }
 
     public function destroyRecord()
