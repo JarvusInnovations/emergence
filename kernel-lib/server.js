@@ -75,8 +75,16 @@ exports.server.prototype.start = function() {
 				{
 					response.writeHead(200, {'Content-Type':'application/json'});
 					response.end(JSON.stringify(me.options));
+					return;
 				}
-				
+
+				if(request.path[0] == 'package-info')
+				{
+					response.writeHead(200, {'Content-Type':'application/json'});
+					response.end(JSON.stringify(require('../package.json')));
+					return;
+				}
+
 				if(me.paths.hasOwnProperty(request.path[0]))
 				{
 					var result = me.paths[request.path[0]].handleRequest(request, response, me);
