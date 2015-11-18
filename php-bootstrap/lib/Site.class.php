@@ -368,30 +368,56 @@ class Site
 
     public static function loadConfig($className)
     {
-        // try to load class PSR-0 style
-        if ($lastNsPos = strrpos($className, '\\')) {
-            $namespace = substr($className, 0, $lastNsPos);
-            $className = substr($className, $lastNsPos + 1);
-            $fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
-        } else {
-            $fileName = '';
-        }
+        $cacheKey = 'class-config:' . $className;
 
-        $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className);
-        $configNode = static::resolvePath("php-config/$fileName.config.php");
 
-        if (!$configNode && empty($namespace) && $fileName != $className) {
-            $configNode = static::resolvePath("php-config/$className.config.php");
-        }
+        if (!$configFileIds = Cache::fetch($cacheKey)) {
+            $configFileIds = [];
 
-        if ($configNode) {
-            if (!$configNode->MIMEType == 'application/php') {
-                throw new Exception('Config file for "'.$className.'" is not application/php');
+
+            // look for primary config file
+            if ($lastNsPos = strrpos($className, '\\')) {
+                $namespace = substr($className, 0, $lastNsPos);
+                $className = substr($className, $lastNsPos + 1);
+                $path  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+            } else {
+                $path = '';
             }
 
-            require($configNode->RealPath);
+            $path .= str_replace('_', DIRECTORY_SEPARATOR, $className);
+
+            $configFileNode = Site::resolvePath("php-config/$path.config.php");
+
+
+            // Fall back on looking for Old_School_Underscore_Namespacing in root
+            if (!$configFileNode && empty($namespace) && $path != $className) {
+                $configFileNode = Site::resolvePath("php-config/$className.config.php");
+            }
+
+            if ($configFileNode && $configFileNode->MIMEType == 'application/php') {
+                $configFileIds[] = $configFileNode->ID;
+            }
+
+
+            // look for composite config files
+            $collectionPath = "php-config/$path.config.d";
+            Emergence_FS::cacheTree($collectionPath);
+
+            foreach (Emergence_FS::getAggregateChildren($collectionPath) AS $filename => $node) {
+                if ($node->Type == 'application/php') {
+                    $configFileIds[] = $node->ID;
+                }
+            }
+
+            Cache::store($cacheKey, $configFileIds);
+        }
+
+
+        foreach ($configFileIds AS $id) {
+            require(SiteFile::getRealPathByID($id));
         }
     }
+
 
     public static function handleError($errno, $errstr, $errfile, $errline)
     {
