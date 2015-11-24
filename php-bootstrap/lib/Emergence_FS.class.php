@@ -15,6 +15,8 @@ class Emergence_FS
             return 0;
         }
 
+        Cache::store($cacheKey, true);
+
         // get tree map from parent
         $remoteTree = Emergence::resolveCollectionFromParent($path);
 
@@ -32,8 +34,6 @@ class Emergence_FS
                 $filesResolved++;
             }
         }
-
-        Cache::store($cacheKey, true);
 
         return $filesResolved;
     }
