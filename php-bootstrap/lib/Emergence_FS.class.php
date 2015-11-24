@@ -11,7 +11,7 @@ class Emergence_FS
 
         // check if this tree has already been cached
         $cacheKey = 'cacheTree:' . implode('/', $path);
-        if (!$force && Cache::fetch($cacheKey)) {
+        if (!Site::$autoPull || (!$force && Cache::fetch($cacheKey))) {
             return 0;
         }
 
