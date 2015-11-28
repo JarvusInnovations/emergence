@@ -526,27 +526,25 @@ class SiteCollection
         static::clearCacheTree($this->_record);
     }
 
-    public function clearCacheTree($record, $key = null)
+    public function clearCacheTree($record)
     {
-        if (!$key) {
-            $key = static::getCacheKey($record['Handle'], $record['ParentID'], $record['Site'] == 'Remote');
-        }
+        $key = static::getCacheKey($record['Handle'], $record['ParentID'], $record['Site'] == 'Remote');
 
         Cache::delete($key);
 
         // iterate child collections
         $childCollectionsKey = static::getCacheKey('.*', $record['ID'], $record['Site'] == 'Remote');
 
-        foreach (CacheIterator::getIterator('|^'.$childCollectionsKey.'|') AS $childCollection) {
+        foreach (Cache::getIterator('|^'.$childCollectionsKey.'|') AS $childCollection) {
             if ($childCollection['value']) {
-                static::clearCacheTree($childCollection['value'], $childCollection['key']);
+                static::clearCacheTree($childCollection['value']);
             }
         }
 
         // iterate child files
         $childFilesKey = SiteFile::getCacheKey($record['ID'], '.*');
 
-        foreach (CacheIterator::getIterator('|^'.$childFilesKey.'|') AS $childFile) {
+        foreach (Cache::getIterator('|^'.$childFilesKey.'|') AS $childFile) {
             if ($childFile['value']) {
                 Cache::delete($childFile['key']);
             }
