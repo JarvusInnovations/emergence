@@ -372,7 +372,7 @@ class Site
 
 
         if (!$configFileIds = Cache::fetch($cacheKey)) {
-            $configFileIds = [];
+            $configFileIds = array();
 
 
             // look for primary config file
