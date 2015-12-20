@@ -166,7 +166,7 @@ exports.NginxService.prototype.makeConfig = function() {
 
     // configure top-level options
     config.push(
-        'user '+me.options.user+' '+me.options.group,
+        'user '+me.options.user+' '+me.options.group+';',
         'worker_processes auto;',
         'pid '+me.options.pidPath+';',
         'error_log '+me.options.errorLogPath+' info;'
