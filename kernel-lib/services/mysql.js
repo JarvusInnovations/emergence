@@ -3,14 +3,16 @@ var _ = require('underscore'),
     path = require('path'),
     util = require('util'),
     spawn = require('child_process').spawn,
-    exec = require('child_process').exec;
+    exec = require('child_process').exec,
+    execSync = require('execSync');
 
 exports.createService = function(name, controller, options) {
     return new exports.MysqlService(name, controller, options);
 };
 
 exports.MysqlService = function(name, controller, options) {
-    var me = this;
+    var me = this,
+        versionMatch;
 
     // call parent constructor
     exports.MysqlService.super_.apply(me, arguments);
@@ -28,6 +30,22 @@ exports.MysqlService = function(name, controller, options) {
     me.options.managerUser = me.options.managerUser || 'emergence';
     me.options.managerPassword = me.options.managerPassword || '';
 
+
+    // verify binary
+    if (!fs.existsSync(me.options.execPath)) {
+        throw 'execPath not found: ' + me.options.execPath;
+    }
+
+    // check binary version
+    console.log(me.name+': detecting mysqld version...');
+    versionMatch = execSync.exec(me.options.execPath+' --version').stdout.match(/mysqld\s+Ver\s+(\d+(\.\d+)*)/);
+
+    if (!versionMatch) {
+        throw 'Failed to detect mysql version';
+    }
+
+    me.mysqldVersion = versionMatch[1];
+    console.log(me.name+': determined mysqld version: '+me.mysqldVersion);
 
     // check for existing mysqld process
     if (fs.existsSync(me.options.pidPath)) {

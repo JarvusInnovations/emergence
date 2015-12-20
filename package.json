@@ -9,7 +9,8 @@
 		"node-static": "0.6.x",
 		"http-auth": "1.2.7",
 		"posix": "JarvusInnovations/node-posix#master",
-		"hostile": "^1.0.2"
+		"hostile": "^1.0.2",
+        "execSync": "^1.0.2"
 	},
 	"bin": {
 		"emergence-kernel": "./bin/kernel",
