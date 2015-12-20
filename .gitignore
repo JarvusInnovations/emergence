@@ -3,3 +3,4 @@
 /sites
 /kernel.config.json
 .DS_Store
+/typings/
