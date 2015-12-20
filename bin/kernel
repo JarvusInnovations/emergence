@@ -14,7 +14,7 @@ var CONFIG;
 if (fs.existsSync('/emergence/config.json')) {
     // try to load existing kernel config
 
-    CONFIG = JSON.parse(fs.readFileSync('/emergence/config.json'));
+    CONFIG = JSON.parse(fs.readFileSync('/emergence/config.json', 'ascii'));
 } else {
     // try to smart-init a new kernel config
     var issueFile = "",

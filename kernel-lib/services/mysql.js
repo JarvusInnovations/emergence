@@ -31,7 +31,7 @@ exports.MysqlService = function(name, controller, options) {
 
     // check for existing mysqld process
     if (fs.existsSync(me.options.pidPath)) {
-        me.pid = parseInt(fs.readFileSync(me.options.pidPath));
+        me.pid = parseInt(fs.readFileSync(me.options.pidPath, 'ascii'));
         console.log(me.name+': found existing PID: '+me.pid+', checking /proc/'+me.pid);
 
         if (fs.existsSync('/proc/'+me.pid)) {

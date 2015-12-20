@@ -38,7 +38,7 @@ exports.Sites = function(config) {
     me.sites = {};
     _.each(fs.readdirSync(me.options.sitesDir), function(handle) {
         try {
-            me.sites[handle] = JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json'));
+            me.sites[handle] = JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii'));
             me.sites[handle].handle = handle;
             console.log('-Loaded: '+me.sites[handle].primary_hostname);
         } catch (error) {
