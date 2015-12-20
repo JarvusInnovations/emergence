@@ -188,7 +188,7 @@ exports.Sites.prototype.writeSiteConfig = function(requestData) {
 
     // apply defaults
     if (!siteData.handle) {
-        siteData.handle = request.path[1] || siteData.primary_hostname;
+        siteData.handle = siteData.primary_hostname;
     }
 
     if (!siteData.label) {
