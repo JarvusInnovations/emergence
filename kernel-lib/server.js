@@ -11,7 +11,7 @@ var http = require('http')
 exports.server = function(paths, config) {
     var me = this
        ,options = config.server;
-    
+
     // call events constructor
     events.EventEmitter.call(me);
 
@@ -23,7 +23,7 @@ exports.server = function(paths, config) {
     me.options.sslKey = me.options.sslKey || null;
     me.options.sslCert = me.options.sslCert || null;
     me.options.staticDir = me.options.staticDir || path.resolve(__dirname, '../kernel-www');
-    
+
     // initialize state
 }
 util.inherits(exports.server, events.EventEmitter);
@@ -61,11 +61,11 @@ exports.server.prototype.start = function() {
 
         http_auth.apply(request, response, function(username) {
             request.content = '';
-        
+
             request.addListener('data', function(chunk) {
                 request.content += chunk;
             });
-        
+
             request.addListener('end', function() {
                 request.urlInfo = url.parse(request.url)
                 request.path = request.urlInfo.pathname.substr(1).split('/');
@@ -106,7 +106,7 @@ exports.server.prototype.start = function() {
             });
 
         });
-        
+
     }
 
 

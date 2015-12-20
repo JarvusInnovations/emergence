@@ -3,17 +3,17 @@ var _ = require('underscore')
     ,path = require('path')
     ,util = require('util')
     ,spawn = require('child_process').spawn;
-    
+
 exports.createService = function(name, controller, options) {
     return new exports.phpFpm(name, controller, options);
 };
 
 exports.phpFpm = function(name, controller, options) {
     var me = this;
-    
+
     // call parent constructor
     exports.phpFpm.super_.apply(me, arguments);
-    
+
     // default options
     me.options.configPath = me.options.configPath || controller.options.configDir + '/php-fpm.conf';
     me.options.execPath = me.options.execPath || '/usr/bin/php-fpm';
@@ -25,14 +25,14 @@ exports.phpFpm = function(name, controller, options) {
     me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/errors.log';
     me.options.user = me.options.user || controller.options.user;
     me.options.group = me.options.group || controller.options.group;
-    
+
     // create required directories
     if(!fs.existsSync(me.options.runDir))
         fs.mkdirSync(me.options.runDir, 0775);
-    
+
     if(!fs.existsSync(me.options.logsDir))
         fs.mkdirSync(me.options.logsDir, 0775);
-    
+
     // check for existing master process
     if(fs.existsSync(me.options.pidPath))
     {
@@ -48,7 +48,7 @@ util.inherits(exports.phpFpm, require('./abstract.js').AbstractService);
 
 exports.phpFpm.prototype.start = function() {
     var me = this;
-    
+
     console.log(me.name+': spawning daemon: '+me.options.execPath);
 
     if(me.pid)
@@ -56,20 +56,20 @@ exports.phpFpm.prototype.start = function() {
         console.log(me.name+': already running with PID '+me.pid);
         return false;
     }
-    
+
     this.writeConfig();
-    
+
     me.proc = spawn(me.options.execPath, ['--fpm-config', me.options.configPath]);
 
     me.proc.on('exit', function (code) {
-    
+
         if (code !== 0)
         {
             me.status = 'offline';
             me.exitCode = code;
             console.log(me.name+': exited with code: '+code);
         }
-        
+
         // look for pid
         if(fs.existsSync(me.options.pidPath))
         {
@@ -84,20 +84,20 @@ exports.phpFpm.prototype.start = function() {
             me.pid = null;
         }
     });
-    
+
     me.proc.stdout.on('data', function (data) {
         console.log(me.name+': stdout:\n\t' + data.toString().replace(/\n/g,'\n\t'));
     });
-    
+
     me.proc.stderr.on('data', function (data) {
         console.log(me.name+': stderr:\n\t' + data.toString().replace(/\n/g,'\n\t'));
-        
+
         if (/^execvp\(\)/.test(data)) {
             console.log('Failed to start child process.');
             me.status = 'offline';
         }
     });
-    
+
     this.status = 'online';
     return true;
 }
@@ -108,7 +108,7 @@ exports.phpFpm.prototype.stop = function() {
 
     if(!me.pid)
         return false;
-        
+
     try
     {
         process.kill(me.pid, 'SIGQUIT');
@@ -118,7 +118,7 @@ exports.phpFpm.prototype.stop = function() {
         console.log(me.name+': failed to stop process: '+error);
         return false;
     }
-    
+
     me.status = 'offline';
     me.pid = null;
     return true;
@@ -130,7 +130,7 @@ exports.phpFpm.prototype.restart = function() {
 
     if(!me.pid)
         return false;
-        
+
     this.writeConfig();
 
     try
@@ -142,9 +142,9 @@ exports.phpFpm.prototype.restart = function() {
         console.log(me.name+': failed to restart process: '+error);
         return false;
     }
-    
+
     console.log(me.name+': reloaded config for process '+me.pid);
-    
+
     return true;
 }
 
@@ -185,6 +185,6 @@ exports.phpFpm.prototype.makeConfig = function() {
     c += 'php_admin_value[memory_limit]='+(me.options.memoryLimit ? me.options.memoryLimit : '200M')+'\n';
     c += 'php_admin_value[error_reporting]=E_ALL & ~E_NOTICE\n';
     c += 'php_admin_value[date.timezone]=America/New_York\n';
-    
+
     return c;
 };

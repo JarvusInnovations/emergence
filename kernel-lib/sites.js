@@ -7,7 +7,7 @@ var _ = require('underscore')
     ,posix = require('posix')
     ,spawn = require('child_process').spawn
     ,hostile = require('hostile');
-    
+
 
 exports.createSites = function(config) {
     return new exports.sites(config);
@@ -16,7 +16,7 @@ exports.createSites = function(config) {
 exports.sites = function(config) {
     var me = this
        ,options = config.sites;
-    
+
     // call events constructor
     events.EventEmitter.call(me);
 
@@ -26,11 +26,11 @@ exports.sites = function(config) {
     me.options.dataUID = me.options.dataUID || posix.getpwnam(config.user).uid;
     me.options.dataGID = me.options.dataGID || posix.getgrnam(config.group).gid;
     me.options.dataMode = me.options.dataMode || 0775;
-    
+
     // create required directories
     if(!fs.existsSync(me.options.sitesDir))
         fs.mkdirSync(me.options.sitesDir, 0775);
-    
+
     // load sites
     console.log('Loading sites from '+me.options.sitesDir+'...');
 
@@ -132,7 +132,7 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
         try
         {
             cfgResult = me.writeSiteConfig(requestData);
-            
+
             if(cfgResult.isNew)
             {
                 // write primary hostname to /etc/hosts
@@ -145,10 +145,10 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
                         // execute onSiteCreated within site's container
                         console.log('Executing Site::onSiteCreated() via php-cli');
                         phpProc = spawn('emergence-shell', [cfgResult.site.handle]);
-                        
+
                         phpProc.stdout.on('data', function(data) { console.log('php-cli stdout: ' + data); });
                         phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
-                        
+
                         function _phpExec(code) {
                             //console.log('php> '+code);
                             phpProc.stdin.write(code+'\n');
@@ -156,7 +156,7 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 
                         _phpExec('Site::onSiteCreated(json_decode(\''+JSON.stringify(requestData).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\', true));');
                         phpProc.stdin.end();
-                        
+
                         phpProc.on('close', function (code) {
                             console.log('php-cli finished with code ' + code);
                             // return created response
@@ -170,7 +170,7 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
                 response.writeHead(200, {'Content-Type':'application/json'});
                 response.end(JSON.stringify({success: true, data: cfgResult.site}));
             }
-    
+
         }
         catch(error)
         {
@@ -178,7 +178,7 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
             response.end(JSON.stringify({success: false, error: error}));
             throw error;
         }
-        
+
         return true;
     }
 
@@ -195,26 +195,26 @@ exports.sites.prototype.writeSiteConfig = function(requestData) {
     {
         throw 'primary_hostname required';
     }
-    
+
     // apply defaults
     if(!siteData.handle)
         siteData.handle = request.path[1] || siteData.primary_hostname;
-    
+
     if(!siteData.label)
         siteData.label = null;
-        
+
     // generate inheritance key
     if(!siteData.inheritance_key)
         siteData.inheritance_key = me.generatePassword(16);
-        
+
     // parent hostname
     if(!siteData.parent_hostname)
         siteData.parent_hostname = null;
-        
+
     // hostnames
     if(siteData.hostnames && _.isString(siteData.hostnames))
         siteData.hostnames = siteData.hostnames.split(/\s*[\s,;]\s*/);
-        
+
     if(!_.isArray(siteData.hostnames))
         siteData.hostnames = [];
 
@@ -223,7 +223,7 @@ exports.sites.prototype.writeSiteConfig = function(requestData) {
         ,dataDir = siteDir + '/data'
         ,siteDataDir = siteDir + '/site-data'
         ,siteConfigPath = siteDir + '/site.json';
-        
+
     if(!fs.existsSync(siteDir))
     {
         console.log('sites: creating site directory '+siteDir);
@@ -241,16 +241,16 @@ exports.sites.prototype.writeSiteConfig = function(requestData) {
         fs.mkdirSync(siteDataDir, me.options.dataMode);
         fs.chownSync(siteDataDir, me.options.dataUID, me.options.dataGID);
     }
-        
+
     // write site config to file
     this.sites[siteData.handle] = siteData;
-    
+
     var isNew = !fs.existsSync(siteConfigPath);
-    
+
     delete siteData.create_user;
-        
+
     fs.writeFileSync(siteConfigPath, JSON.stringify(siteData, null, 4));
-        
+
     return {site: siteData, isNew: isNew};
 };
 
@@ -265,7 +265,7 @@ exports.sites.prototype.updateSiteConfig = function(handle, changes) {
 
     create_user = siteData.create_user;
     delete siteData.create_user;
-    
+
     fs.writeFileSync(filename, JSON.stringify(this.sites[handle], null, 4));
 
     if(create_user) {
@@ -276,7 +276,7 @@ exports.sites.prototype.updateSiteConfig = function(handle, changes) {
 
 exports.generatePassword = exports.sites.prototype.generatePassword = function(length) {
     length = length || 16;
-    
+
     var pass = ''
         ,chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
 
@@ -284,6 +284,6 @@ exports.generatePassword = exports.sites.prototype.generatePassword = function(l
     {
         pass += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    
+
     return pass;
 }

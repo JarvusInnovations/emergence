@@ -5,7 +5,7 @@ var _ = require('underscore')
 
 exports.AbstractService = function(name, controller, options) {
     var me = this;
-    
+
     // call events constructor
     exports.AbstractService.super_.apply(me, arguments);
 
@@ -13,10 +13,10 @@ exports.AbstractService = function(name, controller, options) {
     me.name = name;
     me.controller = controller;
     me.options = options || {};
-    
+
     // initialize state
     me.isService = true;
-    me.status = 'offline';  
+    me.status = 'offline';
 }
 
 
