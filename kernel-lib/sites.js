@@ -1,21 +1,21 @@
-var _ = require('underscore')
-    ,util = require('util')
-    ,fs = require('fs')
-    ,path = require('path')
-    ,util = require('util')
-    ,events = require('events')
-    ,posix = require('posix')
-    ,spawn = require('child_process').spawn
-    ,hostile = require('hostile');
+var _ = require('underscore'),
+    util = require('util'),
+    fs = require('fs'),
+    path = require('path'),
+    util = require('util'),
+    events = require('events'),
+    posix = require('posix'),
+    spawn = require('child_process').spawn,
+    hostile = require('hostile');
 
 
 exports.createSites = function(config) {
-    return new exports.sites(config);
+    return new exports.Sites(config);
 };
 
-exports.sites = function(config) {
-    var me = this
-       ,options = config.sites;
+exports.Sites = function(config) {
+    var me = this,
+       options = config.sites;
 
     // call events constructor
     events.EventEmitter.call(me);
@@ -25,44 +25,40 @@ exports.sites = function(config) {
     me.options.sitesDir = me.options.sitesDir || '/emergence/sites';
     me.options.dataUID = me.options.dataUID || posix.getpwnam(config.user).uid;
     me.options.dataGID = me.options.dataGID || posix.getgrnam(config.group).gid;
-    me.options.dataMode = me.options.dataMode || 0775;
+    me.options.dataMode = me.options.dataMode || '775';
 
     // create required directories
-    if(!fs.existsSync(me.options.sitesDir))
-        fs.mkdirSync(me.options.sitesDir, 0775);
+    if (!fs.existsSync(me.options.sitesDir)) {
+        fs.mkdirSync(me.options.sitesDir, '775');
+    }
 
     // load sites
     console.log('Loading sites from '+me.options.sitesDir+'...');
 
     me.sites = {};
     _.each(fs.readdirSync(me.options.sitesDir), function(handle) {
-        try
-        {
+        try {
             me.sites[handle] = JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json'));
             me.sites[handle].handle = handle;
             console.log('-Loaded: '+me.sites[handle].primary_hostname);
-        }
-        catch(error)
-        {
+        } catch (error) {
             console.log('-FAILED to load: '+handle);
         }
     });
 
-}
-util.inherits(exports.sites, events.EventEmitter);
+};
+
+util.inherits(exports.Sites, events.EventEmitter);
 
 
-exports.sites.prototype.handleRequest = function(request, response, server) {
+exports.Sites.prototype.handleRequest = function(request, response, server) {
     var me = this;
 
-    if(request.method == 'GET')
-    {
+    if (request.method == 'GET') {
         response.writeHead(200, {'Content-Type':'application/json'});
         response.end(JSON.stringify({data: _.values(me.sites)}));
         return true;
-    }
-    else if(request.method == 'POST')
-    {
+    } else if (request.method == 'POST') {
         // TODO: prevent accidentally overwritting existing site -- require different VERB/PATH
         var requestData, cfgResult, phpProc, phpProcInitialized;
 
@@ -129,12 +125,10 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
         }
 
         // create new site
-        try
-        {
+        try {
             cfgResult = me.writeSiteConfig(requestData);
 
-            if(cfgResult.isNew)
-            {
+            if (cfgResult.isNew) {
                 // write primary hostname to /etc/hosts
                 hostile.set('127.0.0.1', cfgResult.site.primary_hostname);
                 console.log('added ' + cfgResult.site.primary_hostname + ' to /etc/hosts');
@@ -165,15 +159,12 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
                         });
                     }
                 });
-            }
-            else {
+            } else {
                 response.writeHead(200, {'Content-Type':'application/json'});
                 response.end(JSON.stringify({success: true, data: cfgResult.site}));
             }
 
-        }
-        catch(error)
-        {
+        } catch (error) {
             response.writeHead(400, {'Content-Type':'application/json'});
             response.end(JSON.stringify({success: false, error: error}));
             throw error;
@@ -186,58 +177,60 @@ exports.sites.prototype.handleRequest = function(request, response, server) {
 };
 
 
-exports.sites.prototype.writeSiteConfig = function(requestData) {
+exports.Sites.prototype.writeSiteConfig = function(requestData) {
     var me = this,
         siteData = _.clone(requestData);
 
     // validate mandatory fields
-    if(!siteData.primary_hostname)
-    {
+    if (!siteData.primary_hostname) {
         throw 'primary_hostname required';
     }
 
     // apply defaults
-    if(!siteData.handle)
+    if (!siteData.handle) {
         siteData.handle = request.path[1] || siteData.primary_hostname;
-
-    if(!siteData.label)
-        siteData.label = null;
-
-    // generate inheritance key
-    if(!siteData.inheritance_key)
-        siteData.inheritance_key = me.generatePassword(16);
-
-    // parent hostname
-    if(!siteData.parent_hostname)
-        siteData.parent_hostname = null;
-
-    // hostnames
-    if(siteData.hostnames && _.isString(siteData.hostnames))
-        siteData.hostnames = siteData.hostnames.split(/\s*[\s,;]\s*/);
-
-    if(!_.isArray(siteData.hostnames))
-        siteData.hostnames = [];
-
-    // create site directory
-    var siteDir = me.options.sitesDir+'/'+siteData.handle
-        ,dataDir = siteDir + '/data'
-        ,siteDataDir = siteDir + '/site-data'
-        ,siteConfigPath = siteDir + '/site.json';
-
-    if(!fs.existsSync(siteDir))
-    {
-        console.log('sites: creating site directory '+siteDir);
-        fs.mkdirSync(siteDir, 0775);
     }
 
-    if(!fs.existsSync(dataDir))
-    {
+    if (!siteData.label) {
+        siteData.label = null;
+    }
+
+    // generate inheritance key
+    if (!siteData.inheritance_key) {
+        siteData.inheritance_key = me.generatePassword(16);
+    }
+
+    // parent hostname
+    if (!siteData.parent_hostname) {
+        siteData.parent_hostname = null;
+    }
+
+    // hostnames
+    if (siteData.hostnames && _.isString(siteData.hostnames)) {
+        siteData.hostnames = siteData.hostnames.split(/\s*[\s,;]\s*/);
+    }
+
+    if (!_.isArray(siteData.hostnames)) {
+        siteData.hostnames = [];
+    }
+
+    // create site directory
+    var siteDir = me.options.sitesDir+'/'+siteData.handle,
+        dataDir = siteDir + '/data',
+        siteDataDir = siteDir + '/site-data',
+        siteConfigPath = siteDir + '/site.json';
+
+    if (!fs.existsSync(siteDir)) {
+        console.log('sites: creating site directory '+siteDir);
+        fs.mkdirSync(siteDir, '775');
+    }
+
+    if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, me.options.dataMode);
         fs.chownSync(dataDir, me.options.dataUID, me.options.dataGID);
     }
 
-    if(!fs.existsSync(siteDataDir))
-    {
+    if (!fs.existsSync(siteDataDir)) {
         fs.mkdirSync(siteDataDir, me.options.dataMode);
         fs.chownSync(siteDataDir, me.options.dataUID, me.options.dataGID);
     }
@@ -254,12 +247,12 @@ exports.sites.prototype.writeSiteConfig = function(requestData) {
     return {site: siteData, isNew: isNew};
 };
 
-exports.sites.prototype.updateSiteConfig = function(handle, changes) {
-    var me = this
-        ,siteDir = me.options.sitesDir+'/'+handle
-        ,filename = siteDir+'/site.json'
-        ,siteData = this.sites[handle]
-        ,create_useri;
+exports.Sites.prototype.updateSiteConfig = function(handle, changes) {
+    var me = this,
+        siteDir = me.options.sitesDir+'/'+handle,
+        filename = siteDir+'/site.json',
+        siteData = this.sites[handle],
+        create_useri;
 
     _.extend(siteData, changes);
 
@@ -268,22 +261,21 @@ exports.sites.prototype.updateSiteConfig = function(handle, changes) {
 
     fs.writeFileSync(filename, JSON.stringify(this.sites[handle], null, 4));
 
-    if(create_user) {
+    if (create_user) {
         siteData.create_user = create_user;
     }
 };
 
 
-exports.generatePassword = exports.sites.prototype.generatePassword = function(length) {
+exports.generatePassword = exports.Sites.prototype.generatePassword = function(length) {
     length = length || 16;
 
-    var pass = ''
-        ,chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+    var pass = '',
+        chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
 
-    for(var x = 0; x < length; x++)
-    {
+    for (var x = 0; x < length; x++) {
         pass += chars.charAt(Math.floor(Math.random() * chars.length));
     }
 
     return pass;
-}
+};

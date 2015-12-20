@@ -17,8 +17,7 @@ exports.AbstractService = function(name, controller, options) {
     // initialize state
     me.isService = true;
     me.status = 'offline';
-}
-
+};
 
 util.inherits(exports.AbstractService, events.EventEmitter);
 
@@ -32,13 +31,16 @@ exports.AbstractService.prototype.getStatus = function() {
 
 exports.AbstractService.prototype.start = function() {
     throw new Error('start() not implemented in '+this.name);
-}
+};
+
 exports.AbstractService.prototype.stop = function() {
     throw new Error('start() not implemented in '+this.name);
-}
+};
+
 exports.AbstractService.prototype.restart = function() {
-    if(this.stop())
+    if (this.stop()) {
         return this.start();
-    else
+    } else {
         return false;
-}
+    }
+};

@@ -1,18 +1,18 @@
-var _ = require('underscore')
-    ,fs = require('fs')
-    ,path = require('path')
-    ,util = require('util')
-    ,spawn = require('child_process').spawn;
+var _ = require('underscore'),
+    fs = require('fs'),
+    path = require('path'),
+    util = require('util'),
+    spawn = require('child_process').spawn;
 
 exports.createService = function(name, controller, options) {
-    return new exports.nginx(name, controller, options);
+    return new exports.NginxService(name, controller, options);
 };
 
-exports.nginx = function(name, controller, options) {
+exports.NginxService = function(name, controller, options) {
     var me = this;
 
     // call parent constructor
-    exports.nginx.super_.apply(me, arguments);
+    exports.NginxService.super_.apply(me, arguments);
 
     // default options
     me.options.bootstrapDir = me.options.bootstrapDir || path.resolve(__dirname, '../../php-bootstrap');
@@ -29,15 +29,16 @@ exports.nginx = function(name, controller, options) {
     me.options.group = me.options.group || controller.options.group;
 
     // create required directories
-    if(!fs.existsSync(me.options.runDir))
-        fs.mkdirSync(me.options.runDir, 0775);
+    if (!fs.existsSync(me.options.runDir)) {
+        fs.mkdirSync(me.options.runDir, '775');
+    }
 
-    if(!fs.existsSync(me.options.logsDir))
-        fs.mkdirSync(me.options.logsDir, 0775);
+    if (!fs.existsSync(me.options.logsDir)) {
+        fs.mkdirSync(me.options.logsDir, '775');
+    }
 
     // check for existing master process
-    if(fs.existsSync(me.options.pidPath))
-    {
+    if (fs.existsSync(me.options.pidPath)) {
         me.pid = parseInt(fs.readFileSync(me.options.pidPath));
         console.log(me.name+': found existing PID: '+me.pid);
         me.status = 'online';
@@ -45,18 +46,18 @@ exports.nginx = function(name, controller, options) {
 
     // listen for site creation
     controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
-}
-util.inherits(exports.nginx, require('./abstract.js').AbstractService);
+};
+
+util.inherits(exports.NginxService, require('./abstract.js').AbstractService);
 
 
 
-exports.nginx.prototype.start = function() {
+exports.NginxService.prototype.start = function() {
     var me = this;
 
     console.log(me.name+': spawning daemon: '+me.options.execPath);
 
-    if(me.pid)
-    {
+    if (me.pid) {
         console.log(me.name+': already running with PID '+me.pid);
         return false;
     }
@@ -67,33 +68,26 @@ exports.nginx.prototype.start = function() {
 
     me.proc.on('exit', function (code) {
 
-        if (code !== 0)
-        {
+        if (code !== 0) {
             me.status = 'offline';
             me.exitCode = code;
             console.log(me.name+': exited with code: '+code);
         }
 
         // look for pid
-        if(fs.existsSync(me.options.pidPath))
-        {
+        if (fs.existsSync(me.options.pidPath)) {
             me.pid = parseInt(fs.readFileSync(me.options.pidPath));
             console.log(me.name+': found new PID: '+me.pid);
             me.status = 'online';
-        }
-        else
-        {
+        } else {
             console.log(me.name+': failed to find pid after launching, waiting 1000ms and trying again...');
             setTimeout(function() {
 
-                if(fs.existsSync(me.options.pidPath))
-                {
+                if (fs.existsSync(me.options.pidPath)) {
                     me.pid = parseInt(fs.readFileSync(me.options.pidPath));
                     console.log(me.name+': found new PID: '+me.pid);
                     me.status = 'online';
-                }
-                else
-                {
+                } else {
                     console.log(me.name+': failed to find pid after launching');
                     me.status = 'unknown';
                     me.pid = null;
@@ -117,21 +111,19 @@ exports.nginx.prototype.start = function() {
 
     this.status = 'online';
     return true;
-}
+};
 
 
-exports.nginx.prototype.stop = function() {
+exports.NginxService.prototype.stop = function() {
     var me = this;
 
-    if(!me.pid)
+    if (!me.pid) {
         return false;
-
-    try
-    {
-        process.kill(me.pid, 'SIGQUIT');
     }
-    catch(error)
-    {
+
+    try {
+        process.kill(me.pid, 'SIGQUIT');
+    } catch (error) {
         console.log(me.name+': failed to stop process: '+error);
         return false;
     }
@@ -139,23 +131,21 @@ exports.nginx.prototype.stop = function() {
     me.status = 'offline';
     me.pid = null;
     return true;
-}
+};
 
 
-exports.nginx.prototype.restart = function() {
+exports.NginxService.prototype.restart = function() {
     var me = this;
 
-    if(!me.pid)
+    if (!me.pid) {
         return false;
+    }
 
     this.writeConfig();
 
-    try
-    {
+    try {
         process.kill(me.pid, 'SIGHUP');
-    }
-    catch(error)
-    {
+    } catch (error) {
         console.log(me.name+': failed to restart process: '+error);
         return false;
     }
@@ -163,16 +153,16 @@ exports.nginx.prototype.restart = function() {
     console.log(me.name+': reloaded config for process '+me.pid);
 
     return true;
-}
+};
 
 
-exports.nginx.prototype.writeConfig = function() {
+exports.NginxService.prototype.writeConfig = function() {
     fs.writeFileSync(this.options.configPath, this.makeConfig());
 };
 
-exports.nginx.prototype.makeConfig = function() {
-    var me = this
-        ,c = '';
+exports.NginxService.prototype.makeConfig = function() {
+    var me = this,
+        c = '';
 
     c += 'user '+me.options.user+' '+me.options.group+';\n';
     c += 'worker_processes auto;\n';
@@ -244,24 +234,25 @@ exports.nginx.prototype.makeConfig = function() {
 */
 
     _.each(me.controller.sites.sites, function(site, handle) {
+        var hostnames = site.hostnames.slice(),
+            siteDir = me.controller.sites.options.sitesDir+'/'+handle,
+            logsDir = siteDir+'/logs',
+            phpSocketPath = me.controller.services['php'].options.socketPath,
+            siteCfg = '',
+            sslHostnames, sslHostname;
 
         // process hostnames
-        var hostnames = site.hostnames.slice();
-        if(_.indexOf(hostnames, site.primary_hostname) == -1)
+        if (_.indexOf(hostnames, site.primary_hostname) == -1) {
             hostnames.unshift(site.primary_hostname);
+        }
 
         // process directories
-        var siteDir = me.controller.sites.options.sitesDir+'/'+handle
-            ,logsDir = siteDir+'/logs';
+        if (!fs.existsSync(logsDir)) {
+            fs.mkdirSync(logsDir, '775');
+        }
 
-        if(!fs.existsSync(logsDir))
-            fs.mkdirSync(logsDir, 0775);
-
-        var siteCfg = '     access_log '+logsDir+'/access.log main;\n';
+        siteCfg += '     access_log '+logsDir+'/access.log main;\n';
         siteCfg += '        error_log '+logsDir+'/error.log notice;\n';
-
-
-        var phpSocketPath = me.controller.services['php'].options.socketPath;
 
         if (phpSocketPath[0] == '/') {
             phpSocketPath = 'unix:'+phpSocketPath;
@@ -286,10 +277,7 @@ exports.nginx.prototype.makeConfig = function() {
         c +=            siteCfg;
         c += '  }\n';
 
-        if(site.ssl)
-        {
-            var sslHostnames;
-
+        if (site.ssl) {
             if (site.ssl.hostnames) {
                 sslHostnames = site.ssl.hostnames;
             } else {
@@ -297,7 +285,7 @@ exports.nginx.prototype.makeConfig = function() {
                 sslHostnames[site.primary_hostname] = site.ssl;
             }
 
-            for (var sslHostname in sslHostnames) {
+            for (sslHostname in sslHostnames) {
                 c += '  server {\n';
                 c += '      listen '+me.options.bindHost+':443;\n';
                 c += '      server_name '+sslHostname+';\n';
@@ -320,6 +308,6 @@ exports.nginx.prototype.makeConfig = function() {
 };
 
 
-exports.nginx.prototype.onSiteCreated = function(siteData) {
+exports.NginxService.prototype.onSiteCreated = function(siteData) {
     this.restart();
 };

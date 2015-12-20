@@ -1,16 +1,16 @@
-var http = require('http')
-    ,util = require('util')
-    ,fs = require('fs')
-    ,path = require('path')
-    ,_ = require('underscore')
-    ,util = require('util')
-    ,url = require('url')
-    ,static = require('node-static')
-    ,events = require('events');
+var http = require('http'),
+    util = require('util'),
+    fs = require('fs'),
+    path = require('path'),
+    _ = require('underscore'),
+    util = require('util'),
+    url = require('url'),
+    static = require('node-static'),
+    events = require('events');
 
-exports.server = function(paths, config) {
-    var me = this
-       ,options = config.server;
+exports.Server = function(paths, config) {
+    var me = this,
+        options = config.server;
 
     // call events constructor
     events.EventEmitter.call(me);
@@ -25,19 +25,18 @@ exports.server = function(paths, config) {
     me.options.staticDir = me.options.staticDir || path.resolve(__dirname, '../kernel-www');
 
     // initialize state
-}
-util.inherits(exports.server, events.EventEmitter);
+};
+
+util.inherits(exports.Server, events.EventEmitter);
 
 
-exports.server.prototype.start = function() {
+exports.Server.prototype.start = function() {
     var me = this,
+        http_auth = require('http-auth')({
+            authRealm: 'Emergence Node Management',
+            authFile: '/emergence/admins.htpasswd'
+        }),
         protocol;
-
-    // create HTTP authentication module
-    var http_auth = require('http-auth')({
-        authRealm: 'Emergence Node Management'
-        ,authFile: '/emergence/admins.htpasswd'
-    });
 
     // create static fileserver
     me.fileServer = new static.Server(me.options.staticDir);
@@ -71,36 +70,29 @@ exports.server.prototype.start = function() {
                 request.path = request.urlInfo.pathname.substr(1).split('/');
                 console.log(request.method+' '+request.url);
 
-                if(request.path[0] == 'server-config')
-                {
+                if (request.path[0] == 'server-config') {
                     response.writeHead(200, {'Content-Type':'application/json'});
                     response.end(JSON.stringify(me.options));
                     return;
                 }
 
-                if(request.path[0] == 'package-info')
-                {
+                if (request.path[0] == 'package-info') {
                     response.writeHead(200, {'Content-Type':'application/json'});
                     response.end(JSON.stringify(require('../package.json')));
                     return;
                 }
 
-                if(me.paths.hasOwnProperty(request.path[0]))
-                {
+                if (me.paths.hasOwnProperty(request.path[0])) {
                     var result = me.paths[request.path[0]].handleRequest(request, response, me);
-                    if(result===false)
-                    {
+
+                    if (result===false)  {
                         response.writeHead(404);
                         response.end();
-                    }
-                    else if(result !== true)
-                    {
+                    } else if (result !== true) {
                         response.writeHead(200, {'Content-Type':'application/json'});
                         response.end(JSON.stringify(result));
                     }
-                }
-                else
-                {
+                } else {
                     me.fileServer.serve(request, response);
                 }
             });
@@ -115,5 +107,5 @@ exports.server.prototype.start = function() {
 };
 
 exports.createServer = function(paths, options) {
-    return new exports.server(paths, options);
+    return new exports.Server(paths, options);
 };

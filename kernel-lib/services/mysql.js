@@ -1,19 +1,19 @@
-var _ = require('underscore')
-    ,fs = require('fs')
-    ,path = require('path')
-    ,util = require('util')
-    ,spawn = require('child_process').spawn
-    ,exec = require('child_process').exec;
+var _ = require('underscore'),
+    fs = require('fs'),
+    path = require('path'),
+    util = require('util'),
+    spawn = require('child_process').spawn,
+    exec = require('child_process').exec;
 
 exports.createService = function(name, controller, options) {
-    return new exports.mysql(name, controller, options);
+    return new exports.MysqlService(name, controller, options);
 };
 
-exports.mysql = function(name, controller, options) {
+exports.MysqlService = function(name, controller, options) {
     var me = this;
 
     // call parent constructor
-    exports.mysql.super_.apply(me, arguments);
+    exports.MysqlService.super_.apply(me, arguments);
 
     // default options
     me.options.configPath = me.options.configPath || controller.options.configDir + '/my.cnf';
@@ -30,24 +30,20 @@ exports.mysql = function(name, controller, options) {
 
 
     // check for existing mysqld process
-    if(fs.existsSync(me.options.pidPath))
-    {
+    if (fs.existsSync(me.options.pidPath)) {
         me.pid = parseInt(fs.readFileSync(me.options.pidPath));
         console.log(me.name+': found existing PID: '+me.pid+', checking /proc/'+me.pid);
 
-        if(fs.existsSync('/proc/'+me.pid))
-        {
+        if (fs.existsSync('/proc/'+me.pid)) {
             me.status = 'online';
 
             // instantiate MySQL client
             me.client = require('mysql').createClient({
-                port: me.options.socketPath
-                ,user: me.options.managerUser
-                ,password: me.options.managerPassword
+                port: me.options.socketPath,
+                user: me.options.managerUser,
+                password: me.options.managerPassword
             });
-        }
-        else
-        {
+        } else {
             console.log(me.name+': process '+me.pid + ' not found, deleting .pid file');
             fs.unlinkSync(me.options.pidPath);
         }
@@ -56,15 +52,15 @@ exports.mysql = function(name, controller, options) {
     // listen for site creation
     controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
 };
-util.inherits(exports.mysql, require('./abstract.js').AbstractService);
+
+util.inherits(exports.MysqlService, require('./abstract.js').AbstractService);
 
 
 
-exports.mysql.prototype.start = function(firstRun) {
+exports.MysqlService.prototype.start = function(firstRun) {
     var me = this;
 
-    if(me.pid)
-    {
+    if (me.pid) {
         console.log(me.name+': mysql already runnig with PID '+me.pid);
         return false;
     }
@@ -73,27 +69,24 @@ exports.mysql.prototype.start = function(firstRun) {
     this.writeConfig();
 
     // init logs directory if needed
-    if(!fs.existsSync(me.options.logsDir))
-    {
+    if (!fs.existsSync(me.options.logsDir)) {
         console.log(me.name+': initializing new log directory');
-        fs.mkdirSync(me.options.logsDir, 0775);
+        fs.mkdirSync(me.options.logsDir, '775');
         exec('chown -R mysql:mysql '+me.options.logsDir);
     }
 
 
     // init run directory if needed
-    if(!fs.existsSync(me.options.runDir))
-    {
+    if (!fs.existsSync(me.options.runDir)) {
         console.log(me.name+': initializing new run directory');
-        fs.mkdirSync(me.options.runDir, 0775);
+        fs.mkdirSync(me.options.runDir, '775');
         exec('chown -R mysql:mysql '+me.options.runDir);
     }
 
     // init data directory if needed
-    if(!fs.existsSync(me.options.dataDir))
-    {
+    if (!fs.existsSync(me.options.dataDir)) {
         console.log(me.name+': initializing new data directory...');
-        fs.mkdirSync(me.options.dataDir, 0775);
+        fs.mkdirSync(me.options.dataDir, '775');
         exec('chown -R mysql:mysql '+me.options.dataDir);
 
         exec('mysql_install_db --datadir='+me.options.dataDir, function(error, stdout, stderr) {
@@ -106,9 +99,9 @@ exports.mysql.prototype.start = function(firstRun) {
 
     // instantiate MySQL client
     me.client = require('mysql').createClient({
-        port: me.options.socketPath
-        ,user: me.options.managerUser
-        ,password: me.options.managerPassword
+        port: me.options.socketPath,
+        user: me.options.managerUser,
+        password: me.options.managerPassword
     });
 
     // spawn process
@@ -122,8 +115,7 @@ exports.mysql.prototype.start = function(firstRun) {
     // add listeners to process
     me.proc.on('exit', function (code) {
 
-        if (code !== 0)
-        {
+        if (code !== 0) {
             me.status = 'offline';
             me.exitCode = code;
             console.log(me.name+': exited with code: '+code);
@@ -137,43 +129,37 @@ exports.mysql.prototype.start = function(firstRun) {
     me.proc.stderr.on('data', function (data) {
         console.log(me.name+': stderr:\n\t' + data.toString().replace(/\n/g,'\n\t'));
 
-        if (/^execvp\(\)/.test(data))
-        {
+        if (/^execvp\(\)/.test(data)) {
             console.log('Failed to start child process.');
             me.status = 'offline';
         }
 
-        if(/ready for connections/.test(data))
-        {
-            if(firstRun)
-                me.secureInstallation();
+        if (/ready for connections/.test(data) && firstRun) {
+            me.secureInstallation();
         }
     });
 
     return true;
-}
+};
 
 
-exports.mysql.prototype.stop = function() {
+exports.MysqlService.prototype.stop = function() {
     var me = this;
 
-    if(!me.pid)
+    if (!me.pid) {
         return false;
+    }
 
     // disconnect client
-    if(me.client && me.client.connected)
-    {
+    if (me.client && me.client.connected) {
         me.client.end();
         console.log(me.name+': mysql client disconnected');
     }
 
-    try
-    {
+    try {
         console.log(me.name+': sending sigterm to '+me.pid);
         process.kill(me.pid, 'SIGTERM');
-    }
-    catch(error)
-    {
+    } catch (error) {
         console.log(me.name+': failed to stop process: '+error);
         return false;
     }
@@ -183,35 +169,37 @@ exports.mysql.prototype.stop = function() {
     return true;
 };
 
-exports.mysql.prototype.restart = function() {
-    var me = this;
+exports.MysqlService.prototype.restart = function() {
+    var me = this,
+        now;
 
-    if(!me.stop())
+    if (!me.stop()) {
         return false;
+    }
 
     // wait for pid to disappear before attempting start
     process.stdout.write(me.name+': waiting for shutdown');
-    while(fs.existsSync(me.options.pidPath))
-    {
+    while (fs.existsSync(me.options.pidPath)) {
         process.stdout.write('.');
-        var now = new Date().getTime();
-        while(new Date().getTime() < now + 500)
-        {
+        now = new Date().getTime();
+
+        while (new Date().getTime() < now + 500) {
             // do nothing
         }
     }
+
     process.stdout.write('\n');
 
     return me.start();
 };
 
-exports.mysql.prototype.writeConfig = function() {
+exports.MysqlService.prototype.writeConfig = function() {
     fs.writeFileSync(this.options.configPath, this.makeConfig());
 };
 
-exports.mysql.prototype.makeConfig = function() {
-    var me = this
-        ,c = '';
+exports.MysqlService.prototype.makeConfig = function() {
+    var me = this,
+        c = '';
 
     c += '[mysqld]\n';
     c += 'character-set-server      = utf8\n';
@@ -233,10 +221,11 @@ exports.mysql.prototype.makeConfig = function() {
     c += 'myisam_sort_buffer_size   = 8M\n';
 //  c += 'lc-messages-dir                   = /usr/local/share/mysql\n';
 
-    if(me.options.bindHost)
+    if (me.options.bindHost) {
         c += 'bind-address = '+me.options.bindHost+'\n';
-    else
+    } else {
         c += 'skip-networking\n';
+    }
 
     c += 'log-bin                   = mysqld-bin\n';
     c += 'expire_logs_days              = 2\n';
@@ -259,10 +248,9 @@ exports.mysql.prototype.makeConfig = function() {
     return c;
 };
 
-exports.mysql.prototype.secureInstallation = function() {
-
-    var me = this
-        ,sql = '';
+exports.MysqlService.prototype.secureInstallation = function() {
+    var me = this,
+        sql = '';
 
     console.log(me.name+': securing installation...');
 
@@ -280,9 +268,9 @@ exports.mysql.prototype.secureInstallation = function() {
 
     // open a temporary connection to the new non-secured installation
     require('mysql').createClient({
-        port: me.options.socketPath
-        ,user: 'root'
-        ,password: ''
+        port: me.options.socketPath,
+        user: 'root',
+        password: ''
     }).query(sql, function(error) {
         if (error) {
             console.log(me.name+': failed to secure installation: ' + error);
@@ -294,14 +282,14 @@ exports.mysql.prototype.secureInstallation = function() {
 };
 
 
-exports.mysql.prototype.onSiteCreated = function(siteData, requestData, callbacks) {
-    var me = this
-        ,sql = ''
-        ,dbConfig = {
-            socket: me.options.socketPath
-            ,database: siteData.handle
-            ,username: siteData.handle
-            ,password: me.controller.sites.generatePassword()
+exports.MysqlService.prototype.onSiteCreated = function(siteData, requestData, callbacks) {
+    var me = this,
+        sql = '',
+        dbConfig = {
+            socket: me.options.socketPath,
+            database: siteData.handle,
+            username: siteData.handle,
+            password: me.controller.sites.generatePassword()
         };
 
     console.log(me.name+': creating database `'+siteData.handle+'`');
@@ -312,8 +300,7 @@ exports.mysql.prototype.onSiteCreated = function(siteData, requestData, callback
     sql += 'FLUSH PRIVILEGES;';
 
     me.client.query(sql, function(error, results) {
-        if(error)
-        {
+        if (error) {
             console.log(me.name+': failed to setup database `'+siteData.handle+'`: '+error);
             return;
         }
@@ -334,9 +321,9 @@ exports.mysql.prototype.onSiteCreated = function(siteData, requestData, callback
 
 
 
-exports.mysql.prototype.createSkeletonTables = function(siteData, callback) {
-    var me = this
-        ,sql = '';
+exports.MysqlService.prototype.createSkeletonTables = function(siteData, callback) {
+    var me = this,
+        sql = '';
 
     sql += 'USE `'+siteData.handle+'`;';
 
@@ -374,8 +361,7 @@ exports.mysql.prototype.createSkeletonTables = function(siteData, callback) {
 
     // run tables
     me.client.query(sql, function(error, results) {
-        if(error)
-        {
+        if (error) {
             console.log(me.name+': failed to setup skeleton tables on `'+siteData.handle+'`: '+error);
             return;
         }

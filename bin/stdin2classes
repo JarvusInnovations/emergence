@@ -2,10 +2,8 @@
 
 open FILE, ">header.php" or die $!;
 
-while(<STDIN>)
-{
-        if(/^(abstract\s+)?class\s+([a-zA-Z0-9_]+)/)
-        {
+while (<STDIN>) {
+        if (/^(abstract\s+)?class\s+([a-zA-Z0-9_]+)/){
                 print "Found class: $2\n";
                 close FILE;
                 open FILE, ">$2.class.php";
