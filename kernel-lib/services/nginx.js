@@ -176,64 +176,66 @@ exports.NginxService.prototype.makeConfig = function() {
     // configure connection processing
     config.push(
         'events {',
-        '  worker_connections 1024;'
+        '    worker_connections 1024;'
     );
 
     if (process.platform == 'linux') {
-        config.push('  use epoll;');
+        config.push('    use epoll;');
     }
 
-    config.push('}'); // end events block
+    config.push(
+        '}' // end events block
+    );
 
 
     // configure http options
     config.push(
         'http {',
-        '  include '+me.options.miscConfigDir+'/mime.types;',
-        '  default_type application/octet-stream;',
+        '    include '+me.options.miscConfigDir+'/mime.types;',
+        '    default_type application/octet-stream;',
 
-        '  log_format main',
-        '      \'$host $remote_addr - $remote_user [$time_local] \'',
-        '      \'"$request" $status $bytes_sent \'',
-        '      \'"$http_referer" "$http_user_agent" \'',
-        '      \'"$gzip_ratio"\';',
+        '    log_format main',
+        '        \'$host $remote_addr - $remote_user [$time_local] \'',
+        '        \'"$request" $status $bytes_sent \'',
+        '        \'"$http_referer" "$http_user_agent" \'',
+        '        \'"$gzip_ratio"\';',
 
-        '  client_header_timeout 10m;',
-        '  client_body_timeout 10m;',
-        '  send_timeout 10m;',
+        '    client_header_timeout 10m;',
+        '    client_body_timeout 10m;',
+        '    send_timeout 10m;',
 
-        '  connection_pool_size 256;',
-        '  client_max_body_size 200m;',
-        '  client_body_buffer_size 128k;',
-        '  client_header_buffer_size 1k;',
-        '  large_client_header_buffers 8 512k;',
-        '  request_pool_size 4k;',
-        '  server_names_hash_bucket_size 1024;',
-        '  types_hash_max_size 2048;',
+        '    connection_pool_size 256;',
+        '    client_max_body_size 200m;',
+        '    client_body_buffer_size 128k;',
+        '    client_header_buffer_size 1k;',
+        '    large_client_header_buffers 8 512k;',
+        '    request_pool_size 4k;',
+        '    server_names_hash_bucket_size 1024;',
+        '    types_hash_max_size 2048;',
 
-        '  gzip on;',
-        '  gzip_min_length 1100;',
-        '  gzip_buffers 4 8k;',
-        '  gzip_types text/plain text/css text/x-scss text/x-html-template text/x-component text/xml application/xml application/javascript application/json application/php application/atom+xml application/rss+xml application/vnd.ms-fontobject application/x-font-ttf application/xhtml+xml font/opentype image/svg+xml image/x-icon;',
+        '    gzip on;',
+        '    gzip_min_length 1100;',
+        '    gzip_buffers 4 8k;',
+        '    gzip_types text/plain text/css text/x-scss text/x-html-template text/x-component text/xml application/xml application/javascript application/json application/php application/atom+xml application/rss+xml application/vnd.ms-fontobject application/x-font-ttf application/xhtml+xml font/opentype image/svg+xml image/x-icon;',
 
-        '  output_buffers 1 32k;',
-        '  postpone_output 1460;',
+        '    output_buffers 1 32k;',
+        '    postpone_output 1460;',
 
-        '  sendfile on;',
-        '  tcp_nopush on;',
-        '  tcp_nodelay on;',
+        '    sendfile on;',
+        '    tcp_nopush on;',
+        '    tcp_nodelay on;',
 
-        '  keepalive_timeout 75 20;',
+        '    keepalive_timeout 75 20;',
 
-        '  ignore_invalid_headers on;',
+        '    ignore_invalid_headers on;',
 
-        '  index index.php;',
+        '    index index.php;',
 
-        '  fastcgi_index index.php;',
-        '  fastcgi_read_timeout 6h;',
-        '  fastcgi_buffers 32 64k;',
+        '    fastcgi_index index.php;',
+        '    fastcgi_read_timeout 6h;',
+        '    fastcgi_buffers 32 64k;',
 
-        '  server_tokens off;'
+        '    server_tokens off;'
 /*
 
         '  server {',
@@ -268,31 +270,33 @@ exports.NginxService.prototype.makeConfig = function() {
         }
 
         siteConfig.push(
-            '    access_log '+logsDir+'/access.log main;',
-            '    error_log '+logsDir+'/error.log notice;',
+            '        access_log '+logsDir+'/access.log main;',
+            '        error_log '+logsDir+'/error.log notice;',
 
-            '    location / {',
-            '         include '+me.options.miscConfigDir+'/fastcgi_params;',
-            '         fastcgi_param HTTPS $php_https;',
-            '         fastcgi_pass '+phpSocketPath+';',
-            '         fastcgi_param PATH_INFO $fastcgi_script_name;',
-            '         fastcgi_param SITE_ROOT '+siteDir+';',
-            '         fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/web.php;',
-            '    }'
+            '        location / {',
+            '            include '+me.options.miscConfigDir+'/fastcgi_params;',
+            '            fastcgi_param HTTPS $php_https;',
+            '            fastcgi_pass '+phpSocketPath+';',
+            '            fastcgi_param PATH_INFO $fastcgi_script_name;',
+            '            fastcgi_param SITE_ROOT '+siteDir+';',
+            '            fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/web.php;',
+            '        }'
         );
 
 
         // append config
         config.push(
-            '  server {',
-            '      listen '+me.options.bindHost+':'+me.options.bindPort+';',
-            '      server_name '+hostnames.join(' ')+';',
-            '      set $php_https "";'
+            '    server {',
+            '        listen '+me.options.bindHost+':'+me.options.bindPort+';',
+            '        server_name '+hostnames.join(' ')+';',
+            '        set $php_https "";'
         );
 
         config.push.apply(config, siteConfig);
 
-        config.push('  }');
+        config.push(
+            '    }'
+        );
 
         if (site.ssl) {
             if (site.ssl.hostnames) {
@@ -304,25 +308,27 @@ exports.NginxService.prototype.makeConfig = function() {
 
             for (sslHostname in sslHostnames) {
                 config.push(
-                    '  server {',
-                    '      listen '+me.options.bindHost+':443;',
-                    '      server_name '+sslHostname+';',
-                    '      set $php_https on;',
+                    '    server {',
+                    '        listen '+me.options.bindHost+':443;',
+                    '        server_name '+sslHostname+';',
+                    '        set $php_https on;',
 
-                    '      ssl on;',
-                    '      ssl_protocols TLSv1 TLSv1.1 TLSv1.2;',
-                    '      ssl_certificate '+sslHostnames[sslHostname].certificate+';',
-                    '      ssl_certificate_key '+sslHostnames[sslHostname].certificate_key+';'
+                    '        ssl on;',
+                    '        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;',
+                    '        ssl_certificate '+sslHostnames[sslHostname].certificate+';',
+                    '        ssl_certificate_key '+sslHostnames[sslHostname].certificate_key+';'
                 );
 
                 config.push.apply(config, siteConfig);
 
-                config.push('  }');
+                config.push('    }');
             }
         }
     });
 
-    config.push('}'); // end http block
+    config.push(
+        '}' // end http block
+    );
 
     return config.join('\n');
 };

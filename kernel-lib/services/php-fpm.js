@@ -151,40 +151,40 @@ exports.PhpFpmService.prototype.makeConfig = function() {
 
     config.push(
         '[global]',
-        'pid = '+me.options.pidPath,
-        'error_log = '+me.options.errorLogPath
+        'pid                                            = '+me.options.pidPath,
+        'error_log                                      = '+me.options.errorLogPath
     );
 
     config.push(
         '[www]',
-        'user = '+me.options.user,
-        'group = '+me.options.group,
-        'listen = '+me.options.socketPath,
-        'listen.owner = '+me.options.user,
-        'listen.group = '+me.options.group,
-        'pm = dynamic',
-        'pm.max_children = '+(me.options.maxClients||50),
-        'pm.start_servers = 5',
-        'pm.min_spare_servers = 1',
-        'pm.max_spare_servers = '+Math.round((me.options.maxClients||50)/5)
+        'user                                           = '+me.options.user,
+        'group                                          = '+me.options.group,
+        'listen                                         = '+me.options.socketPath,
+        'listen.owner                                   = '+me.options.user,
+        'listen.group                                   = '+me.options.group,
+        'pm                                             = dynamic',
+        'pm.max_children                                = '+(me.options.maxClients||50),
+        'pm.start_servers                               = 5',
+        'pm.min_spare_servers                           = 1',
+        'pm.max_spare_servers                           = '+Math.round((me.options.maxClients||50)/5)
     );
 
     if (me.options.statusPath) {
-        config.push('pm.status_path = '+me.options.statusPath);
+        config.push('pm.status_path                         = '+me.options.statusPath);
     }
 
     config.push(
-        'php_admin_flag[short_open_tag]=on',
-        'php_admin_value[apc.shm_size]=512M',
-        'php_admin_value[apc.shm_segments]=1',
-        'php_admin_value[apc.slam_defense]=0',
-        'php_admin_value[apc.stat]='+(me.options.statScripts?'1':'0'),
-        'php_admin_value[opcache.validate_timestamps]='+(me.options.statScripts?'1':'0'),
-        'php_admin_value[upload_max_filesize]=200M',
-        'php_admin_value[post_max_size]=200M',
-        'php_admin_value[memory_limit]='+(me.options.memoryLimit ? me.options.memoryLimit : '200M'),
-        'php_admin_value[error_reporting]=E_ALL & ~E_NOTICE',
-        'php_admin_value[date.timezone]=America/New_York'
+        'php_admin_flag[short_open_tag]                 = on',
+        'php_admin_value[apc.shm_size]                  = 512M',
+        'php_admin_value[apc.shm_segments]              = 1',
+        'php_admin_value[apc.slam_defense]              = 0',
+        'php_admin_value[apc.stat]                      = '+(me.options.statScripts?'1':'0'),
+        'php_admin_value[opcache.validate_timestamps]   = '+(me.options.statScripts?'1':'0'),
+        'php_admin_value[upload_max_filesize]           = 200M',
+        'php_admin_value[post_max_size]                 = 200M',
+        'php_admin_value[memory_limit]                  = '+(me.options.memoryLimit ? me.options.memoryLimit : '200M'),
+        'php_admin_value[error_reporting]               = E_ALL & ~E_NOTICE',
+        'php_admin_value[date.timezone]                 = America/New_York'
     );
 
     return config.join('\n');
