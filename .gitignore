@@ -1,6 +1,3 @@
-/node_modules
-/services
-/sites
-/kernel.config.json
+/node_modules/
 .DS_Store
 /typings/
