@@ -199,53 +199,55 @@ exports.MysqlService.prototype.writeConfig = function() {
 
 exports.MysqlService.prototype.makeConfig = function() {
     var me = this,
-        c = '';
+        config = [];
 
-    c += '[mysqld]\n';
-    c += 'character-set-server      = utf8\n';
-    c += 'user                      = mysql\n';
-    c += 'port                      = 3306\n';
-    c += 'socket                    = '+me.options.socketPath+'\n';
-    c += 'pid-file                  = '+me.options.pidPath+'\n';
-//  c += 'log-error                 = '+me.options.errorLogPath+'\n'; // disabled due to http://bugs.mysql.com/bug.php?id=65592 -- errors output to STDIN will usually go into emergence-kernel's log
-    c += 'basedir                   = /usr\n';
-    c += 'datadir                   = '+me.options.dataDir+'\n';
-    c += 'skip-external-locking\n';
-    c += 'key_buffer_size               = 16M\n';
-    c += 'max_allowed_packet        = 1M\n';
-    c += 'table_cache               = 64\n';
-    c += 'sort_buffer_size          = 512K\n';
-    c += 'net_buffer_length         = 8K\n';
-    c += 'read_buffer_size          = 256K\n';
-    c += 'read_rnd_buffer_size      = 512K\n';
-    c += 'myisam_sort_buffer_size   = 8M\n';
-//  c += 'lc-messages-dir                   = /usr/local/share/mysql\n';
+    config.push(
+        '[mysqld]',
+        'character-set-server      = utf8',
+        'user                      = mysql',
+        'port                      = 3306',
+        'socket                    = '+me.options.socketPath,
+        'pid-file                  = '+me.options.pidPath,
+//      'log-error                 = '+me.options.errorLogPath, // disabled due to http://bugs.mysql.com/bug.php?id=65592 -- errors output to STDIN will usually go into emergence-kernel's log
+        'basedir                   = /usr',
+        'datadir                   = '+me.options.dataDir,
+        'skip-external-locking',
+        'key_buffer_size           = 16M',
+        'max_allowed_packet        = 1M',
+        'table_cache               = 64',
+        'sort_buffer_size          = 512K',
+        'net_buffer_length         = 8K',
+        'read_buffer_size          = 256K',
+        'read_rnd_buffer_size      = 512K',
+        'myisam_sort_buffer_size   = 8M',
+//      'lc-messages-dir           = /usr/local/share/mysql',
+
+        'log-bin                   = mysqld-bin',
+        'expire_logs_days          = 2',
+        'server-id                 = 1',
+
+        'tmpdir                    = /tmp/',
+
+        'innodb_buffer_pool_size = 16M',
+        'innodb_additional_mem_pool_size = 2M',
+        'innodb_data_file_path = ibdata1:10M:autoextend:max:128M',
+        'innodb_log_file_size = 5M',
+        'innodb_log_buffer_size = 8M',
+        'innodb_log_files_in_group=2',
+        'innodb_flush_log_at_trx_commit = 1',
+        'innodb_lock_wait_timeout = 50',
+        'innodb_file_per_table',
+        'max_binlog_size  = 100M',
+        'binlog_format    = row'
+    );
 
     if (me.options.bindHost) {
-        c += 'bind-address = '+me.options.bindHost+'\n';
+        config.push('bind-address = '+me.options.bindHost);
     } else {
-        c += 'skip-networking\n';
+        config.push('skip-networking');
     }
 
-    c += 'log-bin                   = mysqld-bin\n';
-    c += 'expire_logs_days              = 2\n';
-    c += 'server-id                 = 1\n';
-
-    c += 'tmpdir                    = /tmp/\n';
-
-    c += 'innodb_buffer_pool_size = 16M\n';
-    c += 'innodb_additional_mem_pool_size = 2M\n';
-    c += 'innodb_data_file_path = ibdata1:10M:autoextend:max:128M\n';
-    c += 'innodb_log_file_size = 5M\n';
-    c += 'innodb_log_buffer_size = 8M\n';
-    c += 'innodb_log_files_in_group=2\n';
-    c += 'innodb_flush_log_at_trx_commit = 1\n';
-    c += 'innodb_lock_wait_timeout = 50\n';
-    c += 'innodb_file_per_table\n';
-    c += 'max_binlog_size  = 100M\n';
-    c += 'binlog_format    = row\n';
-
-    return c;
+    return config.join('\n');
 };
 
 exports.MysqlService.prototype.secureInstallation = function() {
