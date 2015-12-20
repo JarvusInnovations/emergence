@@ -252,7 +252,7 @@ exports.Sites.prototype.updateSiteConfig = function(handle, changes) {
         siteDir = me.options.sitesDir+'/'+handle,
         filename = siteDir+'/site.json',
         siteData = this.sites[handle],
-        create_useri;
+        create_user;
 
     _.extend(siteData, changes);
 
