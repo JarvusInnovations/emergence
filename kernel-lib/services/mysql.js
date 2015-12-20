@@ -4,7 +4,8 @@ var _ = require('underscore'),
     util = require('util'),
     spawn = require('child_process').spawn,
     exec = require('child_process').exec,
-    execSync = require('execSync');
+    execSync = require('execSync'),
+    semver = require('semver');
 
 exports.createService = function(name, controller, options) {
     return new exports.MysqlService(name, controller, options);
@@ -232,7 +233,6 @@ exports.MysqlService.prototype.makeConfig = function() {
         'skip-external-locking',
         'key_buffer_size                    = 16M',
         'max_allowed_packet                 = 1M',
-        'table_cache                        = 64',
         'sort_buffer_size                   = 512K',
         'net_buffer_length                  = 8K',
         'read_buffer_size                   = 256K',
@@ -258,6 +258,12 @@ exports.MysqlService.prototype.makeConfig = function() {
         'max_binlog_size                    = 100M',
         'binlog_format                      = row'
     );
+
+    if (semver.gt(me.mysqldVersion, '5.6.0')) {
+        config.push('table_open_cache                   = 64');
+    } else {
+        config.push('table_cache                        = 64');
+    }
 
     if (me.options.bindHost) {
         config.push('bind-address               = '+me.options.bindHost);

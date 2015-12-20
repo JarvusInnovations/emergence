@@ -10,7 +10,8 @@
 		"http-auth": "1.2.7",
 		"posix": "JarvusInnovations/node-posix#master",
 		"hostile": "^1.0.2",
-        "execSync": "^1.0.2"
+        "execSync": "^1.0.2",
+        "semver": "^5.1.0"
 	},
 	"bin": {
 		"emergence-kernel": "./bin/kernel",
