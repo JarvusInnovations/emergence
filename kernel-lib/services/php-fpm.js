@@ -159,6 +159,7 @@ exports.PhpFpmService.prototype.makeConfig = function() {
         '[www]',
         'user                                           = '+me.options.user,
         'group                                          = '+me.options.group,
+        'catch_workers_output                           = on',
         'listen                                         = '+me.options.socketPath,
         'listen.owner                                   = '+me.options.user,
         'listen.group                                   = '+me.options.group,
