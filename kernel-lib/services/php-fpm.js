@@ -164,9 +164,9 @@ exports.PhpFpmService.prototype.makeConfig = function() {
         'listen.group                                   = '+me.options.group,
         'pm                                             = dynamic',
         'pm.max_children                                = '+(me.options.maxClients||50),
-        'pm.start_servers                               = 5',
-        'pm.min_spare_servers                           = 1',
-        'pm.max_spare_servers                           = '+Math.round((me.options.maxClients||50)/5)
+        'pm.start_servers                               = '+(me.options.startServers||5),
+        'pm.min_spare_servers                           = '+(me.options.min_spare_servers||1),
+        'pm.max_spare_servers                           = '+Math.round((me.options.maxClients||50)/(me.options.startServers||5))
     );
 
     if (me.options.statusPath) {
@@ -180,11 +180,11 @@ exports.PhpFpmService.prototype.makeConfig = function() {
         'php_admin_value[apc.slam_defense]              = 0',
         'php_admin_value[apc.stat]                      = '+(me.options.statScripts?'1':'0'),
         'php_admin_value[opcache.validate_timestamps]   = '+(me.options.statScripts?'1':'0'),
-        'php_admin_value[upload_max_filesize]           = 200M',
-        'php_admin_value[post_max_size]                 = 200M',
+        'php_admin_value[upload_max_filesize]           = '+(me.options.uploadMaxSize ? me.options.uploadMaxSize : '200M'),
+        'php_admin_value[post_max_size]                 = '+(me.options.postMaxSize ? me.options.postMaxSize : '200M'),
         'php_admin_value[memory_limit]                  = '+(me.options.memoryLimit ? me.options.memoryLimit : '200M'),
-        'php_admin_value[error_reporting]               = E_ALL & ~E_NOTICE',
-        'php_admin_value[date.timezone]                 = America/New_York'
+        'php_admin_value[error_reporting]               = '+(me.options.errorReporting ? me.options.errorReporting : 'E_ALL & ~E_NOTICE'),
+        'php_admin_value[date.timezone]                 = '+(me.options.defaultTimezone ? me.options.defaultTimezone : 'America/New_York')
     );
 
     return config.join('\n');
