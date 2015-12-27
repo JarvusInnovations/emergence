@@ -139,12 +139,8 @@ class Emergence
             curl_setopt($ch, CURLOPT_FILE, $fp);
             curl_setopt($ch, CURLOPT_HEADER, true);
 
-            if (!curl_exec($ch)) {
-                throw new Exception('Failed to query parent site for file');
-            }
-
-            if (curl_errno($ch)) {
-                throw new Exception("curl error:".curl_error($ch));
+            if (curl_exec($ch) === false || curl_errno($ch)) {
+                throw new Exception('Failed to query parent site for file: '.curl_error($ch));
             }
 
             // read response
@@ -197,12 +193,8 @@ class Emergence
         $responseStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $responseType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 
-        if (!$responseText) {
-            throw new Exception('Failed to query parent site for collection');
-        }
-
-        if (curl_errno($ch)) {
-            throw new Exception("curl error:".curl_error($ch));
+        if ($responseText === false || curl_errno($ch)) {
+            throw new Exception('Failed to query parent site for collection: '.curl_error($ch));
         }
 
         if ($responseStatus != 300 || $responseType != 'application/vnd.emergence.tree+json') {
