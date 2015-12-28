@@ -148,6 +148,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                             phpProc.stdin.write(code+'\n');
                         }
 
+                        _phpExec('Site::$debug = false;');
                         _phpExec('Site::onSiteCreated(json_decode(\''+JSON.stringify(requestData).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\', true));');
                         phpProc.stdin.end();
 
