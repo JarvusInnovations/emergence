@@ -526,10 +526,13 @@ class Site
         $notFoundStack = array_filter(static::$requestPath);
         array_unshift($notFoundStack, 'site-root');
 
-        // TODO: cache list of _notfound handlers for given containing collection
+        // TODO: cache list of _default/_notfound handlers for given containing collection
         $notFoundNode = null;
         while (count($notFoundStack)) { // last iteration is when site-root is all that's left
-            if ($notFoundNode = static::resolvePath(array_merge($notFoundStack, array('_notfound.php')))) {
+            if (
+                ($notFoundNode = static::resolvePath(array_merge($notFoundStack, array('_default.php')))) ||
+                ($notFoundNode = static::resolvePath(array_merge($notFoundStack, array('_notfound.php'))))
+            ) {
                 // calculate pathStack and resolvedPath relative to each handler
                 static::$pathStack = array_slice(static::$requestPath, count($notFoundStack) - 1);
                 static::$resolvedPath = array_slice(static::$requestPath, 0, count($notFoundStack) - 1);
