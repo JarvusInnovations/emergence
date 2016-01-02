@@ -380,6 +380,17 @@ class Site
             $configFileIds = array();
 
 
+            // look for composite config files
+            $collectionPath = "php-config/$path.config.d";
+            Emergence_FS::cacheTree($collectionPath);
+
+            foreach (Emergence_FS::getAggregateChildren($collectionPath) AS $filename => $node) {
+                if ($node->Type == 'application/php') {
+                    $configFileIds[] = $node->ID;
+                }
+            }
+
+
             // look for primary config file
             if ($lastNsPos = strrpos($className, '\\')) {
                 $namespace = substr($className, 0, $lastNsPos);
@@ -401,17 +412,6 @@ class Site
 
             if ($configFileNode && $configFileNode->MIMEType == 'application/php') {
                 $configFileIds[] = $configFileNode->ID;
-            }
-
-
-            // look for composite config files
-            $collectionPath = "php-config/$path.config.d";
-            Emergence_FS::cacheTree($collectionPath);
-
-            foreach (Emergence_FS::getAggregateChildren($collectionPath) AS $filename => $node) {
-                if ($node->Type == 'application/php') {
-                    $configFileIds[] = $node->ID;
-                }
             }
 
             Cache::store($cacheKey, $configFileIds);
