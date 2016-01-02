@@ -293,10 +293,13 @@ class SiteFile
 
     public static function createPhantom($collectionID, $handle, $ancestorID = null)
     {
-        DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Phantom", AuthorID = %s, AncestorID = %s', array(
+        $timestamp = date('Y-m-d H:i:s');
+
+        DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Phantom", Timestamp = "%s", AuthorID = %s, AncestorID = %s', array(
             static::$tableName
             ,$collectionID
             ,DB::escape($handle)
+            ,$timestamp
             ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
             ,$ancestorID ? $ancestorID : 'NULL'
         ));
@@ -306,6 +309,7 @@ class SiteFile
             ,'CollectionID' => $collectionID
             ,'Handle' => $handle
             ,'Status' => 'Phantom'
+            ,'Timestamp' => $timestamp
             ,'AuthorID' => !empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : null
             ,'AncestorID' => $ancestorID
         );
@@ -349,18 +353,21 @@ class SiteFile
     {
         $authorID = !empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : null;
         $oldHandle = $this->_handle;
+        $timestamp = date('Y-m-d H:i:s');
 
         if ($this->Size == 0 && $authorID && $this->AuthorID == $authorID && !$this->AncestorID) {
             // updating existing record only if file is empty, by the same author, and has no ancestor
-            DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
+            DB::nonQuery('UPDATE `%s` SET Handle = "%s", Timestamp = "%s" WHERE ID = %u', array(
                 static::$tableName
                 ,DB::escape($handle)
+                ,$timestamp
                 ,$this->ID
             ));
+            $this->_record['Timestamp'] = $timestamp;
         } else {
             // clone existing record
             DB::nonQuery(
-                'INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "%s", SHA1 = "%s", Size = %u, Type = "%s", AuthorID = %s, AncestorID = %u'
+                'INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "%s", SHA1 = "%s", Size = %u, Type = "%s", Timestamp = "%s", AuthorID = %s, AncestorID = %u'
                 ,array(
                     static::$tableName
                     ,$this->CollectionID
@@ -369,6 +376,7 @@ class SiteFile
                     ,$this->SHA1
                     ,$this->Size
                     ,$this->Type
+                    ,$timestamp
                     ,$this->AuthorID ? $this->AuthorID : 'NULL'
                     ,$this->ID
                 )
@@ -383,6 +391,7 @@ class SiteFile
 
             // update instance
             $this->_record['ID'] = $newID;
+            $this->_record['Timestamp'] = $timestamp;
 
             if ($authorID != $this->AuthorID) {
                 $this->_author = null;
@@ -407,10 +416,11 @@ class SiteFile
 
     public function delete()
     {
-        DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Deleted", AuthorID = %s, AncestorID = %u', array(
+        DB::nonQuery('INSERT INTO `%s` SET CollectionID = %u, Handle = "%s", Status = "Deleted", Timestamp = "%s", AuthorID = %s, AncestorID = %u', array(
             static::$tableName
             ,$this->CollectionID
             ,DB::escape($this->Handle)
+            ,date('Y-m-d H:i:s')
             ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
             ,$this->ID
         ));
@@ -451,12 +461,13 @@ class SiteFile
         ));
 
         DB::nonQuery(
-            'INSERT INTO `%1$s` (CollectionID, Handle, Status, AuthorID, AncestorID) SELECT f2.CollectionID, f2.Handle, "Deleted", %5$s, f2.ID FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
+            'INSERT INTO `%1$s` (CollectionID, Handle, Status, Timestamp, AuthorID, AncestorID) SELECT f2.CollectionID, f2.Handle, "Deleted", "%5$s", %6$s, f2.ID FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (SELECT collections.ID FROM `%2$s` collections WHERE PosLeft BETWEEN %3$u AND %4$u) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted"'
             ,array(
                 static::$tableName
                 ,SiteCollection::$tableName
                 ,$positions['PosLeft']
                 ,$positions['PosRight']
+                ,date('Y-m-d H:i:s')
                 ,!empty($GLOBALS['Session']) && $GLOBALS['Session']->PersonID ? $GLOBALS['Session']->PersonID : 'NULL'
             )
         );
