@@ -81,6 +81,11 @@ class Site
             static::$pathStack = static::$requestPath = static::splitPath($path);
         }
 
+        // set time zone
+        if ($timezone = static::getConfig('time_zone')) {
+            date_default_timezone_set($timezone);
+        }
+
         // set useful transaction name for newrelic
         if (extension_loaded('newrelic')) {
             newrelic_name_transaction (static::getConfig('handle') . '/' . implode('/', site::$requestPath));
