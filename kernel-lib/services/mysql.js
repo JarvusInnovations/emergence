@@ -4,7 +4,7 @@ var _ = require('underscore'),
     util = require('util'),
     spawn = require('child_process').spawn,
     exec = require('child_process').exec,
-    execSync = require('execSync'),
+    shell = require('shelljs'),
     semver = require('semver');
 
 exports.createService = function(name, controller, options) {
@@ -39,7 +39,7 @@ exports.MysqlService = function(name, controller, options) {
 
     // check binary version
     console.log(me.name+': detecting mysqld version...');
-    versionMatch = execSync.exec(me.options.execPath+' --version').stdout.match(/mysqld\s+Ver\s+(\d+(\.\d+)*)/);
+    versionMatch = shell.exec(me.options.execPath+' --version').output.match(/mysqld\s+Ver\s+(\d+(\.\d+)*)/);
 
     if (!versionMatch) {
         throw 'Failed to detect mysql version';
