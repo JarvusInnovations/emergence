@@ -6,11 +6,6 @@ class QueryException extends Exception { }
 
 class DB
 {
-    // config properties
-    public static $timeZone;
-    public static $encoding = 'UTF-8';
-    public static $charset = 'utf8';
-
     // protected properties
     protected static $_mysqli;
     protected static $_record_cache = array();
@@ -431,13 +426,11 @@ class DB
                 self::handleError('connect');
             }
 
-            // set timezone
-            if (isset(self::$timeZone)) {
-                self::$_mysqli->query(sprintf(
-                    'SET time_zone = "%s"'
-                    , self::$_mysqli->real_escape_string(self::$timeZone)
-                ));
-            }
+            // set timezone to match PHP
+            self::nonQuery(
+                'SET time_zone = "%s"',
+                self::escape(date('P'))
+            );
         }
 
         return self::$_mysqli;
