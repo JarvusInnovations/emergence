@@ -380,7 +380,19 @@ class Site
             $configFileIds = array();
 
 
-            // look for composite config files
+            // compute file path for given class name
+            if ($lastNsPos = strrpos($className, '\\')) {
+                $namespace = substr($className, 0, $lastNsPos);
+                $className = substr($className, $lastNsPos + 1);
+                $path  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+            } else {
+                $path = '';
+            }
+
+            $path .= str_replace('_', DIRECTORY_SEPARATOR, $className);
+
+
+            // look for composite config files first
             $collectionPath = "php-config/$path.config.d";
             Emergence_FS::cacheTree($collectionPath);
 
@@ -392,16 +404,6 @@ class Site
 
 
             // look for primary config file
-            if ($lastNsPos = strrpos($className, '\\')) {
-                $namespace = substr($className, 0, $lastNsPos);
-                $className = substr($className, $lastNsPos + 1);
-                $path  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
-            } else {
-                $path = '';
-            }
-
-            $path .= str_replace('_', DIRECTORY_SEPARATOR, $className);
-
             $configFileNode = Site::resolvePath("php-config/$path.config.php");
 
 
