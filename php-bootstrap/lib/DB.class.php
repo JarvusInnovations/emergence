@@ -6,6 +6,10 @@ class QueryException extends Exception { }
 
 class DB
 {
+    // deprecated:
+    public static $encoding = 'UTF-8';
+    public static $charset = 'utf8';
+
     // protected properties
     protected static $_mysqli;
     protected static $_record_cache = array();
