@@ -119,6 +119,10 @@ class Site
         if (is_callable(static::$onInitialized)) {
             call_user_func(static::$onInitialized);
         }
+
+        if (class_exists('Emergence\\EventBus')) {
+            Emergence\EventBus::fireEvent('initialized', 'Site');
+        }
     }
 
     public static function onSiteCreated($requestData)
@@ -141,6 +145,10 @@ class Site
         // execute configured method
         if (is_callable(static::$onSiteCreated)) {
             call_user_func(static::$onSiteCreated, $requestData);
+        }
+
+        if (class_exists('Emergence\\EventBus')) {
+            Emergence\EventBus::fireEvent('siteCreated', 'Site', $requestData);
         }
     }
 
@@ -226,6 +234,12 @@ class Site
                 call_user_func(static::$onRequestMapped, $resolvedNode);
             }
 
+            if (class_exists('Emergence\\EventBus')) {
+                Emergence\EventBus::fireEvent('requestMapped', 'Site', array(
+                    'node' => $resolvedNode
+                ));
+            }
+
             // switch collection result to its _index.php if found
             if (
                 is_a($resolvedNode, 'SiteCollection') &&
@@ -247,6 +261,12 @@ class Site
 
                 if (is_callable(static::$onBeforeStaticResponse)) {
                     call_user_func(static::$onBeforeStaticResponse, $resolvedNode);
+                }
+
+                if (class_exists('Emergence\\EventBus')) {
+                    Emergence\EventBus::fireEvent('beforeStaticResponse', 'Site', array(
+                        'node' => $resolvedNode
+                    ));
                 }
 
                 $resolvedNode->outputAsResponse();
@@ -271,6 +291,13 @@ class Site
 
         if (is_callable(static::$onBeforeScriptExecute)) {
             call_user_func(static::$onBeforeScriptExecute, $_SCRIPT_NODE);
+        }
+
+        if (class_exists('Emergence\\EventBus')) {
+            Emergence\EventBus::fireEvent('beforeScriptExecute', 'Site', array(
+                'node' => $_SCRIPT_NODE,
+                'exit' => $_SCRIPT_EXIT
+            ));
         }
 
         require($_SCRIPT_NODE->RealPath);
