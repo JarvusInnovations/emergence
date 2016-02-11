@@ -27,6 +27,7 @@ class Site
     public static $requestPath = array();
     public static $pathStack = array();
     public static $resolvedPath = array();
+    public static $resolvedNode;
     public static $config; // TODO: deprecated; use Site::getConfig(...)
     public static $initializeTime;
 
@@ -38,6 +39,10 @@ class Site
     public static function initialize($rootPath, $hostname = null)
     {
         static::$initializeTime = microtime(true);
+
+        // prevent caching by default
+        header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
 
         // get site root
         if ($rootPath) {
@@ -154,12 +159,6 @@ class Site
 
     public static function handleRequest()
     {
-        // handle emergence request
-        if (static::$pathStack[0] == 'emergence') {
-            array_shift(static::$pathStack);
-            return Emergence::handleRequest();
-        }
-
         // handle CORS headers
         if (isset($_SERVER['HTTP_ORIGIN'])) {
             $hostname = strtolower(parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST));
@@ -183,99 +182,184 @@ class Site
             exit();
         }
 
-        // try to resolve URL in site-root
-        $rootNode = static::getRootCollection('site-root');
-        $resolvedNode = $rootNode;
-        static::$resolvedPath = array();
-
-        // handle default page request
-        if (empty(static::$pathStack[0]) && static::$defaultPage) {
-            static::$pathStack[0] = static::$defaultPage;
+        // handle emergence request
+        if (static::$pathStack[0] == 'emergence') {
+            array_shift(static::$pathStack);
+            return Emergence::handleRequest();
         }
 
-        // crawl down path stack until a handler is found
-        while (($handle = array_shift(static::$pathStack))) {
-            $scriptHandle = (substr($handle, -4)=='.php') ? $handle : $handle.'.php';
-
-            if (
-                (
-                    $resolvedNode
-                    && method_exists($resolvedNode, 'getChild')
-                    && (
-                        ($scriptHandle && $childNode = $resolvedNode->getChild($scriptHandle))
-                        || ($childNode = $resolvedNode->getChild($handle))
-                    )
-                )
-                || ($scriptHandle && $childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath, array($scriptHandle))))
-                || ($childNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath, array($handle))))
-            )
-            {
-                $resolvedNode = $childNode;
-
-                if (is_a($resolvedNode, 'SiteFile')) {
-                    static::$resolvedPath[] = $scriptHandle;
-                    break;
-                }
-            } else {
-                $resolvedNode = false;
-                //break;
+        // TEMPORARY: bypass routing for some scripts
+        // TODO: delete this
+        foreach (['develop', 'editor', 'app'] AS $bypassRoute) {
+            if (static::$pathStack[0] == $bypassRoute) {
+                static::$resolvedPath = [array_shift(static::$pathStack)];
+                return static::executeScript(static::resolvePath("site-root/$bypassRoute.php"));
             }
-
-            static::$resolvedPath[] = $handle;
         }
 
+        // TODO: delete this too
+        if (static::$pathStack[0] == 'site-admin') {
+            if (count(static::$pathStack) > 1) {
+                static::$resolvedPath = [array_shift(static::$pathStack), array_shift(static::$pathStack)];
+                return static::executeScript(static::resolvePath("site-root/site-admin/".static::$resolvedPath[1].".php"));
+            } else {
+                static::$resolvedPath = [array_shift(static::$pathStack)];
+                return static::executeScript(static::resolvePath("site-root/site-admin/_index.php"));
+            }
+        }
 
-        if ($resolvedNode) {
-            // prevent caching by default
-            header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
-            header('Pragma: no-cache');
+        // header('Content-Type: text/plain');
 
-            if (is_callable(static::$onRequestMapped)) {
-                call_user_func(static::$onRequestMapped, $resolvedNode);
+        // printf("Getting result for pathStack: %s\n", implode('/', static::$pathStack));
+
+        // resolve request path against site-root filesystem
+        $pathResult = static::getRequestPathResult(static::$pathStack);
+        static::$resolvedNode = $pathResult['resolvedNode'];
+        static::$resolvedPath = $pathResult['resolvedPath'];
+        static::$pathStack = $pathResult['pathStack'];
+
+        // print_r([
+        //     '$pathResult[resolvedNode]' => sprintf('%s:%s', $pathResult['resolvedNode']->Class, $pathResult['resolvedNode']->FullPath),
+        //     '$pathResult[resolvedPath]' => implode('/', $pathResult['resolvedPath']),
+        //     '$pathResult[pathStack]' => implode('/', $pathResult['pathStack']),
+        //     '$pathResult[searchPath]' => implode('/', $pathResult['searchPath'])
+        // ]);
+
+        // bail now if no node found
+        if (!static::$resolvedNode) {
+            return static::respondNotFound();
+        }
+
+        // execute requestMapped hook and event handlers
+        if (is_callable(static::$onRequestMapped)) {
+            call_user_func(static::$onRequestMapped, static::$resolvedNode);
+        }
+
+        if (class_exists('Emergence\\EventBus')) {
+            Emergence\EventBus::fireEvent('requestMapped', 'Site', array(
+                'node' => static::$resolvedNode
+            ));
+        }
+
+        // if resolved node is a collection, look for _index.php
+        if (is_a(static::$resolvedNode, 'SiteCollection')) {
+            $indexNode = static::resolvePath(array_merge($pathResult['searchPath'], array('_index.php')));
+
+            if ($indexNode) {
+                // switch resolvedNode to the index script
+                static::$resolvedNode = $indexNode;
+            } elseif (!static::$listCollections) {
+                // if listing collections is disabled and no index script was found, treat this as not found
+                return static::respondNotFound();
+            }
+        }
+
+        // handle php script
+        if (static::$resolvedNode->MIMEType == 'application/php') {
+            // TODO: execute _all.php handlers, cache the list of them for the containing collection
+            return static::executeScript(static::$resolvedNode);
+        }
+
+        // output response
+        if (is_callable(array(static::$resolvedNode, 'outputAsResponse'))) {
+            if (is_callable(static::$onBeforeStaticResponse)) {
+                call_user_func(static::$onBeforeStaticResponse, static::$resolvedNode);
             }
 
             if (class_exists('Emergence\\EventBus')) {
-                Emergence\EventBus::fireEvent('requestMapped', 'Site', array(
-                    'node' => $resolvedNode
+                Emergence\EventBus::fireEvent('beforeStaticResponse', 'Site', array(
+                    'node' => static::$resolvedNode
                 ));
             }
 
-            // switch collection result to its _index.php if found
-            if (
-                is_a($resolvedNode, 'SiteCollection') &&
-                (
-                    ($indexNode = $resolvedNode->getChild('_index.php')) ||
-                    ($indexNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath, array('_index.php'))))
-                )
-            ) {
-                $resolvedNode = $indexNode;
-            }
-
-            if ($resolvedNode->MIMEType == 'application/php') {
-                // TODO: execute _all.php handlers, cache the list of them for the containing collection
-                static::executeScript($resolvedNode);
-            } elseif (is_callable(array($resolvedNode, 'outputAsResponse'))) {
-                if (!is_a($resolvedNode, 'SiteFile') && !static::$listCollections) {
-                    static::respondNotFound();
-                }
-
-                if (is_callable(static::$onBeforeStaticResponse)) {
-                    call_user_func(static::$onBeforeStaticResponse, $resolvedNode);
-                }
-
-                if (class_exists('Emergence\\EventBus')) {
-                    Emergence\EventBus::fireEvent('beforeStaticResponse', 'Site', array(
-                        'node' => $resolvedNode
-                    ));
-                }
-
-                $resolvedNode->outputAsResponse();
-            } else {
-                static::respondNotFound();
-            }
-        } else {
-            static::respondNotFound();
+            static::$resolvedNode->outputAsResponse();
         }
+
+        // fallback on notfound handler
+        return static::respondNotFound();
+    }
+
+    public static function getRequestPathResult($path)
+    {
+        // results returned at end:
+        $resolvedNode = null;
+        $resolvedPath = array();
+
+        // normalize args
+        if (is_string($path)) {
+            $path = static::splitPath($path);
+        }
+
+        // header('Content-Type: text/plain');
+        // printf("getRequestPathResult(%s)\n", implode('/', $path));
+
+        // rewrite empty path to default page
+        if (empty($path[0]) && static::$defaultPage) {
+            $path = array(static::$defaultPage);
+        }
+
+        // crawl down path stack until a handler is found
+        // printf("while (\$handle = array_shift(%s))\n", implode(',', $path));
+        $searchPath = array('site-root');
+        while ($handle = array_shift($path)) {
+
+            // printf(
+            //     "\n\t\$searchPath=%s\n\t\$handle=%s\n\t\$path=.../%s\n",
+            //     implode('/', $searchPath),
+            //     $handle, implode('/', $path)
+            // );
+
+            $foundNode = null;
+
+            // if path component doesn't already end in .php, check for a .php match first
+            if (substr($handle, -4) != '.php') {
+                array_push($searchPath, $handle . '.php');
+                $foundNode = static::resolvePath($searchPath);
+                // printf("\t\t%s\t%s\n", $foundNode ? 'matched' : 'missed', implode('/', $searchPath));
+                array_pop($searchPath);
+
+                // don't match a collection as a script
+                if ($foundNode && !is_a($foundNode, 'SiteFile')) {
+                    $foundNode = null;
+                }
+            }
+
+            // if no script node, try to match provided handle
+            if (!$foundNode) {
+                array_push($searchPath, $handle);
+                $foundNode = static::resolvePath($searchPath);
+                // printf("\t\t%s\t%s\n", $foundNode ? 'matched' : 'missed', implode('/', $searchPath));
+                array_pop($searchPath);
+            }
+
+            // if no node at all was matched by now, end search
+            if (!$foundNode) {
+                $resolvedNode = null;
+                array_unshift($path, $handle);
+                break;
+            }
+
+            // a node has been matched
+            $resolvedNode = $foundNode;
+            $resolvedPath[] = $handle;
+
+            // if matching node is a file, end search
+            if (is_a($foundNode, 'SiteFile')) {
+                break;
+            }
+
+            // node is a collection, continue search
+            $searchPath[] = $foundNode->Handle;
+        }
+
+        // print("\nDone while.\n\n");
+
+        return [
+            'resolvedNode' => $resolvedNode,
+            'resolvedPath' => $resolvedPath,
+            'pathStack' => $path,
+            'searchPath' => $searchPath
+        ];
     }
 
     public static function executeScript(SiteFile $_SCRIPT_NODE, $_SCRIPT_EXIT = true)
