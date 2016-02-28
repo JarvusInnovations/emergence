@@ -35,6 +35,11 @@ class DB
 
     public static function foundRows()
     {
+        // table not found
+        if (self::getMysqli()->sqlstate == '42S02') {
+            return 0;
+        }
+
         return (int)self::oneValue('SELECT FOUND_ROWS()');
     }
 
