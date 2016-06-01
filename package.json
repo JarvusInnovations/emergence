@@ -15,7 +15,8 @@
     },
     "bin": {
         "emergence-kernel": "./bin/kernel",
-        "emergence-shell": "./bin/shell"
+        "emergence-shell": "./bin/shell",
+        "emergence-su": "./bin/su"
     },
     "repository": {
         "type": "git",
