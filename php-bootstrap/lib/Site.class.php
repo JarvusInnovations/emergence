@@ -22,7 +22,7 @@ class Site
     // public properties
     public static $hostname;
     public static $rootPath;
-    public static $webmasterEmail = 'errors@chrisrules.com';
+    public static $webmasterEmail = 'root@localhost';
     public static $requestURI;
     public static $requestPath = array();
     public static $pathStack = array();
