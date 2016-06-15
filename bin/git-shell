@@ -90,9 +90,13 @@ fi
 
 
 # execute subshell
+echo "Opening git shell at $GIT_DIR"
+cd $GIT_DIR
+
+git status
+
 echo "Committing as $GIT_NAME <$GIT_EMAIL>"
 
-cd $GIT_DIR
 exec sudo -u $EMERGENCE_USER \
     HOME="$GIT_DIR" \
     HISTFILE="$GIT_DIR.bash_history" \
