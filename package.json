@@ -11,11 +11,13 @@
         "posix": "^4.0.2",
         "hostile": "^1.0.2",
         "shelljs": "^0.5.3",
-        "semver": "^5.1.0"
+        "semver": "^5.1.0",
+        "underscore-cli": "^0.2.19"
     },
     "bin": {
         "emergence-kernel": "./bin/kernel",
         "emergence-shell": "./bin/shell",
+        "emergence-git-shell": "./bin/git-shell",
         "emergence-su": "./bin/su"
     },
     "repository": {
