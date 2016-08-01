@@ -47,13 +47,13 @@ class Site
         }
 
         // load config
-        if (!(static::$_config = apc_fetch(static::$rootPath))) {
+        if (!(static::$_config = Cache::rawFetch(static::$rootPath))) {
             if (is_readable(static::$rootPath.'/site.json')) {
                 static::$_config = json_decode(file_get_contents(static::$rootPath.'/site.json'), true);
-                apc_store(static::$rootPath, static::$_config);
+                Cache::rawStore(static::$rootPath, static::$_config);
             } elseif (is_readable(static::$rootPath.'/Site.config.php')) {
                 include(static::$rootPath.'/Site.config.php');
-                apc_store(static::$rootPath, static::$_config);
+                Cache::rawStore(static::$rootPath, static::$_config);
             }
         }
 

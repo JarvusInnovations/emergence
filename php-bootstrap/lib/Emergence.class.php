@@ -129,7 +129,7 @@ class Emergence
 
             $remoteURL = static::buildUrl(array_merge($collection->getFullPath(null, false), $path), $params);
 
-            $cachedStatus = apc_fetch($remoteURL);
+            $cachedStatus = Cache::rawFetch($remoteURL);
             if ($cachedStatus) {
                 return false;
             }
@@ -151,7 +151,7 @@ class Emergence
 
             if ($status != '200') {
                 fclose($fp);
-                apc_store($remoteURL, (int)$status);
+                Cache::rawStore($remoteURL, (int)$status);
                 return false;
             }
 
