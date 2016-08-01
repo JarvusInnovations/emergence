@@ -318,7 +318,7 @@ exports.MysqlService.prototype.secureInstallation = function() {
         if (error) {
             console.log(me.name+': failed to secure installation: ' + error);
         } else {
-            console.log(me.name+': securing complete, mysql ready: '+sql);
+            console.log(me.name+': securing complete, mysql ready.');
         }
     });
 
