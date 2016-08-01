@@ -108,9 +108,15 @@ exports.MysqlService.prototype.start = function(firstRun) {
         fs.mkdirSync(me.options.dataDir, '775');
         exec('chown -R mysql:mysql '+me.options.dataDir);
 
-        exec('mysql_install_db --datadir='+me.options.dataDir, function(error, stdout, stderr) {
-            me.start(true);
-        });
+        if (semver.lt(me.mysqldVersion, '5.7.0')) {
+            exec('mysql_install_db --datadir='+me.options.dataDir, function(error, stdout, stderr) {
+                me.start(true);
+            });
+        } else {
+            exec('mysqld --initialize-insecure --datadir='+me.options.dataDir, function(error, stdout, stderr) {
+                me.start(true);
+            });
+        }
 
         me.status = 'configuring';
         return true; // not really started, we have to try again after mysql_install_db is done
@@ -247,7 +253,6 @@ exports.MysqlService.prototype.makeConfig = function() {
         'tmpdir                             = /tmp/',
 
         'innodb_buffer_pool_size            = 16M',
-        'innodb_additional_mem_pool_size    = 2M',
         'innodb_data_file_path              = ibdata1:10M:autoextend:max:128M',
         'innodb_log_file_size               = 5M',
         'innodb_log_buffer_size             = 8M',
@@ -263,6 +268,10 @@ exports.MysqlService.prototype.makeConfig = function() {
         config.push('table_open_cache                   = 64');
     } else {
         config.push('table_cache                        = 64');
+    }
+
+    if (semver.lt(me.mysqldVersion, '5.7.4')) {
+        config.push('innodb_additional_mem_pool_size    = 2M');
     }
 
     if (me.options.bindHost) {
@@ -281,14 +290,22 @@ exports.MysqlService.prototype.secureInstallation = function() {
     console.log(me.name+': securing installation...');
 
     // set root password
-    sql += 'UPDATE mysql.user SET Password=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
+    if (semver.lt(me.mysqldVersion, '5.7.0')) {
+        sql += 'UPDATE mysql.user SET Password=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
+    } else {
+        sql += 'UPDATE mysql.user SET authentication_string=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
+    }
+
     // remove anonymous users
     sql += 'DELETE FROM mysql.user WHERE User="";';
+
     // delete remote roots
     sql += 'DELETE FROM mysql.user WHERE User="root" AND Host NOT IN ("localhost", "127.0.0.1", "::1");';
+
     // remove test database
     sql += 'DROP DATABASE IF EXISTS test;';
     sql += 'DELETE FROM mysql.db WHERE Db="test" OR Db="test\\_%";';
+
     // reload privs
     sql += 'FLUSH PRIVILEGES;';
 
