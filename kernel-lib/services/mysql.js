@@ -57,10 +57,11 @@ exports.MysqlService = function(name, controller, options) {
             me.status = 'online';
 
             // instantiate MySQL client
-            me.client = require('mysql').createClient({
-                port: me.options.socketPath,
+            me.client = require('mysql').createConnection({
+                socketPath: me.options.socketPath,
                 user: me.options.managerUser,
-                password: me.options.managerPassword
+                password: me.options.managerPassword,
+                multipleStatements: true
             });
         } else {
             console.log(me.name+': process '+me.pid + ' not found, deleting .pid file');
@@ -123,10 +124,11 @@ exports.MysqlService.prototype.start = function(firstRun) {
     }
 
     // instantiate MySQL client
-    me.client = require('mysql').createClient({
-        port: me.options.socketPath,
+    me.client = require('mysql').createConnection({
+        socketPath: me.options.socketPath,
         user: me.options.managerUser,
-        password: me.options.managerPassword
+        password: me.options.managerPassword,
+        multipleStatements: true
     });
 
     // spawn process
@@ -310,10 +312,11 @@ exports.MysqlService.prototype.secureInstallation = function() {
     sql += 'FLUSH PRIVILEGES;';
 
     // open a temporary connection to the new non-secured installation
-    require('mysql').createClient({
-        port: me.options.socketPath,
+    require('mysql').createConnection({
+        socketPath: me.options.socketPath,
         user: 'root',
-        password: ''
+        password: '',
+        multipleStatements: true
     }).query(sql, function(error) {
         if (error) {
             console.log(me.name+': failed to secure installation: ' + error);
