@@ -274,13 +274,19 @@ class SiteFile
     function put($data, $ancestorID = null)
     {
         $record = null;
+        $tempPath = tempnam(static::getRealPathByID(''), 'uploading');
+        file_put_contents($tempPath, $data);
+        $sha1 = sha1_file($tempPath);
+        $data = new SplFileInfo($tempPath);
 
         if ($this->Status == 'Phantom' && !empty($GLOBALS['Session']) && $this->AuthorID == $GLOBALS['Session']->PersonID) {
-            static::saveRecordData($this->_record, $data);
+            static::saveRecordData($this->_record, $data, $sha1);
             $record = $this->_record;
+        } elseif ($this->Status == 'Normal' && $this->SHA1 == $sha1) {
+            return $this->_record;
         } else {
             $record = static::createPhantom($this->CollectionID, $this->Handle, $ancestorID ? $ancestorID : $this->ID);
-            static::saveRecordData($record, $data);
+            static::saveRecordData($record, $data, $sha1);
         }
 
         // fire event
@@ -288,7 +294,7 @@ class SiteFile
             'record' => $record
         ));
 
-        return $result;
+        return $record;
     }
 
     public static function createPhantom($collectionID, $handle, $ancestorID = null)
@@ -319,7 +325,12 @@ class SiteFile
     {
         // save file
         $filePath = static::getRealPathByID($record['ID']);
-        file_put_contents($filePath, $data);
+
+        if ($data instanceof SplFileInfo) {
+            rename($data->getPathname(), $filePath);
+        } else {
+            file_put_contents($filePath, $data);
+        }
 
         // update in-memory record
         $record['SHA1'] = $sha1 ? $sha1 : sha1_file($filePath);
