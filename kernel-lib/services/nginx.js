@@ -304,6 +304,10 @@ exports.NginxService.prototype.makeConfig = function() {
             } else {
                 sslHostnames = {};
                 sslHostnames[site.primary_hostname] = site.ssl;
+
+                site.hostnames.forEach(function(hostname) {
+                    sslHostnames[hostname] = site.ssl;
+                });
             }
 
             for (sslHostname in sslHostnames) {
