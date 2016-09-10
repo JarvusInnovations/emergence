@@ -304,12 +304,28 @@ class Emergence_FS
         $filesDeleted = array();
 
         if (count($includedCollectionIDs)) {
+            $conditions = array();
+
+            if ($mark) {
+                $conditions[] = sprintf('ID > %u', $mark);
+            }
+
+            if (!empty($options['minId'])) {
+                $conditions[] = sprintf('ID >= %u', $options['minId']);
+            }
+
+            if (!empty($options['maxId'])) {
+                $conditions[] = sprintf('ID <= %u', $options['maxId']);
+            }
+
+            $conditions[] = sprintf('CollectionID IN (%s)', join(',', $includedCollectionIDs));
+            $conditions[] = 'Status != "Phantom"';
+
             $fileResult = DB::query(
-                'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE ID > %2$u AND CollectionID IN (%3$s) AND Status != "Phantom" GROUP BY f1.CollectionID, f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 USING (ID)'
+                'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE (%2$s) GROUP BY f1.CollectionID, f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 USING (ID)'
                 ,array(
                     SiteFile::$tableName
-                    ,$mark
-                    ,join(',', $includedCollectionIDs)
+                    ,implode(') AND (', $conditions)
                 )
             );
 
