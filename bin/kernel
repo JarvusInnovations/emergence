@@ -100,7 +100,13 @@ if (fs.existsSync('/emergence/config.json')) {
     }
 
     // detect php-fpm
-    if (fs.existsSync('/usr/sbin/php-fpm7.0')) {
+    if (fs.existsSync('/usr/sbin/php-fpm5.6')) {
+        CONFIG.services.plugins.php = {
+            type: 'php-fpm',
+            autoStart: true,
+            execPath: '/usr/sbin/php-fpm5.6'
+        };
+    } else if (fs.existsSync('/usr/sbin/php-fpm7.0')) {
         CONFIG.services.plugins.php = {
             type: 'php-fpm',
             autoStart: true,
