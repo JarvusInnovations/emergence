@@ -11,9 +11,9 @@ Ext.define('eMan.view.site.CreateForm', {
 		,labelAlign: 'right'
 		,labelWidth: 110
 	}
-	
+
 	,initComponent: function() {
-	
+
 		this.buttons = [{
 			xtype: 'button'
 			,text: 'Cancel'
@@ -25,7 +25,7 @@ Ext.define('eMan.view.site.CreateForm', {
 			//,disabled: true
 			,action: 'save'
 		}];
-		
+
 		this.items = [{
             fieldLabel: 'Site Label'
             ,name: 'label'
@@ -54,7 +54,7 @@ Ext.define('eMan.view.site.CreateForm', {
                 ,focus: function(priField) {
                     var handleField = this.getForm().findField('handle')
                         ,defaultSuffix = eMan.app.serverConfig.defaultSuffix;;
-                    
+
                     if(!priField.getValue() && handleField.getValue() && defaultSuffix)
                     {
                         priField.setValue(handleField.getValue() + '.' + defaultSuffix);
@@ -66,7 +66,7 @@ Ext.define('eMan.view.site.CreateForm', {
                     {
                         if(priField.getValue().substr(0,4) == 'www.')
                             priField.setValue(priField.getValue().substr(4));
-                        
+
                         if(priField.getValue().split('.').length == 2)
                             secField.setValue('www.'+priField.getValue());
                     }
@@ -82,7 +82,7 @@ Ext.define('eMan.view.site.CreateForm', {
                         ,defaultSuffix = eMan.app.serverConfig.defaultSuffix
                         ,defaultHostname = defaultSuffix && (handleField.getValue() + '.' + defaultSuffix)
                         ,altHostnames = Ext.Array.clean(secField.getValue().split(/\s*,\s*/));
-                        
+
                     if (defaultHostname && !secField.defaultAdded && !Ext.Array.contains(altHostnames, defaultHostname)) {
                         altHostnames.push(defaultHostname);
                         secField.setValue(altHostnames.join(', '));
@@ -94,7 +94,6 @@ Ext.define('eMan.view.site.CreateForm', {
             fieldLabel: 'Parent Site'
             ,xtype: 'combo'
             ,name: 'parent_hostname'
-            ,allowBlank: false
             ,autoSelect: false
             ,emptyText: 'Select or enter hostname'
             ,displayField: 'hostname'
@@ -105,11 +104,11 @@ Ext.define('eMan.view.site.CreateForm', {
                 scope: this
                 ,select: function(hostField) {
                     var keyField = this.getForm().findField('parent_key');
-                    
+
                     if(hostField.getValue())
                     {
                     	var hostRecord = hostField.findRecordByValue(hostField.getValue());
-                    	
+
                     	if(hostRecord && hostRecord.get('key'))
                     		keyField.setValue(hostRecord.get('key'));
                     	else
@@ -124,7 +123,6 @@ Ext.define('eMan.view.site.CreateForm', {
         },{
             fieldLabel: 'Parent Access Key'
             ,name: 'parent_key'
-            ,allowBlank: false
         },{
             xtype: 'fieldset'
             ,title: 'First User'
@@ -140,7 +138,7 @@ Ext.define('eMan.view.site.CreateForm', {
                     ,blur: function(emailField) {
                         var userField = this.getForm().findField('user_username')
                             ,email = emailField.getValue();
-                            
+
                         if(!userField.getValue() && email)
                         {
                             userField.setValue(email.substr(0, email.indexOf('@')));
