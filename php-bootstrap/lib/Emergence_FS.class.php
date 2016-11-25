@@ -413,6 +413,14 @@ class Emergence_FS
             $options['exclude'] = array($options['exclude']);
         }
 
+        // normalize input paths
+        $sourcePath = rtrim($sourcePath, '/');
+
+        if (!$destinationPath || $destinationPath == '/') {
+            $destinationPath = null;
+        } else {
+            $destinationPath = trim($sourcePath, '/');
+        }
 
         // initialize state
         $prefixLen = strlen($sourcePath);
@@ -437,6 +445,8 @@ class Emergence_FS
             if ($collectionInfo['ParentID'] && isset($destinationCollectionsTree[$collectionInfo['ParentID']])) {
                 $collectionInfo['_path'] = $destinationCollectionsTree[$collectionInfo['ParentID']]['_path'] . '/' . $collectionInfo['Handle'];
                 $localDestinationCollectionsMap[$collectionInfo['_path']] = &$collectionInfo;
+            } elseif (!$collectionInfo['ParentID']) {
+                $collectionInfo['_path'] = $collectionInfo['Handle'];
             } else {
                 $collectionInfo['_path'] = $destinationPath;
             }
@@ -459,7 +469,7 @@ class Emergence_FS
         // iterate through all source files
         foreach ($iterator AS $tmpPath => $node) {
             $relPath = substr($tmpPath, $prefixLen);
-            $path = $destinationPath . $relPath;
+            $path = $destinationPath ? $destinationPath . $relPath : ltrim($relPath, '/');
 
             // skip .emergence data directory
             if ($options['dataPath'] && 0 === strpos($path, $options['dataPath'])) {
