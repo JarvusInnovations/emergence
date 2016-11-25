@@ -564,7 +564,7 @@ class Emergence_FS
                         SiteFile::$tableName
                         ,$fileInfo['CollectionID']
                         ,basename($path)
-                        ,$GLOBALS['Session']->PersonID
+                        ,!empty($GLOBALS['Session']) ? $GLOBALS['Session']->PersonID : null
                         ,$fileInfo['ID']
                     )
                 );
