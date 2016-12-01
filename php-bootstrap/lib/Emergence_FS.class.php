@@ -234,32 +234,60 @@ class Emergence_FS
 
     public static function exportTree($sourcePath, $destinationPath, $options = array())
     {
+        // initialize result accumulators
+        $includedCollectionIDs = array();
+        $collectionsExcluded = 0;
+        $filesAnalyzed = 0;
+        $filesExcluded = 0;
+        $filesWritten = array();
+        $filesDeleted = array();
+
+
+        // prepare options
         $options = array_merge(array(
             'localOnly' => false
-            ,'dataPath' => $destinationPath . '/.emergence'
             ,'exclude' => array()
-            ,'transferDelete' => true
+            ,'delete' => true
         ), $options);
 
-        // check destination
-        if (!is_dir($destinationPath)) {
-            mkdir($destinationPath, 0777, true);
-        }
-
-        if (!is_writable($destinationPath)) {
-            throw new Exception("Destination \"$destinationPath\" is not writable");
+        if (isset($options['transferDelete'])) {
+            // transferDelete is a deprecated option
+            $options['delete'] = (bool)$options['transferDelete'];
+            unset($options['transferDelete']);
         }
 
         if (!empty($options['exclude']) && is_string($options['exclude'])) {
             $options['exclude'] = array($options['exclude']);
         }
 
-        $prefixLen = strlen($sourcePath);
-        $tree = static::getTree($sourcePath, $options['localOnly'], $options['transferDelete']);
-        $includedCollectionIDs = array();
-        $collectionsExcluded = 0;
 
-        // build relative paths and create directories
+        // check and prepare destination
+        if (!is_dir($destinationPath)) {
+            mkdir($destinationPath, 0777, true);
+        } elseif ($options['delete']) {
+            // scrub destination before writing
+            $destinationIterator = new RecursiveDirectoryIterator($destinationPath, FilesystemIterator::SKIP_DOTS);
+            $destinationIterator = new RecursiveIteratorIterator($destinationIterator, RecursiveIteratorIterator::CHILD_FIRST);
+
+            foreach ($destinationIterator AS $file) {
+                if ($file->isFile()) {
+                    unlink($file);
+                    $filesDeleted[] = (string)$file;
+                } else {
+                    rmdir($file);
+                }
+            }
+        }
+
+        if (!is_writable($destinationPath)) {
+            throw new Exception("Destination \"$destinationPath\" is not writable");
+        }
+
+
+        // build map of subtrees to be written and create directories
+        $prefixLen = strlen($sourcePath);
+        $tree = static::getTree($sourcePath, $options['localOnly']);
+
         foreach ($tree AS $collectionID => &$node) {
 
             if ($node['ParentID'] && $tree[$node['ParentID']]) {
@@ -286,29 +314,10 @@ class Emergence_FS
             $includedCollectionIDs[] = $collectionID;
         }
 
-        // read file state from emergence data
-        $mark = 0;
 
-        if ($options['dataPath'] && is_dir($options['dataPath'])) {
-            $markFilePath = $options['dataPath'] . '/mark';
-
-            if (file_exists($markFilePath)) {
-                $mark = file_get_contents($markFilePath);
-            }
-        }
-
-        // get files
-        $filesAnalyzed = 0;
-        $filesExcluded = 0;
-        $filesWritten = array();
-        $filesDeleted = array();
-
+        // fetch and write files in included collections
         if (count($includedCollectionIDs)) {
             $conditions = array();
-
-            if ($mark) {
-                $conditions[] = sprintf('ID > %u', $mark);
-            }
 
             if (!empty($options['minId'])) {
                 $conditions[] = sprintf('ID >= %u', $options['minId']);
@@ -343,26 +352,13 @@ class Emergence_FS
                     copy(Site::$rootPath . '/' . SiteFile::$dataPath . '/' . $fileRow['ID'], $dst);
                     touch($dst, strtotime($fileRow['Timestamp']));
                     $filesWritten[] = $dst;
-                } elseif ($fileRow['Status'] == 'Deleted') {
-                    if ($options['transferDelete'] && is_file($dst) && !in_array($dst, $filesWritten)) {
-                        unlink($dst);
-                        $filesDeleted[] = $dst;
-                    }
                 }
 
-                $mark = max($mark, $fileRow['ID']);
                 $filesAnalyzed++;
             }
-
-            // write emergence data
-            if ($options['dataPath']) {
-                if (!is_dir($options['dataPath'])) {
-                    mkdir($options['dataPath']);
-                }
-
-                file_put_contents($options['dataPath'] . '/mark', $mark);
-            }
         }
+
+        $filesDeleted = array_diff($filesDeleted, $filesWritten);
 
         return array(
             'collectionsExcluded' => $collectionsExcluded,
@@ -398,11 +394,16 @@ class Emergence_FS
     public static function importTree($sourcePath, $destinationPath, $options = array())
     {
         $options = array_merge(array(
-            'dataPath' => $sourcePath . '/.emergence'
-            ,'exclude' => array()
-            ,'transferDelete' => true
+            'exclude' => array()
+            ,'delete' => true
             ,'debug' => false
         ), $options);
+
+        // backwords compatibility
+        if (isset($options['transferDelete'])) {
+            $options['delete'] = (bool)$options['transferDelete'];
+            unset($options['transferDelete']);
+        }
 
         // check source
         if (!is_readable($sourcePath)) {
@@ -471,11 +472,6 @@ class Emergence_FS
             $relPath = substr($tmpPath, $prefixLen);
             $path = $destinationPath ? $destinationPath . $relPath : ltrim($relPath, '/');
 
-            // skip .emergence data directory
-            if ($options['dataPath'] && 0 === strpos($path, $options['dataPath'])) {
-                continue;
-            }
-
             if ($options['debug']) {
                 Debug::dump(array('tmpPath' => $tmpPath, 'destPath' => $path), false, 'iterating node');
             }
@@ -497,11 +493,6 @@ class Emergence_FS
                 continue;
             } else {
                 $filesAnalyzed++;
-            }
-
-            // skip .emergence data directory
-            if ($options['dataPath'] && 0 === strpos($node->getPath(), $options['dataPath'])) {
-                continue;
             }
 
             $existingNode = isset($destinationFilesMap[$path]) ? $destinationFilesMap[$path] : null;
