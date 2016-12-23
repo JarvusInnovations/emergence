@@ -88,7 +88,7 @@ class Site
 
         // set useful transaction name for newrelic
         if (extension_loaded('newrelic')) {
-            newrelic_name_transaction (static::getConfig('handle') . '/' . implode('/', site::$requestPath));
+            newrelic_name_transaction(static::getConfig('handle') . '/' . implode('/', site::$requestPath));
         }
 
         // register class loader
@@ -287,6 +287,15 @@ class Site
             !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths)
         ) {
             $GLOBALS['Session'] = UserSession::getFromRequest();
+        }
+
+        if (extension_loaded('newrelic')) {
+            if (!empty($GLOBALS['Session'])) {
+                newrelic_add_custom_parameter('session_id', $GLOBALS['Session']->Handle);
+                newrelic_add_custom_parameter('person_id', $GLOBALS['Session']->PersonID);
+            }
+
+            newrelic_add_custom_parameter('script_path', $_SCRIPT_NODE->FullPath);
         }
 
         if (is_callable(static::$onBeforeScriptExecute)) {
