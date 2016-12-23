@@ -427,10 +427,10 @@ class Emergence_FS
         $prefixLen = strlen($sourcePath);
 
         $collectionsAnalyzed = 0;
-        $filesAnalyzed = 0;
-        $filesUpdated = 0;
-        $pathsExcluded = 0;
         $collectionsDeleted = 0;
+        $filesAnalyzed = 0;
+        $filesExcluded = 0;
+        $filesUpdated = 0;
         $filesDeleted = 0;
 
 
@@ -477,7 +477,7 @@ class Emergence_FS
             }
 
             if (static::matchesExclude($relPath, $options['exclude'])) {
-                $pathsExcluded++;
+                $filesExcluded++;
                 continue;
             }
 
@@ -522,13 +522,14 @@ class Emergence_FS
         }
 
 
-        if ($options['transferDelete']) {
+        if ($options['delete']) {
             // delete local collections
             foreach ($localDestinationCollectionsMap AS $path => $collectionInfo) {
                 $relPath = substr($path, strlen($destinationPath));
 
                 // skip excluded paths
                 if (static::matchesExclude($relPath, $options['exclude'])) {
+                    $filesExcluded++;
                     continue;
                 }
 
@@ -556,6 +557,7 @@ class Emergence_FS
 
                 // skip excluded paths
                 if (static::matchesExclude($relPath, $options['exclude'])) {
+                    $filesExcluded++;
                     continue;
                 }
 
@@ -579,10 +581,10 @@ class Emergence_FS
 
         return array(
             'collectionsAnalyzed' => $collectionsAnalyzed
-            ,'filesAnalyzed' => $filesAnalyzed
-            ,'filesUpdated' => $filesUpdated
-            ,'pathsExcluded' => $pathsExcluded
             ,'collectionsDeleted' => $collectionsDeleted
+            ,'filesAnalyzed' => $filesAnalyzed
+            ,'filesExcluded' => $filesExcluded
+            ,'filesUpdated' => $filesUpdated
             ,'filesDeleted' => $filesDeleted
         );
     }
