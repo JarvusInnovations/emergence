@@ -260,6 +260,18 @@ class Emergence_FS
             $options['exclude'] = array($options['exclude']);
         }
 
+        // normalize input paths
+        if (!$sourcePath || $sourcePath == '/' || $sourcePath == '.' || $sourcePath == './') {
+            $sourcePath = null;
+        } else {
+            $sourcePath = trim($sourcePath, '/');
+        }
+
+        if (!$destinationPath || $destinationPath == '/' || $destinationPath == './') {
+            $destinationPath = '.';
+        } else {
+            $destinationPath = trim($destinationPath, '/');
+        }
 
         // check and prepare destination
         if (!is_dir($destinationPath)) {
@@ -270,6 +282,10 @@ class Emergence_FS
             $destinationIterator = new RecursiveIteratorIterator($destinationIterator, RecursiveIteratorIterator::CHILD_FIRST);
 
             foreach ($destinationIterator AS $file) {
+                if (preg_match('#(^|/)\\.git(/|$)#', $file)) {
+                    continue;
+                }
+
                 if ($file->isFile()) {
                     unlink($file);
                     $filesDeleted[] = (string)$file;
