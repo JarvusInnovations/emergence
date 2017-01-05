@@ -5,7 +5,8 @@ var _ = require('underscore'),
     spawn = require('child_process').spawn,
     exec = require('child_process').exec,
     shell = require('shelljs'),
-    semver = require('semver');
+    semver = require('semver'),
+    mariasql = require('mariasql');
 
 exports.createService = function(name, controller, options) {
     return new exports.MysqlService(name, controller, options);
@@ -58,11 +59,11 @@ exports.MysqlService = function(name, controller, options) {
             me.status = 'online';
 
             // instantiate MySQL client
-            me.client = require('mysql').createConnection({
-                socketPath: me.options.socketPath,
+            me.client = new mariasql({
+                unixSocket: me.options.socketPath,
                 user: me.options.managerUser,
                 password: me.options.managerPassword,
-                multipleStatements: true
+                multiStatements: true
             });
         } else {
             console.log(me.name+': process '+me.pid + ' not found, deleting .pid file');
@@ -125,11 +126,11 @@ exports.MysqlService.prototype.start = function(firstRun) {
     }
 
     // instantiate MySQL client
-    me.client = require('mysql').createConnection({
-        socketPath: me.options.socketPath,
+    me.client = new mariasql({
+        unixSocket: me.options.socketPath,
         user: me.options.managerUser,
         password: me.options.managerPassword,
-        multipleStatements: true
+        multiStatements: true
     });
 
     // spawn process
@@ -313,12 +314,12 @@ exports.MysqlService.prototype.secureInstallation = function() {
     sql += 'FLUSH PRIVILEGES;';
 
     // open a temporary connection to the new non-secured installation
-    require('mysql').createConnection({
-        socketPath: me.options.socketPath,
+    (new mariasql({
+        unixSocket: me.options.socketPath,
         user: 'root',
         password: '',
-        multipleStatements: true
-    }).query(sql, function(error) {
+        multiStatements: true
+    })).query(sql, function(error) {
         if (error) {
             console.log(me.name+': failed to secure installation: ' + error);
         } else {
