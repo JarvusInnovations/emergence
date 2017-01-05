@@ -110,7 +110,7 @@ exports.MysqlService.prototype.start = function(firstRun) {
         fs.mkdirSync(me.options.dataDir, '775');
         exec('chown -R mysql:mysql '+me.options.dataDir);
 
-        if (semver.lt(me.mysqldVersion, '5.7.0')) {
+        if (semver.lt(me.mysqldVersion, '5.7.6') || me.mysqldIsMaria) {
             exec('mysql_install_db --datadir='+me.options.dataDir, function(error, stdout, stderr) {
                 me.start(true);
             });
