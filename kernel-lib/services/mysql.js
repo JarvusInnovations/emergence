@@ -294,7 +294,7 @@ exports.MysqlService.prototype.secureInstallation = function() {
     console.log(me.name+': securing installation...');
 
     // set root password
-    if (semver.lt(me.mysqldVersion, '5.7.0')) {
+    if (semver.lt(me.mysqldVersion, '5.7.0') || me.mysqldIsMaria) {
         sql += 'UPDATE mysql.user SET Password=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
     } else {
         sql += 'UPDATE mysql.user SET authentication_string=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
