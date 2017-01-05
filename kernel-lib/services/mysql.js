@@ -116,7 +116,7 @@ exports.MysqlService.prototype.start = function(firstRun) {
                 me.start(true);
             });
         } else {
-            exec('mysqld --initialize-insecure --defaults-file='+me.options.configPath, function(error, stdout, stderr) {
+            exec('mysqld --initialize-insecure --user=mysql --datadir='+me.options.dataDir, function(error, stdout, stderr) {
                 me.start(true);
             });
         }
