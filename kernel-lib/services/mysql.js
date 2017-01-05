@@ -39,14 +39,15 @@ exports.MysqlService = function(name, controller, options) {
 
     // check binary version
     console.log(me.name+': detecting mysqld version...');
-    versionMatch = shell.exec(me.options.execPath+' --version').output.match(/mysqld\s+Ver\s+(\d+(\.\d+)*)/);
+    versionMatch = shell.exec(me.options.execPath+' --version').output.match(/mysqld\s+Ver\s+(\d+(\.\d+)*)(-MariaDB)?/);
 
     if (!versionMatch) {
         throw 'Failed to detect mysql version';
     }
 
     me.mysqldVersion = versionMatch[1];
-    console.log(me.name+': determined mysqld version: '+me.mysqldVersion);
+    me.mysqldIsMaria = versionMatch[3] == '-MariaDB';
+    console.log('%s: determined mysqld version: %s', me.name, me.mysqldVersion + (me.mysqldIsMaria ? ' (MariaDB)' : ''));
 
     // check for existing mysqld process
     if (fs.existsSync(me.options.pidPath)) {
