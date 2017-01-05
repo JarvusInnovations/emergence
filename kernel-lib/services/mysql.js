@@ -111,11 +111,11 @@ exports.MysqlService.prototype.start = function(firstRun) {
         exec('chown -R mysql:mysql '+me.options.dataDir);
 
         if (semver.lt(me.mysqldVersion, '5.7.6') || me.mysqldIsMaria) {
-            exec('mysql_install_db --datadir='+me.options.dataDir, function(error, stdout, stderr) {
+            exec('mysql_install_db --defaults-file='+me.options.configPath, function(error, stdout, stderr) {
                 me.start(true);
             });
         } else {
-            exec('mysqld --initialize-insecure --datadir='+me.options.dataDir, function(error, stdout, stderr) {
+            exec('mysqld --initialize-insecure --defaults-file='+me.options.configPath, function(error, stdout, stderr) {
                 me.start(true);
             });
         }
