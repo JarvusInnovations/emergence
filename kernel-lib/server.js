@@ -75,8 +75,10 @@ exports.createServer = function(paths, options) {
 
 
 exports.Server.prototype.handleWebRequest = function(request, response) {
-    this.httpAuth.apply(request, response, function(username) {
-        handleRequest(request, response);
+    var me = this;
+
+    me.httpAuth.apply(request, response, function(username) {
+        me.handleRequest(request, response);
     });
 };
 
