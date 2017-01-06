@@ -166,7 +166,7 @@ exports.PhpFpmService.prototype.makeConfig = function() {
         'pm                                             = dynamic',
         'pm.max_children                                = '+(me.options.maxClients||50),
         'pm.start_servers                               = '+(me.options.startServers||5),
-        'pm.min_spare_servers                           = '+(me.options.min_spare_servers||1),
+        'pm.min_spare_servers                           = '+(me.options.minSpareServers||1),
         'pm.max_spare_servers                           = '+Math.round((me.options.maxClients||50)/(me.options.startServers||5))
     );
 
