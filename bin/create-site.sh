@@ -6,16 +6,8 @@ DEFAULT_GENERATE_TABLES='UserSession,User'
 for i in "$@"
 do
 case $i in
-    --kernel-host=*)
-        KERNEL_HOST="${i#*=}"
-        shift
-        ;;
-    --kernel-user=*)
-        KERNEL_USER="${i#*=}"
-        shift
-        ;;
-    --kernel-password=*)
-        KERNEL_PASSWORD="${i#*=}"
+    --kernel-socket=*)
+        KERNEL_SOCKET="${i#*=}"
         shift
         ;;
     --handle=*)
@@ -85,16 +77,13 @@ if [ "$GENERATE_TABLES" ] || [ "$PRECACHE_TREES" ] || [ "$ENTER_SHELL" ]; then
     command -v underscore >/dev/null 2>&1 || { echo >&2 "underscore must be installed to use --precache-trees or --generate-tables"; exit 1; }
 fi
 
-if [ -z "$KERNEL_HOST" ]; then
-    KERNEL_HOST="localhost"
+if [ -z "$KERNEL_SOCKET" ]; then
+    KERNEL_SOCKET="/emergence/kernel.sock"
 fi
 
-if [ -z "$KERNEL_USER" ]; then
-    KERNEL_USER="admin"
-fi
-
-if [ -z "$KERNEL_PASSWORD" ]; then
-    KERNEL_PASSWORD="admin"
+if [ ! -S "$KERNEL_SOCKET" ]; then
+    echo "kernel socket not available at ${KERNEL_SOCKET}"
+    exit 1
 fi
 
 if [ -z "$HANDLE" ]; then
@@ -140,10 +129,10 @@ END_OF_BODY
 RESPONSE=$(
   curl -s \
     -X POST \
+    --unix-socket "${KERNEL_SOCKET}" \
     -H "Content-Type: application/json" \
-    --user "${KERNEL_USER}:${KERNEL_PASSWORD}" \
     -d "${REQUEST_BODY}" \
-    "http://${KERNEL_HOST}:9083/sites"
+    "http:/sites"
 )
 
 echo "$RESPONSE"
