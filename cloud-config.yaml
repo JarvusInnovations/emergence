@@ -86,7 +86,7 @@ runcmd:
   - service nginx stop && sudo update-rc.d -f nginx disable
   - service php5.6-fpm stop && sudo update-rc.d -f php5.6-fpm disable
   - service mysql stop && sudo update-rc.d -f mysql disable
-  - echo -e "apc.shm_size=128M" | tee -a /etc/php5/mods-available/apcu.ini
+  - echo "apc.shm_size=128M" >> /etc/php/5.6/mods-available/apcu.ini
   - npm install -g git+https://github.com/JarvusInnovations/Emergence
   - systemctl enable emergence-kernel
   - service emergence-kernel start
