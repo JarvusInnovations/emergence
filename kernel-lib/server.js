@@ -63,8 +63,6 @@ exports.Server.prototype.start = function() {
 
     // clean up on exit
     process.on('exit', this.close.bind(this));
-    process.on('SIGINT', this.close.bind(this));
-    process.on('uncaughtException', this.close.bind(this));
 
     console.log('Management server listening on '+this.webProtocol+'://'+this.options.host+':'+this.options.port);
 };
@@ -124,7 +122,9 @@ exports.Server.prototype.handleRequest = function(request, response) {
     });
 };
 
-exports.Server.prototype.close = function() {
+exports.Server.prototype.close = function(options, error) {
+    console.log('Shutting down management server...');
+
     if (this.webServer) {
         this.webServer.close();
     }
