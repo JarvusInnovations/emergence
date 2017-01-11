@@ -34,6 +34,10 @@ case $i in
         PARENT_KEY="${i#*=}"
         shift
         ;;
+    --no-parent)
+        NO_PARENT=YES
+        shift
+        ;;
     --precache-trees)
         PRECACHE_TREES="$DEFAULT_PRECACHE_TREES"
         shift
@@ -101,7 +105,7 @@ if [ -z "$PRIMARY_HOSTNAME" ]; then
     PRIMARY_HOSTNAME="${HANDLE}.local"
 fi
 
-if [ -z "$PARENT_HOSTNAME" ]; then
+if [ -z "$PARENT_HOSTNAME" ] && [ -z "$NO_PARENT" ]; then
     PARENT_HOSTNAME="skeleton-v1.emr.ge"
     PARENT_KEY="8U6kydil36bl3vlJ"
 fi
