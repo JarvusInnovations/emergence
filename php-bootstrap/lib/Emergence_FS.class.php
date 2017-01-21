@@ -267,10 +267,10 @@ class Emergence_FS
             $sourcePath = trim($sourcePath, '/');
         }
 
-        if (!$destinationPath || $destinationPath == '/' || $destinationPath == './') {
+        if (!$destinationPath || $destinationPath == './') {
             $destinationPath = '.';
         } else {
-            $destinationPath = trim($destinationPath, '/');
+            $destinationPath = rtrim($destinationPath, '/');
         }
 
         // check and prepare destination
@@ -431,10 +431,10 @@ class Emergence_FS
         }
 
         // normalize input paths
-        if (!$sourcePath || $sourcePath == '/' || $sourcePath == './') {
+        if (!$sourcePath || $sourcePath == './') {
             $sourcePath = '.';
         } else {
-            $sourcePath = trim($sourcePath, '/');
+            $sourcePath = rtrim($sourcePath, '/');
         }
 
         if (!$destinationPath || $destinationPath == '/' || $destinationPath == '.' || $destinationPath == './') {
