@@ -719,12 +719,24 @@ class Site
         }
     }
 
+    /**
+     * Set the active timezone for the site
+     *
+     * @param string $timezone Time zone name as defined in the IANA time zone database
+     *
+     * @return void
+     */
     public static function setTimezone($timezone)
     {
         date_default_timezone_set($timezone);
-        DB::nonQuery(
-            'SET time_zone = "%s"',
-            DB::escape(date('P'))
+        DB::syncTimezone();
+
+        Emergence\EventBus::fireEvent(
+            'timezoneSet',
+            __CLASS__,
+            array(
+                'timezone' => $timezone
+            )
         );
     }
 }
