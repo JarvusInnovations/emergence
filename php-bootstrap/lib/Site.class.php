@@ -718,4 +718,13 @@ class Site
             fastcgi_finish_request();
         }
     }
+
+    public static function setTimezone($timezone)
+    {
+        date_default_timezone_set($timezone);
+        DB::nonQuery(
+            'SET time_zone = "%s"',
+            DB::escape(date('P'))
+        );
+    }
 }
