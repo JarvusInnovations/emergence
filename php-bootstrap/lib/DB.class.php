@@ -436,10 +436,7 @@ class DB
             }
 
             // set timezone to match PHP
-            self::nonQuery(
-                'SET time_zone = "%s"',
-                self::escape(date('P'))
-            );
+            self::syncTimezone();
         }
 
         return self::$_mysqli;
@@ -463,5 +460,22 @@ class DB
         } else {
             throw new QueryException($message, static::$_mysqli->errno);
         }
+    }
+
+    /**
+     * Sets timezone for connection to match current PHP default
+     *
+     * @return void
+     */
+    public static function syncTimezone()
+    {
+        if (!isset(self::$_mysqli)) {
+            return;
+        }
+
+        self::nonQuery(
+            'SET time_zone = "%s"',
+            self::escape(date('P'))
+        );
     }
 }

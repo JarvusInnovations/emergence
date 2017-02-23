@@ -718,4 +718,25 @@ class Site
             fastcgi_finish_request();
         }
     }
+
+    /**
+     * Set the active timezone for the site
+     *
+     * @param string $timezone Time zone name as defined in the IANA time zone database
+     *
+     * @return void
+     */
+    public static function setTimezone($timezone)
+    {
+        date_default_timezone_set($timezone);
+        DB::syncTimezone();
+
+        Emergence\EventBus::fireEvent(
+            'timezoneSet',
+            __CLASS__,
+            array(
+                'timezone' => $timezone
+            )
+        );
+    }
 }
