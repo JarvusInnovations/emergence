@@ -24,8 +24,8 @@ class Emergence
             if (!empty($_REQUEST['exclude'])) {
                 $remoteParams['exclude'] = $_REQUEST['exclude'];
             }
-            if (!empty($_REQUEST['minid'])) {
-                $remoteParams['minid'] = $_REQUEST['minId'];
+            if (!empty($_REQUEST['minId'])) {
+                $remoteParams['minId'] = $_REQUEST['minId'];
             }
             HttpProxy::relayRequest(array(
                 'url' => static::buildUrl(Site::$pathStack, $remoteParams)
