@@ -83,11 +83,7 @@ class Emergence
         }
 
         // set include deleted
-        if (!empty($_REQUEST['includeDeleted'])) {
-            $includeDeleted = true;
-        } else {
-            $includeDeleted = false;
-        }
+        $includeDeleted = !empty($_REQUEST['includeDeleted']);
 
         // get files
         $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions, $includeDeleted);
