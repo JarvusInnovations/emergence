@@ -139,15 +139,14 @@ class Emergence_FS
         return $tree;
     }
 
-    public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array()) {
-        return static::getTreeFilesFromTree(static::getTree($path, $localOnly, false, $collectionConditions), $fileConditions);
+    public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array(), $includeDeleted = false) {
+        return static::getTreeFilesFromTree(static::getTree($path, $localOnly, false, $collectionConditions), $fileConditions, $includeDeleted);
     }
 
-    public static function getTreeFilesFromTree($tree, $conditions = array()) {
+    public static function getTreeFilesFromTree($tree, $conditions = array(), $includeDeleted = false) {
 
-        // conditionally include deleted status
-        if (!empty($conditions['includeDeleted'])) {
-            unset($conditions['includeDeleted']);
+        // allow for includeDeleted
+        if ($includeDeleted) {
             $conditions[] = 'Status IN ("Normal", "Deleted")';
         } else {
             $conditions['Status'] = 'Normal';
