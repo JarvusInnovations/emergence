@@ -145,7 +145,13 @@ class Emergence_FS
 
     public static function getTreeFilesFromTree($tree, $conditions = array()) {
 
-        $conditions['Status'] = 'Normal';
+        // conditionally include deleted status
+        if (!empty($conditions['includeDeleted'])) {
+            unset($conditions['includeDeleted']);
+            $conditions[] = 'Status IN ("Normal", "Deleted")';
+        } else {
+            $conditions['Status'] = 'Normal';
+        }
 
         // map conditions
         $mappedConditions = array();
