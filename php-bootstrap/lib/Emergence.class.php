@@ -24,6 +24,9 @@ class Emergence
             if (!empty($_REQUEST['exclude'])) {
                 $remoteParams['exclude'] = $_REQUEST['exclude'];
             }
+            if (!empty($_REQUEST['includeDeleted'])) {
+                $remoteParams['includeDeleted'] = true;
+            }
             HttpProxy::relayRequest(array(
                 'url' => static::buildUrl(Site::$pathStack, $remoteParams)
                 ,'autoAppend' => false
@@ -79,6 +82,10 @@ class Emergence
             }
         }
 
+        // set include deleted
+        if (!empty($_REQUEST['includeDeleted'])) {
+            $fileConditions['includeDeleted'] = true;
+        }
 
         // get files
         $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions);
