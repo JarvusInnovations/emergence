@@ -25,7 +25,7 @@ class Emergence
                 $remoteParams['exclude'] = $_REQUEST['exclude'];
             }
             if (!empty($_REQUEST['minid'])) {
-                $remoteParams['minid'] = $_REQUEST['minid'];
+                $remoteParams['minid'] = $_REQUEST['minId'];
             }
             HttpProxy::relayRequest(array(
                 'url' => static::buildUrl(Site::$pathStack, $remoteParams)
@@ -83,8 +83,8 @@ class Emergence
         }
 
         // set minimum id
-        if (!empty($_REQUEST['minid'])) {
-            $fileConditions[] = 'ID > ' . intval($_REQUEST['minid']);
+        if (!empty($_REQUEST['minId'])) {
+            $fileConditions[] = 'ID > ' . intval($_REQUEST['minId']);
         }
 
         // get files
