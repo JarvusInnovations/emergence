@@ -84,11 +84,13 @@ class Emergence
 
         // set include deleted
         if (!empty($_REQUEST['includeDeleted'])) {
-            $fileConditions['includeDeleted'] = true;
+            $includeDeleted = true;
+        } else {
+            $includeDeleted = false;
         }
 
         // get files
-        $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions);
+        $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions, $includeDeleted);
 
         header('HTTP/1.1 300 Multiple Choices');
         header('Content-Type: application/vnd.emergence.tree+json');
