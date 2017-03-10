@@ -2,7 +2,8 @@ var _ = require('underscore'),
     fs = require('fs'),
     path = require('path'),
     util = require('util'),
-    spawn = require('child_process').spawn;
+    spawn = require('child_process').spawn,
+    phpfpm = require('node-phpfpm');
 
 exports.createService = function(name, controller, options) {
     return new exports.PhpFpmService(name, controller, options);
@@ -42,6 +43,9 @@ exports.PhpFpmService = function(name, controller, options) {
         console.log(me.name+': found existing PID: '+me.pid);
         me.status = 'online';
     }
+
+    // listen for site updated
+    controller.sites.on('siteUpdated', _.bind(me.onSiteUpdated, me));
 };
 
 util.inherits(exports.PhpFpmService, require('./abstract.js').AbstractService);
@@ -190,4 +194,30 @@ exports.PhpFpmService.prototype.makeConfig = function() {
     );
 
     return config.join('\n');
+};
+
+exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
+    var me = this,
+        siteRoot = me.controller.sites.options.sitesDir + '/' + siteData.handle,
+        phpClient;
+
+    console.log(me.name+': clearing config cache for '+siteRoot);
+
+    // Connect to FPM worker pool
+    phpClient = new phpfpm({
+        sockFile: me.options.socketPath,
+        documentRoot: me.options.bootstrapDir + '/'
+    });
+
+    // Clear cached site.json
+    phpClient.run({
+        uri: 'cache.php',
+        form: {
+            cacheKey: siteRoot
+        }
+    }, function(err, output, phpErrors) {
+        if (err == 99) console.error('PHPFPM server error');
+        console.log(output);
+        if (phpErrors) console.error(phpErrors);
+    });
 };

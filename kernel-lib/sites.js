@@ -6,8 +6,7 @@ var _ = require('underscore'),
     events = require('events'),
     posix = require('posix'),
     spawn = require('child_process').spawn,
-    hostile = require('hostile'),
-    phpfpm = require('node-phpfpm');
+    hostile = require('hostile');
 
 
 exports.createSites = function(config) {
@@ -88,9 +87,8 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             var handle = request.path[1],
                 siteDir = me.options.sitesDir + '/' + handle,
                 siteConfigPath = siteDir + '/site.json',
-                siteRoot = me.options.sitesDir + '/' + handle,
                 params = JSON.parse(request.content),
-                siteData, phpClient;
+                siteData;
 
             // Get existing site config
             siteData = me.sites[handle];
@@ -106,25 +104,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             fs.writeFileSync(siteConfigPath, JSON.stringify(siteData, null, 4));
 
             // Restart nginx
-            me.emit('siteUpdated');
-
-            // Create phpfpm connection
-            phpClient = new phpfpm({
-                sockFile: '/emergence/services/run/php-fpm/php-fpm.sock', // @todo make dynamic
-                documentRoot: path.resolve(__dirname, '../php-bootstrap/') + '/'
-            });
-
-            // Clear cached site.json
-            phpClient.run({
-                uri: 'cache.php',
-                form: {
-                    cacheKey: siteRoot
-                }
-            }, function(err, output, phpErrors) {
-                if (err == 99) console.error('PHPFPM server error');
-                console.log(output);
-                if (phpErrors) console.error(phpErrors);
-            });
+            me.emit('siteUpdated', siteData);
 
             response.writeHead(404, {'Content-Type':'application/json'});
             response.end(JSON.stringify({
