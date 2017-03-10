@@ -6,7 +6,8 @@ var _ = require('underscore'),
     events = require('events'),
     posix = require('posix'),
     spawn = require('child_process').spawn,
-    hostile = require('hostile');
+    hostile = require('hostile'),
+    phpfpm = require('node-phpfpm');
 
 
 exports.createSites = function(config) {
@@ -58,6 +59,71 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
         response.writeHead(200, {'Content-Type':'application/json'});
         response.end(JSON.stringify({data: _.values(me.sites)}));
         return true;
+
+    } else if (request.method == 'PATCH') {
+
+        if (request.path[1]) {
+
+            if (!me.sites[request.path[1]]) {
+                console.error('Site not found: ' + request.path[1]);
+                response.writeHead(404, {'Content-Type':'application/json'});
+                response.end(JSON.stringify({success: false, message: 'Site not found'}));
+                return;
+            }
+
+            var handle = request.path[1],
+                siteDir = me.options.sitesDir + '/' + handle,
+                siteConfigPath = siteDir + '/site.json',
+                siteRoot = me.options.sitesDir + '/' + handle,
+                params = JSON.parse(request.content),
+                siteData, phpClient;
+
+            // Get existing site config
+            siteData = me.sites[handle];
+
+            // Apply updates except handle
+            for (var k in params) {
+                if (k !== 'handle') {
+                    siteData[k] = params[k];
+                }
+            }
+
+            // Update file
+            fs.writeFileSync(siteConfigPath, JSON.stringify(siteData, null, 4));
+
+            // Restart nginx
+            me.emit('siteUpdated');
+
+            // Create phpfpm connection
+            phpClient = new phpfpm({
+                sockFile: '/emergence/services/run/php-fpm/php-fpm.sock', // @todo make dynamic
+                documentRoot: path.resolve(__dirname, '../php-bootstrap/') + '/'
+            });
+
+            // Clear cached site.json
+            phpClient.run({
+                uri: 'cache.php',
+                form: {
+                    cacheKey: siteRoot
+                }
+            }, function(err, output, phpErrors) {
+                if (err == 99) console.error('PHPFPM server error');
+                console.log(output);
+                if (phpErrors) console.error(phpErrors);
+            });
+
+            response.writeHead(404, {'Content-Type':'application/json'});
+            response.end(JSON.stringify({
+                success: true,
+                message: 'Processed patch request',
+            }));
+            return;
+        }
+
+        response.writeHead(400, {'Content-Type':'application/json'});
+        response.end(JSON.stringify({success: false, error: 'Missing site identifier'}));
+        return;
+
     } else if (request.method == 'POST') {
         // TODO: prevent accidentally overwritting existing site -- require different VERB/PATH
         var requestData, cfgResult, phpProc, phpProcInitialized;
@@ -112,6 +178,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     });
 
                     return true;
+
                 } else {
                     console.error('Unhandled site sub-resource: ' + request.path[2]);
                     response.writeHead(404, {'Content-Type':'application/json'});

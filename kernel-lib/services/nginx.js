@@ -46,6 +46,9 @@ exports.NginxService = function(name, controller, options) {
 
     // listen for site creation
     controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
+
+    // listen for site updated
+    controller.sites.on('siteUpdated', _.bind(me.onSiteCreated, me));
 };
 
 util.inherits(exports.NginxService, require('./abstract.js').AbstractService);
