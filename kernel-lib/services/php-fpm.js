@@ -15,6 +15,7 @@ exports.PhpFpmService = function(name, controller, options) {
     exports.PhpFpmService.super_.apply(me, arguments);
 
     // default options
+    me.options.bootstrapDir = me.options.bootstrapDir || path.resolve(__dirname, '../../php-bootstrap');
     me.options.configPath = me.options.configPath || controller.options.configDir + '/php-fpm.conf';
     me.options.execPath = me.options.execPath || '/usr/bin/php-fpm';
     me.options.statScripts = me.options.statScripts || false;
