@@ -56,6 +56,20 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
     var me = this;
 
     if (request.method == 'GET') {
+
+        if (request.path[1]) {
+            if (!me.sites[request.path[1]]) {
+                console.error('Site not found: ' + request.path[1]);
+                response.writeHead(404, {'Content-Type':'application/json'});
+                response.end(JSON.stringify({success: false, message: 'Site not found'}));
+                return;
+            }
+
+            response.writeHead(200, {'Content-Type':'application/json'});
+            response.end(JSON.stringify({data: me.sites[request.path[1]]}));
+            return true;
+        }
+
         response.writeHead(200, {'Content-Type':'application/json'});
         response.end(JSON.stringify({data: _.values(me.sites)}));
         return true;
