@@ -24,7 +24,7 @@ exports.NginxService = function(name, controller, options) {
     me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/nginx';
     me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
     me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/errors.log';
-    me.options.miscConfigDir = me.options.miscConfigDir || (process.platform=='darwin'?'/usr/local/etc/nginx':'/etc/nginx')
+    me.options.miscConfigDir = me.options.miscConfigDir || (process.platform=='darwin'?'/usr/local/etc/nginx':'/etc/nginx');
     me.options.user = me.options.user || controller.options.user;
     me.options.group = me.options.group || controller.options.group;
 
