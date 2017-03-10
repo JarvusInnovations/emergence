@@ -12,7 +12,8 @@
         "hostile": "^1.0.2",
         "shelljs": "^0.5.3",
         "semver": "^5.1.0",
-        "underscore-cli": "^0.2.19"
+        "underscore-cli": "^0.2.19",
+        "node-phpfpm": "^1.0.1"
     },
     "bin": {
         "emergence-kernel": "./bin/kernel",
