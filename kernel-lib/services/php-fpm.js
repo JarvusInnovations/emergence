@@ -212,9 +212,9 @@ exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
     // Clear cached site.json
     phpClient.run({
         uri: 'cache.php',
-        form: {
-            cacheKey: siteRoot
-        }
+        json: [
+            { action: 'delete', key: siteRoot }
+        ]
     }, function(err, output, phpErrors) {
         if (err == 99) console.error('PHPFPM server error');
         console.log(output);

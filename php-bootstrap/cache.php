@@ -3,10 +3,27 @@
 // bootstrap emergence
 require('bootstrap.inc.php');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// only process POST requests
+if ($_SERVER['REQUEST_METHOD'] != 'POST') {
+    exit();
+}
 
-    // Delete given cacheKey
-    if (!empty($_POST['cacheKey'])) {
-        \Cache::rawDelete($_POST['cacheKey']);
+$commands = json_decode(file_get_contents('php://input'), true);
+
+foreach ($commands AS $command) {
+    $key = $command['key'];
+
+    if (!empty($command['site'])) {
+        $key = $command['site'].':'.$key;
+    }
+
+    if ($action == 'delete') {
+        Cache::rawDelete($key);
+    } else {
+        Cache::rawStore(
+            $key,
+            empty($command['value']) ? null : $command['value'],
+            empty($command['ttl']) ? 0 : $command['ttl']
+        );
     }
 }
