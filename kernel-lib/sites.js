@@ -55,9 +55,69 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
     var me = this;
 
     if (request.method == 'GET') {
+
+        if (request.path[1]) {
+            if (!me.sites[request.path[1]]) {
+                console.error('Site not found: ' + request.path[1]);
+                response.writeHead(404, {'Content-Type':'application/json'});
+                response.end(JSON.stringify({success: false, message: 'Site not found'}));
+                return;
+            }
+
+            response.writeHead(200, {'Content-Type':'application/json'});
+            response.end(JSON.stringify({data: me.sites[request.path[1]]}));
+            return true;
+        }
+
         response.writeHead(200, {'Content-Type':'application/json'});
         response.end(JSON.stringify({data: _.values(me.sites)}));
         return true;
+
+    } else if (request.method == 'PATCH') {
+
+        if (request.path[1]) {
+
+            if (!me.sites[request.path[1]]) {
+                console.error('Site not found: ' + request.path[1]);
+                response.writeHead(404, {'Content-Type':'application/json'});
+                response.end(JSON.stringify({success: false, message: 'Site not found'}));
+                return;
+            }
+
+            var handle = request.path[1],
+                siteDir = me.options.sitesDir + '/' + handle,
+                siteConfigPath = siteDir + '/site.json',
+                params = JSON.parse(request.content),
+                siteData;
+
+            // Get existing site config
+            siteData = me.sites[handle];
+
+            // Apply updates except handle
+            for (var k in params) {
+                if (k !== 'handle') {
+                    siteData[k] = params[k];
+                }
+            }
+
+            // Update file
+            fs.writeFileSync(siteConfigPath, JSON.stringify(siteData, null, 4));
+
+            // Restart nginx
+            me.emit('siteUpdated', siteData);
+
+            response.writeHead(404, {'Content-Type':'application/json'});
+            response.end(JSON.stringify({
+                success: true,
+                message: 'Processed patch request',
+            }));
+            return;
+        }
+
+        response.writeHead(400, {'Content-Type':'application/json'});
+        response.end(JSON.stringify({success: false, error: 'Missing site identifier'}));
+        return;
+
     } else if (request.method == 'POST') {
         // TODO: prevent accidentally overwritting existing site -- require different VERB/PATH
         var requestData, cfgResult, phpProc, phpProcInitialized;
@@ -112,6 +172,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     });
 
                     return true;
+
                 } else {
                     console.error('Unhandled site sub-resource: ' + request.path[2]);
                     response.writeHead(404, {'Content-Type':'application/json'});
