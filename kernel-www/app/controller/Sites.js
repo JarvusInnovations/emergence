@@ -194,6 +194,7 @@ Ext.define('eMan.controller.Sites', {
         var developerWindow = this.getDeveloperWindow(),
 			developerForm = developerWindow.down('developerform');
 
+		developerWindow.setLoading('Creating developer&hellip;');
 		Ext.Ajax.request({
 			method: 'POST',
 			url: '/sites/'+developerForm.getSite().get('handle')+'/developers',
@@ -201,6 +202,8 @@ Ext.define('eMan.controller.Sites', {
 			callback: function(operation, success, response) {
 				var responseData = success && Ext.decode(response.responseText),
 					errorMessage = 'Failed to create developer';
+
+				developerWindow.setLoading(false);
 
 				if (!success || !responseData || !responseData.success || !responseData.data.ID) {
 					if (responseData.errors) {
