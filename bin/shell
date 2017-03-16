@@ -45,8 +45,9 @@ fi
 
 
 # determine code source
-if [ -n "$2" ]
-then
+if [ "$2" == "--stdin"  ]; then
+    INPUT_ARGS=""
+elif [ -n "$2" ]; then
     INPUT_ARGS="-f $2"
 else
     INPUT_ARGS="-a"
