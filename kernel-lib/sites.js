@@ -174,6 +174,35 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
                     return true;
 
+                } else if (request.path[2] == 'developers') {
+                    console.log('Creating developer for ' + request.path[1] + ':' + phpShellScript);
+                    response.writeHead(200, {'Content-Type':'application/json'});
+
+                    phpProc = spawn(phpShellScript, [request.path[1], '--stdin']);
+
+                    phpProc.stdout.on('data', function(data) {
+                        console.log('php-cli stdout: ' + data);
+                        response.write(data);
+                    });
+                    phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
+
+                    requestData.AccountLevel = 'Developer';
+
+                    phpProc.stdin.write('<?php\n');
+                    phpProc.stdin.write('$userClass = User::getStaticDefaultClass();');
+                    phpProc.stdin.write('$User = $userClass::create(json_decode(\''+JSON.stringify(requestData).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\', true));');
+                    phpProc.stdin.write('$User->setClearPassword(json_decode(\''+JSON.stringify(requestData.Password).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\'));');
+                    phpProc.stdin.write('if (!$User->validate()) JSON::respond(["success"=>false,"errors"=>$User->validationErrors]);');
+                    phpProc.stdin.write('$User->save();');
+                    phpProc.stdin.write('JSON::respond(["success"=>true,"data"=>$User->getData()]);');
+                    phpProc.stdin.end();
+
+                    phpProc.on('close', function (code) {
+                        console.log('php-cli finished with code ' + code);
+                        response.end();
+                    });
+
+                    return true;
                 } else {
                     console.error('Unhandled site sub-resource: ' + request.path[2]);
                     response.writeHead(404, {'Content-Type':'application/json'});
