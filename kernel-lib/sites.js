@@ -6,7 +6,8 @@ var _ = require('underscore'),
     events = require('events'),
     posix = require('posix'),
     spawn = require('child_process').spawn,
-    hostile = require('hostile');
+    hostile = require('hostile'),
+    phpShellScript = path.resolve(__dirname, '../bin/shell');
 
 
 exports.createSites = function(config) {
@@ -144,7 +145,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log('Executing shell post for ' + request.path[1] + ':');
                     console.log(requestData);
 
-                    phpProc = spawn('emergence-shell', [request.path[1]]);
+                    phpProc = spawn(phpShellScript, [request.path[1]]);
                     phpProcInitialized = false;
 
                     phpProc.stderr.on('data', function(data) {
@@ -199,7 +200,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     databaseReady: function() {
                         // execute onSiteCreated within site's container
                         console.log('Executing Site::onSiteCreated() via php-cli');
-                        phpProc = spawn('emergence-shell', [cfgResult.site.handle]);
+                        phpProc = spawn(phpShellScript, [cfgResult.site.handle]);
 
                         phpProc.stdout.on('data', function(data) { console.log('php-cli stdout: ' + data); });
                         phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
