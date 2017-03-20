@@ -140,7 +140,7 @@ class Emergence_FS
     }
 
     public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array(), $includeDeleted = false) {
-        return static::getTreeFilesFromTree(static::getTree($path, $localOnly, false, $collectionConditions), $fileConditions, $includeDeleted);
+        return static::getTreeFilesFromTree(static::getTree($path, $localOnly, $includeDeleted, $collectionConditions), $fileConditions, $includeDeleted);
     }
 
     public static function getTreeFilesFromTree($tree, $conditions = array(), $includeDeleted = false) {
