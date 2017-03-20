@@ -26,6 +26,7 @@ class Emergence
             }
             if (!empty($_REQUEST['includeDeleted'])) {
                 $remoteParams['includeDeleted'] = true;
+            }
             if (!empty($_REQUEST['minId'])) {
                 $remoteParams['minId'] = $_REQUEST['minId'];
             }
