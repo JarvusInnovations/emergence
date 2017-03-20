@@ -128,7 +128,7 @@ class Emergence_FS
             ,'SELECT ID, Site, Handle, ParentID, Status FROM `%s` WHERE (%s) ORDER BY Site = "Remote", PosLeft'
             ,array(
                 SiteCollection::$tableName
-                ,join(') AND (', $mappedConditions)
+                ,count($mappedConditions) ? join(') AND (', $mappedConditions) : '1'
             )
         );
 
