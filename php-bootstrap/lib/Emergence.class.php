@@ -24,6 +24,9 @@ class Emergence
             if (!empty($_REQUEST['exclude'])) {
                 $remoteParams['exclude'] = $_REQUEST['exclude'];
             }
+            if (!empty($_REQUEST['minId'])) {
+                $remoteParams['minId'] = $_REQUEST['minId'];
+            }
             HttpProxy::relayRequest(array(
                 'url' => static::buildUrl(Site::$pathStack, $remoteParams)
                 ,'autoAppend' => false
@@ -79,6 +82,10 @@ class Emergence
             }
         }
 
+        // set minimum id
+        if (!empty($_REQUEST['minId'])) {
+            $fileConditions[] = 'ID > ' . intval($_REQUEST['minId']);
+        }
 
         // get files
         $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions);
