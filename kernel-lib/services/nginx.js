@@ -15,7 +15,6 @@ exports.NginxService = function(name, controller, options) {
     exports.NginxService.super_.apply(me, arguments);
 
     // default options
-    me.options.bootstrapDir = me.options.bootstrapDir || path.resolve(__dirname, '../../php-bootstrap');
     me.options.configPath = me.options.configPath || controller.options.configDir + '/nginx.conf';
     me.options.execPath = me.options.execPath || '/usr/sbin/nginx';
     me.options.bindHost = me.options.bindHost || '127.0.0.1';
@@ -24,7 +23,7 @@ exports.NginxService = function(name, controller, options) {
     me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/nginx';
     me.options.pidPath = me.options.pidPath || me.options.runDir + '/nginx.pid';
     me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/errors.log';
-    me.options.miscConfigDir = me.options.miscConfigDir || (process.platform=='darwin'?'/usr/local/etc/nginx':'/etc/nginx')
+    me.options.miscConfigDir = me.options.miscConfigDir || (process.platform=='darwin'?'/usr/local/etc/nginx':'/etc/nginx');
     me.options.user = me.options.user || controller.options.user;
     me.options.group = me.options.group || controller.options.group;
 
@@ -46,6 +45,9 @@ exports.NginxService = function(name, controller, options) {
 
     // listen for site creation
     controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
+
+    // listen for site updated
+    controller.sites.on('siteUpdated', _.bind(me.onSiteCreated, me));
 };
 
 util.inherits(exports.NginxService, require('./abstract.js').AbstractService);
@@ -162,7 +164,14 @@ exports.NginxService.prototype.writeConfig = function() {
 
 exports.NginxService.prototype.makeConfig = function() {
     var me = this,
+        phpSocketPath = me.controller.services['php'].options.socketPath,
+        phpBootstrapDir = me.controller.services['php'].options.bootstrapDir,
         config = [];
+
+    // format socket path
+    if (phpSocketPath[0] == '/') {
+        phpSocketPath = 'unix:'+phpSocketPath;
+    }
 
     // configure top-level options
     config.push(
@@ -250,7 +259,6 @@ exports.NginxService.prototype.makeConfig = function() {
         var hostnames = site.hostnames.slice(),
             siteDir = me.controller.sites.options.sitesDir+'/'+handle,
             logsDir = siteDir+'/logs',
-            phpSocketPath = me.controller.services['php'].options.socketPath,
             siteConfig = [],
             sslHostnames, sslHostname;
 
@@ -264,11 +272,6 @@ exports.NginxService.prototype.makeConfig = function() {
             fs.mkdirSync(logsDir, '775');
         }
 
-        // format socket path
-        if (phpSocketPath[0] == '/') {
-            phpSocketPath = 'unix:'+phpSocketPath;
-        }
-
         siteConfig.push(
             '        access_log '+logsDir+'/access.log main;',
             '        error_log '+logsDir+'/error.log notice;',
@@ -279,7 +282,7 @@ exports.NginxService.prototype.makeConfig = function() {
             '            fastcgi_pass '+phpSocketPath+';',
             '            fastcgi_param PATH_INFO $fastcgi_script_name;',
             '            fastcgi_param SITE_ROOT '+siteDir+';',
-            '            fastcgi_param SCRIPT_FILENAME '+me.options.bootstrapDir+'/web.php;',
+            '            fastcgi_param SCRIPT_FILENAME '+phpBootstrapDir+'/web.php;',
             '        }'
         );
 

@@ -6,7 +6,8 @@ var _ = require('underscore'),
     events = require('events'),
     posix = require('posix'),
     spawn = require('child_process').spawn,
-    hostile = require('hostile');
+    hostile = require('hostile'),
+    phpShellScript = path.resolve(__dirname, '../bin/shell');
 
 
 exports.createSites = function(config) {
@@ -55,9 +56,69 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
     var me = this;
 
     if (request.method == 'GET') {
+
+        if (request.path[1]) {
+            if (!me.sites[request.path[1]]) {
+                console.error('Site not found: ' + request.path[1]);
+                response.writeHead(404, {'Content-Type':'application/json'});
+                response.end(JSON.stringify({success: false, message: 'Site not found'}));
+                return;
+            }
+
+            response.writeHead(200, {'Content-Type':'application/json'});
+            response.end(JSON.stringify({data: me.sites[request.path[1]]}));
+            return true;
+        }
+
         response.writeHead(200, {'Content-Type':'application/json'});
         response.end(JSON.stringify({data: _.values(me.sites)}));
         return true;
+
+    } else if (request.method == 'PATCH') {
+
+        if (request.path[1]) {
+
+            if (!me.sites[request.path[1]]) {
+                console.error('Site not found: ' + request.path[1]);
+                response.writeHead(404, {'Content-Type':'application/json'});
+                response.end(JSON.stringify({success: false, message: 'Site not found'}));
+                return;
+            }
+
+            var handle = request.path[1],
+                siteDir = me.options.sitesDir + '/' + handle,
+                siteConfigPath = siteDir + '/site.json',
+                params = JSON.parse(request.content),
+                siteData;
+
+            // Get existing site config
+            siteData = me.sites[handle];
+
+            // Apply updates except handle
+            for (var k in params) {
+                if (k !== 'handle') {
+                    siteData[k] = params[k];
+                }
+            }
+
+            // Update file
+            fs.writeFileSync(siteConfigPath, JSON.stringify(siteData, null, 4));
+
+            // Restart nginx
+            me.emit('siteUpdated', siteData);
+
+            response.writeHead(404, {'Content-Type':'application/json'});
+            response.end(JSON.stringify({
+                success: true,
+                message: 'Processed patch request',
+            }));
+            return;
+        }
+
+        response.writeHead(400, {'Content-Type':'application/json'});
+        response.end(JSON.stringify({success: false, error: 'Missing site identifier'}));
+        return;
+
     } else if (request.method == 'POST') {
         // TODO: prevent accidentally overwritting existing site -- require different VERB/PATH
         var requestData, cfgResult, phpProc, phpProcInitialized;
@@ -84,7 +145,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log('Executing shell post for ' + request.path[1] + ':');
                     console.log(requestData);
 
-                    phpProc = spawn('emergence-shell', [request.path[1]]);
+                    phpProc = spawn(phpShellScript, [request.path[1]]);
                     phpProcInitialized = false;
 
                     phpProc.stderr.on('data', function(data) {
@@ -104,6 +165,36 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     });
 
                     phpProc.stdin.write(requestData+'\n');
+                    phpProc.stdin.end();
+
+                    phpProc.on('close', function (code) {
+                        console.log('php-cli finished with code ' + code);
+                        response.end();
+                    });
+
+                    return true;
+
+                } else if (request.path[2] == 'developers') {
+                    console.log('Creating developer for ' + request.path[1] + ':' + phpShellScript);
+                    response.writeHead(200, {'Content-Type':'application/json'});
+
+                    phpProc = spawn(phpShellScript, [request.path[1], '--stdin']);
+
+                    phpProc.stdout.on('data', function(data) {
+                        console.log('php-cli stdout: ' + data);
+                        response.write(data);
+                    });
+                    phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
+
+                    requestData.AccountLevel = 'Developer';
+
+                    phpProc.stdin.write('<?php\n');
+                    phpProc.stdin.write('$userClass = User::getStaticDefaultClass();');
+                    phpProc.stdin.write('$User = $userClass::create(json_decode(\''+JSON.stringify(requestData).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\', true));');
+                    phpProc.stdin.write('$User->setClearPassword(json_decode(\''+JSON.stringify(requestData.Password).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')+'\'));');
+                    phpProc.stdin.write('if (!$User->validate()) JSON::respond(["success"=>false,"errors"=>$User->validationErrors]);');
+                    phpProc.stdin.write('$User->save();');
+                    phpProc.stdin.write('JSON::respond(["success"=>true,"data"=>$User->getData()]);');
                     phpProc.stdin.end();
 
                     phpProc.on('close', function (code) {
@@ -138,7 +229,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     databaseReady: function() {
                         // execute onSiteCreated within site's container
                         console.log('Executing Site::onSiteCreated() via php-cli');
-                        phpProc = spawn('emergence-shell', [cfgResult.site.handle]);
+                        phpProc = spawn(phpShellScript, [cfgResult.site.handle]);
 
                         phpProc.stdout.on('data', function(data) { console.log('php-cli stdout: ' + data); });
                         phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });

@@ -5,6 +5,9 @@ Ext.define('eMan.view.site.Menu', {
     ,items: [{
         text: 'Create inheriting site'
         ,action: 'create-inheriting'
-        //,icon: '/img/icons/fugue/blue-document.png' 
+        //,icon: '/img/icons/fugue/blue-document.png'
+    },{
+        text: 'Create developer user'
+        ,action: 'create-developer'
     }]
 });
