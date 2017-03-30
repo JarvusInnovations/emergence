@@ -19,6 +19,7 @@ class SiteFile
         ,'scss' => 'text/x-scss'
         ,'tpl' => 'text/x-html-template'
         ,'svg' => 'image/svg+xml'
+        ,'yml' => 'application/x-yaml'
     );
     public static $additionalHeaders = array(
         'static' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
