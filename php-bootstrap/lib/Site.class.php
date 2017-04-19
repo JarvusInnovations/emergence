@@ -86,9 +86,13 @@ class Site
             date_default_timezone_set($timezone);
         }
 
-        // set useful transaction name for newrelic
+        // set useful transaction name and metadata for newrelic
         if (extension_loaded('newrelic')) {
             newrelic_name_transaction(static::getConfig('handle') . '/' . implode('/', site::$requestPath));
+
+            if (isset($_SERVER['QUERY_STRING'])) {
+                newrelic_add_custom_parameter('request.query', $_SERVER['QUERY_STRING']);
+            }
         }
 
         // register class loader
@@ -291,8 +295,8 @@ class Site
 
         if (extension_loaded('newrelic')) {
             if (!empty($GLOBALS['Session'])) {
-                newrelic_add_custom_parameter('session_id', $GLOBALS['Session']->Handle);
-                newrelic_add_custom_parameter('person_id', $GLOBALS['Session']->PersonID);
+                newrelic_add_custom_parameter('session.token', $GLOBALS['Session']->Handle);
+                newrelic_add_custom_parameter('session.person_id', $GLOBALS['Session']->PersonID);
             }
 
             newrelic_add_custom_parameter('script_path', $_SCRIPT_NODE->FullPath);
