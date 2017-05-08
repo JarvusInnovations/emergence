@@ -203,6 +203,26 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     });
 
                     return true;
+
+                } else if (request.path[2] == 'maintenance') {
+
+                    // append site handle to all commands
+                    for (i=0; i<requestData.length; i++) {
+                        requestData[i].handle = request.path[1];
+                    }
+
+                    console.log('Received maintenance request for ' + request.path[1]);
+                    console.log(requestData);
+
+                    me.emit('maintenanceRequested', requestData);
+
+                    response.writeHead(200, {'Content-Type':'application/json'});
+                    response.end(JSON.stringify({
+                        success: true,
+                        message: 'maintenance request finished',
+                    }));
+                    return true;
+
                 } else {
                     console.error('Unhandled site sub-resource: ' + request.path[2]);
                     response.writeHead(404, {'Content-Type':'application/json'});

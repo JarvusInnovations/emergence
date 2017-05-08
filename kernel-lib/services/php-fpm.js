@@ -46,6 +46,9 @@ exports.PhpFpmService = function(name, controller, options) {
 
     // listen for site updated
     controller.sites.on('siteUpdated', _.bind(me.onSiteUpdated, me));
+
+    // listen for maintenance requests
+    controller.sites.on('maintenanceRequested', _.bind(me.onMaintenanceRequested, me));
 };
 
 util.inherits(exports.PhpFpmService, require('./abstract.js').AbstractService);
@@ -221,3 +224,25 @@ exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
         if (phpErrors) console.error(phpErrors);
     });
 };
+
+exports.PhpFpmService.prototype.onMaintenanceRequested = function(siteData) {
+    var me = this,
+        phpClient;
+
+    // Connect to FPM worker pool
+    phpClient = new phpfpm({
+        sockFile: me.options.socketPath,
+        documentRoot: me.options.bootstrapDir + '/'
+    });
+
+    // Run maintenance request
+    phpClient.run({
+        uri: 'maintenance.php',
+        json: siteData
+    }, function(err, output, phpErrors) {
+        if (err == 99) console.error('PHPFPM server error');
+        console.log(output);
+        // @todo update given jobs
+        if (phpErrors) console.error(phpErrors);
+    });
+}
