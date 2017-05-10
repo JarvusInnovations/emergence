@@ -206,15 +206,10 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
                 } else if (request.path[2] == 'maintenance') {
 
-                    // append site handle to all commands
-                    for (i=0; i<requestData.length; i++) {
-                        requestData[i].handle = request.path[1];
-                    }
-
                     console.log('Received maintenance request for ' + request.path[1]);
                     console.log(requestData);
 
-                    me.emit('maintenanceRequested', requestData);
+                    me.emit('maintenanceRequested', requestData, request.path[1]);
 
                     response.writeHead(200, {'Content-Type':'application/json'});
                     response.end(JSON.stringify({

@@ -213,6 +213,7 @@ exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
     });
 
     // Clear cached site.json
+    // @todo update to use maintenance.php instead of cache.php
     phpClient.run({
         uri: 'cache.php',
         json: [
@@ -225,12 +226,14 @@ exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
     });
 };
 
-exports.PhpFpmService.prototype.onMaintenanceRequested = function(siteData) {
+exports.PhpFpmService.prototype.onMaintenanceRequested = function(siteData, handle) {
     var me = this,
+        siteRoot = me.controller.sites.options.sitesDir + '/' + handle,
         phpClient;
 
     // Connect to FPM worker pool
     phpClient = new phpfpm({
+        handle: handle,
         sockFile: me.options.socketPath,
         documentRoot: me.options.bootstrapDir + '/'
     });
@@ -238,7 +241,11 @@ exports.PhpFpmService.prototype.onMaintenanceRequested = function(siteData) {
     // Run maintenance request
     phpClient.run({
         uri: 'maintenance.php',
-        json: siteData
+        json: {
+            'commands': siteData,
+            'handle': handle,
+            'siteRoot': siteRoot
+        }
     }, function(err, output, phpErrors) {
         if (err == 99) console.error('PHPFPM server error');
         console.log(output);
