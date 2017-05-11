@@ -68,12 +68,25 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                 if (request.path[2] == 'maintenance') {
                     console.log('Received maintenance GET request for ' + request.path[1]);
                     response.writeHead(200, {'Content-Type':'application/json'});
-                    response.end(JSON.stringify({
-                        success: true,
-                        message: 'maintenance request finished',
-                        jobs: me.sites[request.path[1]].jobs
-                    }));
-                    return true;
+
+                    // Return specific uid
+                    if (request.path[3]) {
+                        response.end(JSON.stringify({
+                            success: true,
+                            message: 'Maintenance get request finished',
+                            jobs: (me.sites[request.path[1]].jobs[request.path[3]]) ? me.sites[request.path[1]].jobs[request.path[3]] : false
+                        }));
+                        return true;
+
+                    // Return all jobs
+                    } else {
+                        response.end(JSON.stringify({
+                            success: true,
+                            message: 'Maintenance get request finished',
+                            jobs: (me.sites[request.path[1]].jobs) ? me.sites[request.path[1]].jobs : false
+                        }));
+                        return true;
+                    }
 
                 } else {
                     console.error('Unhandled site sub-resource: ' + request.path[2]);
