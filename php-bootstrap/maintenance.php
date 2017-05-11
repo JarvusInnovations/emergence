@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 $data = json_decode(file_get_contents('php://input'), true);
 
 foreach ($data['job']['commands'] as &$command) {
+
     switch ($command['action'])
     {
         case 'cache':
@@ -35,9 +36,10 @@ function handleCacheRequest($command, $handle, $siteRoot)
     // Raw delete
     if (!empty($command['remove'])) {
         if ($command['remove'] == '##SiteRoot##') {
-            $command['remove'] = $siteRoot;
+            Cache::rawDelete($siteRoot);
+        } else {
+            Cache::rawDelete($handle . ':' . $command['remove']);
         }
-        Cache::rawDelete($handle . ':' . $command['remove']);
     }
 
     // Pattern delete
