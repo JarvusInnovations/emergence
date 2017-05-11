@@ -203,7 +203,6 @@ exports.PhpFpmService.prototype.onMaintenanceRequested = function(job, handle) {
 
     // Connect to FPM worker pool
     phpClient = new phpfpm({
-        handle: handle,
         sockFile: me.options.socketPath,
         documentRoot: me.options.bootstrapDir + '/'
     });
