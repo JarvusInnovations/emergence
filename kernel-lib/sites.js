@@ -120,7 +120,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                 siteDir = me.options.sitesDir + '/' + handle,
                 siteConfigPath = siteDir + '/site.json',
                 params = JSON.parse(request.content),
-                siteData;
+                siteData, siteDataTmp;
 
             // Get existing site config
             siteData = me.sites[handle];
@@ -132,8 +132,10 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                 }
             }
 
-            // Update file
-            fs.writeFileSync(siteConfigPath, JSON.stringify(siteData, null, 4));
+            // Clone site data and remove jobs before writing sitedata to disk
+            siteDataTmp = JSON.parse(JSON.stringify(siteData));;
+            delete siteDataTmp.jobs;
+            fs.writeFileSync(siteConfigPath, JSON.stringify(siteDataTmp, null, 4));
 
             // Restart nginx
             me.emit('siteUpdated', siteData);
