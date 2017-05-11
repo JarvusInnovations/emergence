@@ -10,17 +10,24 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-foreach ($data['commands'] as $command) {
+foreach ($data['job']['commands'] as &$command) {
     switch ($command['action'])
     {
         case 'cache':
-            handleCacheRequest($command, $data['handle'], $data['siteRoot']);
+            $command['result'] = handleCacheRequest($command, $data['handle'], $data['siteRoot']);
             break;
-        case 'vfs':
-            handleVFSRequest($command, $data['handle'], $data['siteRoot']);
+        case 'vfs-update':
+            $command['result'] = handleVFSUpdateRequest($command, $data['handle'], $data['siteRoot']);
+            break;
+        case 'vfs-summary':
+            $command['result'] = handleVFSSummaryRequest($command, $data['handle'], $data['siteRoot']);
             break;
     }
 }
+
+// Return results
+echo json_encode($data['job']);
+return;
 
 // Create, update or delete cached elements
 function handleCacheRequest($command, $handle, $siteRoot)
@@ -49,13 +56,24 @@ function handleCacheRequest($command, $handle, $siteRoot)
     }
 }
 
-function handleVFSRequest($command, $handle, $siteRoot)
+// Get the vfs summary
+function handleVFSSummaryRequest($command, $handle, $siteRoot)
 {
     // Initialize site for Emergence FS commands
     Site::initialize($siteRoot);
 
     // Update the file system
-    updateFileSystem($handle, $command['cursor'], $siteRoot);
+    return getFileSystemSummary($command['cursor']);
+}
+
+// Run full update of vfs
+function handleVFSUpdateRequest($command, $handle, $siteRoot)
+{
+    // Initialize site for Emergence FS commands
+    Site::initialize($siteRoot);
+
+    // Update the file system
+    return updateFileSystem($handle, $command['cursor'], $siteRoot);
 }
 
 function updateFileSystem($handle, $cursor = 0)

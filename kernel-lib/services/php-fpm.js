@@ -226,7 +226,7 @@ exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
     });
 };
 
-exports.PhpFpmService.prototype.onMaintenanceRequested = function(siteData, handle) {
+exports.PhpFpmService.prototype.onMaintenanceRequested = function(job, handle) {
     var me = this,
         siteRoot = me.controller.sites.options.sitesDir + '/' + handle,
         phpClient;
@@ -242,14 +242,20 @@ exports.PhpFpmService.prototype.onMaintenanceRequested = function(siteData, hand
     phpClient.run({
         uri: 'maintenance.php',
         json: {
-            'commands': siteData,
+            'job': job,
             'handle': handle,
             'siteRoot': siteRoot
         }
     }, function(err, output, phpErrors) {
         if (err == 99) console.error('PHPFPM server error');
-        console.log(output);
-        // @todo update given jobs
         if (phpErrors) console.error(phpErrors);
+
+        // Parse job response
+        var response = JSON.parse(output);
+
+        // Update job with response
+        job.commands = response.commands;
+        job.status = 'completed';
+        job.completed = new Date().getTime();
     });
 }

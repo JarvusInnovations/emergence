@@ -65,6 +65,25 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                 return;
             }
 
+            if (request.path[2]) {
+                if (request.path[2] == 'maintenance') {
+                    console.log('Received maintenance GET request for ' + request.path[1]);
+                    response.writeHead(200, {'Content-Type':'application/json'});
+                    response.end(JSON.stringify({
+                        success: true,
+                        message: 'maintenance request finished',
+                        jobs: me.sites[request.path[1]].jobs
+                    }));
+                    return true;
+
+                } else {
+                    console.error('Unhandled site sub-resource: ' + request.path[2]);
+                    response.writeHead(404, {'Content-Type':'application/json'});
+                    response.end(JSON.stringify({success: false, message: 'Site resource not found'}));
+                    return;
+                }
+            }
+
             response.writeHead(200, {'Content-Type':'application/json'});
             response.end(JSON.stringify({data: me.sites[request.path[1]]}));
             return true;
@@ -208,13 +227,50 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
                     console.log('Received maintenance request for ' + request.path[1]);
                     console.log(requestData);
+                    console.log('Existing jobs');
+                    console.log( me.sites[request.path[1]]['jobs']);
 
-                    me.emit('maintenanceRequested', requestData, request.path[1]);
+                    // Init jobs array
+                    if (typeof(me.sites[request.path[1]]['jobs']) == 'undefined') {
+                        me.sites[request.path[1]]['jobs'] = {};
+                    }
+
+                    // Clean up completed jobs
+                    var jobKeys = Object.keys(me.sites[request.path[1]]['jobs']),
+                        cutoffTime = new Date().getTime() - (60 * 60 * 1000); // 1 hour ago
+                    for (i=0; i<jobKeys.length; i++) {
+                        if (me.sites[request.path[1]]['jobs'][jobKeys[i]].completed && me.sites[request.path[1]]['jobs'][jobKeys[i]].completed < cutoffTime) {
+                            console.log('Remove job');
+                            console.log(me.sites[request.path[1]]['jobs'][jobKeys[i]]);
+                            delete me.sites[request.path[1]]['jobs'][jobKeys[i]];
+                        }
+                    }
+
+                    // Create uid
+                    var uid = Math.floor((Math.random() * 100000));
+                    while (Object.keys(me.sites[request.path[1]]['jobs']).indexOf(uid) !== -1) {
+                        uid =  Math.floor((Math.random() * 100000));
+                    }
+
+                    // Init job
+                    me.sites[request.path[1]]['jobs'][uid] = {
+                        'uid': uid,
+                        'status': 'pending',
+                        'completed': null,
+                        'commands': requestData
+                    };
+
+                    console.log('Added new job');
+                    console.log(me.sites[request.path[1]]['jobs']);
+
+                    // Emit maintence request with job
+                    me.emit('maintenanceRequested', me.sites[request.path[1]]['jobs'][uid], request.path[1]);
 
                     response.writeHead(200, {'Content-Type':'application/json'});
                     response.end(JSON.stringify({
                         success: true,
-                        message: 'maintenance request finished',
+                        message: 'maintenance request initiated',
+                        job: me.sites[request.path[1]]['jobs'][uid]
                     }));
                     return true;
 
