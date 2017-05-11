@@ -51,7 +51,6 @@ exports.Sites = function(config) {
 
 util.inherits(exports.Sites, events.EventEmitter);
 
-
 exports.Sites.prototype.handleRequest = function(request, response, server) {
     var me = this;
 
@@ -126,10 +125,41 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             // Restart nginx
             me.emit('siteUpdated', siteData);
 
-            response.writeHead(404, {'Content-Type':'application/json'});
+            // Init / clean jobs
+            if (typeof(me.sites[request.path[1]]['jobs']) == 'undefined') {
+                me.sites[request.path[1]]['jobs'] = {};
+            } else {
+                cleanJobs(me.sites[request.path[1]]['jobs']);
+            }
+
+            // Create uid
+            var uid = Math.floor((Math.random() * 100000));
+            while (Object.keys(me.sites[request.path[1]]['jobs']).indexOf(uid) !== -1) {
+                uid =  Math.floor((Math.random() * 100000));
+            }
+
+            // Init maintenance job
+            me.sites[request.path[1]]['jobs'][uid] = {
+                'uid': uid,
+                'status': 'pending',
+                'completed': null,
+                'commands': [{
+                    'action': 'cache',
+                    'remove': '##SiteRoot##'
+                }]
+            };
+
+            console.log('Added new job');
+            console.log(me.sites[request.path[1]]);
+
+            // Emit maintence request with job
+            me.emit('maintenanceRequested', me.sites[request.path[1]]['jobs'][uid], request.path[1]);
+
+            response.writeHead(200, {'Content-Type':'application/json'});
             response.end(JSON.stringify({
                 success: true,
                 message: 'Processed patch request',
+                job: me.sites[request.path[1]]['jobs'][uid]
             }));
             return;
         }
@@ -227,23 +257,12 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
                     console.log('Received maintenance request for ' + request.path[1]);
                     console.log(requestData);
-                    console.log('Existing jobs');
-                    console.log( me.sites[request.path[1]]['jobs']);
 
-                    // Init jobs array
+                    // Init / clean jobs
                     if (typeof(me.sites[request.path[1]]['jobs']) == 'undefined') {
                         me.sites[request.path[1]]['jobs'] = {};
-                    }
-
-                    // Clean up completed jobs
-                    var jobKeys = Object.keys(me.sites[request.path[1]]['jobs']),
-                        cutoffTime = new Date().getTime() - (60 * 60 * 1000); // 1 hour ago
-                    for (i=0; i<jobKeys.length; i++) {
-                        if (me.sites[request.path[1]]['jobs'][jobKeys[i]].completed && me.sites[request.path[1]]['jobs'][jobKeys[i]].completed < cutoffTime) {
-                            console.log('Remove job');
-                            console.log(me.sites[request.path[1]]['jobs'][jobKeys[i]]);
-                            delete me.sites[request.path[1]]['jobs'][jobKeys[i]];
-                        }
+                    } else {
+                        cleanJobs(me.sites[request.path[1]]['jobs']);
                     }
 
                     // Create uid
@@ -261,7 +280,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     };
 
                     console.log('Added new job');
-                    console.log(me.sites[request.path[1]]['jobs']);
+                    console.log(me.sites[request.path[1]]['jobs'][uid]);
 
                     // Emit maintence request with job
                     me.emit('maintenanceRequested', me.sites[request.path[1]]['jobs'][uid], request.path[1]);
@@ -339,6 +358,19 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
     return false;
 };
 
+// Clean up completed jobs
+cleanJobs = function(jobs) {
+    var jobKeys = Object.keys(jobs),
+        cutoffTime = new Date().getTime() - (60 * 60 * 1000); // 1 hour ago
+
+    for (i=0; i<jobKeys.length; i++) {
+        if (jobs[jobKeys[i]].completed && jobs[jobKeys[i]].completed < cutoffTime) {
+            console.log('Remove job');
+            console.log(jobs[jobKeys[i]]);
+            delete jobs[jobKeys[i]];
+        }
+    }
+}
 
 exports.Sites.prototype.writeSiteConfig = function(requestData) {
     var me = this,

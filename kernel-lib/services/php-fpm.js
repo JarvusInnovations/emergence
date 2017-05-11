@@ -44,9 +44,6 @@ exports.PhpFpmService = function(name, controller, options) {
         me.status = 'online';
     }
 
-    // listen for site updated
-    controller.sites.on('siteUpdated', _.bind(me.onSiteUpdated, me));
-
     // listen for maintenance requests
     controller.sites.on('maintenanceRequested', _.bind(me.onMaintenanceRequested, me));
 };
@@ -197,33 +194,6 @@ exports.PhpFpmService.prototype.makeConfig = function() {
     );
 
     return config.join('\n');
-};
-
-exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
-    var me = this,
-        siteRoot = me.controller.sites.options.sitesDir + '/' + siteData.handle,
-        phpClient;
-
-    console.log(me.name+': clearing config cache for '+siteRoot);
-
-    // Connect to FPM worker pool
-    phpClient = new phpfpm({
-        sockFile: me.options.socketPath,
-        documentRoot: me.options.bootstrapDir + '/'
-    });
-
-    // Clear cached site.json
-    // @todo update to use maintenance.php instead of cache.php
-    phpClient.run({
-        uri: 'cache.php',
-        json: [
-            { action: 'delete', key: siteRoot }
-        ]
-    }, function(err, output, phpErrors) {
-        if (err == 99) console.error('PHPFPM server error');
-        console.log(output);
-        if (phpErrors) console.error(phpErrors);
-    });
 };
 
 exports.PhpFpmService.prototype.onMaintenanceRequested = function(job, handle) {

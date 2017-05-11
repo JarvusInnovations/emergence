@@ -33,8 +33,11 @@ return;
 function handleCacheRequest($command, $handle, $siteRoot)
 {
     // Raw delete
-    if (!empty($command['delete'])) {
-        Cache::rawDelete($handle . ':' . $command['delete']);
+    if (!empty($command['remove'])) {
+        if ($command['remove'] == '##SiteRoot##') {
+            $command['remove'] = $siteRoot;
+        }
+        Cache::rawDelete($handle . ':' . $command['remove']);
     }
 
     // Pattern delete
@@ -54,6 +57,8 @@ function handleCacheRequest($command, $handle, $siteRoot)
             empty($command['ttl']) ? 0 : $command['ttl']
         );
     }
+
+    return true;
 }
 
 // Get the vfs summary
