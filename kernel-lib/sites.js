@@ -52,12 +52,15 @@ exports.Sites = function(config) {
 util.inherits(exports.Sites, events.EventEmitter);
 
 exports.Sites.prototype.handleRequest = function(request, response, server) {
-    var me = this;
+    var me = this,
+        site;
 
     if (request.method == 'GET') {
 
         if (request.path[1]) {
-            if (!me.sites[request.path[1]]) {
+            site = me.sites[request.path[1]];
+
+            if (!site) {
                 console.error('Site not found: ' + request.path[1]);
                 response.writeHead(404, {'Content-Type':'application/json'});
                 response.end(JSON.stringify({success: false, message: 'Site not found'}));
@@ -74,7 +77,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                         response.end(JSON.stringify({
                             success: true,
                             message: 'Maintenance get request finished',
-                            jobs: (me.sites[request.path[1]].jobs[request.path[3]]) ? me.sites[request.path[1]].jobs[request.path[3]] : false
+                            jobs: (site.jobs[request.path[3]]) ? site.jobs[request.path[3]] : false
                         }));
                         return true;
 
@@ -83,7 +86,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                         response.end(JSON.stringify({
                             success: true,
                             message: 'Maintenance get request finished',
-                            jobs: (me.sites[request.path[1]].jobs) ? me.sites[request.path[1]].jobs : false
+                            jobs: (site.jobs) ? site.jobs : false
                         }));
                         return true;
                     }
@@ -97,7 +100,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             }
 
             response.writeHead(200, {'Content-Type':'application/json'});
-            response.end(JSON.stringify({data: me.sites[request.path[1]]}));
+            response.end(JSON.stringify({data: site}));
             return true;
         }
 
@@ -108,8 +111,9 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
     } else if (request.method == 'PATCH') {
 
         if (request.path[1]) {
+            site = me.sites[request.path[1]];
 
-            if (!me.sites[request.path[1]]) {
+            if (!site) {
                 console.error('Site not found: ' + request.path[1]);
                 response.writeHead(404, {'Content-Type':'application/json'});
                 response.end(JSON.stringify({success: false, message: 'Site not found'}));
@@ -141,20 +145,20 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             me.emit('siteUpdated', siteData);
 
             // Init / clean jobs
-            if (typeof(me.sites[request.path[1]]['jobs']) == 'undefined') {
-                me.sites[request.path[1]]['jobs'] = {};
+            if (typeof(site['jobs']) == 'undefined') {
+                site['jobs'] = {};
             } else {
-                cleanJobs(me.sites[request.path[1]]['jobs']);
+                cleanJobs(site['jobs']);
             }
 
             // Create uid
             var uid = Math.floor((Math.random() * 100000));
-            while (Object.keys(me.sites[request.path[1]]['jobs']).indexOf(uid) !== -1) {
+            while (Object.keys(site['jobs']).indexOf(uid) !== -1) {
                 uid =  Math.floor((Math.random() * 100000));
             }
 
             // Init maintenance job
-            me.sites[request.path[1]]['jobs'][uid] = {
+            site['jobs'][uid] = {
                 'uid': uid,
                 'status': 'pending',
                 'completed': null,
@@ -165,16 +169,16 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             };
 
             console.log('Added new job');
-            console.log(me.sites[request.path[1]]);
+            console.log(site);
 
             // Emit maintence request with job
-            me.emit('maintenanceRequested', me.sites[request.path[1]]['jobs'][uid], request.path[1]);
+            me.emit('maintenanceRequested', site['jobs'][uid], request.path[1]);
 
             response.writeHead(200, {'Content-Type':'application/json'});
             response.end(JSON.stringify({
                 success: true,
                 message: 'Processed patch request',
-                job: me.sites[request.path[1]]['jobs'][uid]
+                job: site['jobs'][uid]
             }));
             return;
         }
@@ -195,7 +199,9 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
         // handle post to an individual site
         if (request.path[1]) {
-            if (!me.sites[request.path[1]]) {
+            site = me.sites[request.path[1]];
+
+            if (!site) {
                 console.error('Site not found: ' + request.path[1]);
                 response.writeHead(404, {'Content-Type':'application/json'});
                 response.end(JSON.stringify({success: false, message: 'Site not found'}));
@@ -274,20 +280,20 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log(requestData);
 
                     // Init / clean jobs
-                    if (typeof(me.sites[request.path[1]]['jobs']) == 'undefined') {
-                        me.sites[request.path[1]]['jobs'] = {};
+                    if (typeof(site['jobs']) == 'undefined') {
+                        site['jobs'] = {};
                     } else {
-                        cleanJobs(me.sites[request.path[1]]['jobs']);
+                        cleanJobs(site['jobs']);
                     }
 
                     // Create uid
                     var uid = Math.floor((Math.random() * 100000));
-                    while (Object.keys(me.sites[request.path[1]]['jobs']).indexOf(uid) !== -1) {
+                    while (Object.keys(site['jobs']).indexOf(uid) !== -1) {
                         uid =  Math.floor((Math.random() * 100000));
                     }
 
                     // Init job
-                    me.sites[request.path[1]]['jobs'][uid] = {
+                    site['jobs'][uid] = {
                         'uid': uid,
                         'status': 'pending',
                         'completed': null,
@@ -295,16 +301,16 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     };
 
                     console.log('Added new job');
-                    console.log(me.sites[request.path[1]]['jobs'][uid]);
+                    console.log(site['jobs'][uid]);
 
                     // Emit maintence request with job
-                    me.emit('maintenanceRequested', me.sites[request.path[1]]['jobs'][uid], request.path[1]);
+                    me.emit('maintenanceRequested', site['jobs'][uid], request.path[1]);
 
                     response.writeHead(200, {'Content-Type':'application/json'});
                     response.end(JSON.stringify({
                         success: true,
                         message: 'maintenance request initiated',
-                        job: me.sites[request.path[1]]['jobs'][uid]
+                        job: site['jobs'][uid]
                     }));
                     return true;
 
@@ -317,7 +323,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             }
 
             // apply existing site's properties in
-            _.defaults(requestData, me.sites[request.path[1]]);
+            _.defaults(requestData, site);
         }
 
         // create new site
