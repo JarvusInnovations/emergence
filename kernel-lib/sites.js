@@ -137,7 +137,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             }
 
             // Clone site data and remove jobs before writing sitedata to disk
-            siteDataTmp = JSON.parse(JSON.stringify(siteData));;
+            siteDataTmp = JSON.parse(JSON.stringify(siteData));
             delete siteDataTmp.jobs;
             fs.writeFileSync(siteConfigPath, JSON.stringify(siteDataTmp, null, 4));
 
