@@ -39,8 +39,11 @@ exports.Sites = function(config) {
     me.sites = {};
     _.each(fs.readdirSync(me.options.sitesDir), function(handle) {
         try {
-            me.sites[handle] = JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii'));
-            me.sites[handle].handle = handle;
+            me.sites[handle] = {
+                handle: handle,
+                config: JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii')),
+                jobs: []
+            };
             console.log('-Loaded: '+me.sites[handle].primary_hostname);
         } catch (error) {
             console.log('-FAILED to load: '+handle);
@@ -100,12 +103,12 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             }
 
             response.writeHead(200, {'Content-Type':'application/json'});
-            response.end(JSON.stringify({data: site}));
+            response.end(JSON.stringify({data: site.config}));
             return true;
         }
 
         response.writeHead(200, {'Content-Type':'application/json'});
-        response.end(JSON.stringify({data: _.values(me.sites)}));
+        response.end(JSON.stringify({data: _.pluck(_.values(me.sites), 'config')}));
         return true;
 
     } else if (request.method == 'PATCH') {
@@ -328,6 +331,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
         // create new site
         try {
+
             cfgResult = me.writeSiteConfig(requestData);
 
             if (cfgResult.isNew) {
@@ -452,7 +456,11 @@ exports.Sites.prototype.writeSiteConfig = function(requestData) {
     }
 
     // write site config to file
-    this.sites[siteData.handle] = siteData;
+    this.sites[siteData.handle] = {
+        handle: siteData.handle,
+        config: siteData,
+        jobs: []
+    };
 
     var isNew = !fs.existsSync(siteConfigPath);
 
@@ -470,12 +478,12 @@ exports.Sites.prototype.updateSiteConfig = function(handle, changes) {
         siteData = this.sites[handle],
         create_user;
 
-    _.extend(siteData, changes);
+    _.extend(siteData.config, changes);
 
-    create_user = siteData.create_user;
-    delete siteData.create_user;
+    create_user = siteData.config.create_user;
+    delete siteData.config.create_user;
 
-    fs.writeFileSync(filename, JSON.stringify(this.sites[handle], null, 4));
+    fs.writeFileSync(filename, JSON.stringify(this.sites[handle].config, null, 4));
 
     if (create_user) {
         siteData.create_user = create_user;
