@@ -147,21 +147,14 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             // Restart nginx
             me.emit('siteUpdated', siteData);
 
-            // Init / clean jobs
-            if (typeof(site['jobs']) == 'undefined') {
-                site['jobs'] = {};
-            } else {
-                cleanJobs(site['jobs']);
-            }
-
             // Create uid
             var uid = Math.floor((Math.random() * 100000));
-            while (Object.keys(site['jobs']).indexOf(uid) !== -1) {
+            while (Object.keys(site.jobs).indexOf(uid) !== -1) {
                 uid =  Math.floor((Math.random() * 100000));
             }
 
             // Init maintenance job
-            site['jobs'][uid] = {
+            site.jobs[uid] = {
                 'uid': uid,
                 'status': 'pending',
                 'completed': null,
@@ -175,13 +168,13 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             console.log(site);
 
             // Emit maintence request with job
-            me.emit('maintenanceRequested', site['jobs'][uid], request.path[1]);
+            me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
 
             response.writeHead(200, {'Content-Type':'application/json'});
             response.end(JSON.stringify({
                 success: true,
                 message: 'Processed patch request',
-                job: site['jobs'][uid]
+                job: site.jobs[uid]
             }));
             return;
         }
@@ -282,21 +275,14 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log('Received maintenance request for ' + request.path[1]);
                     console.log(requestData);
 
-                    // Init / clean jobs
-                    if (typeof(site['jobs']) == 'undefined') {
-                        site['jobs'] = {};
-                    } else {
-                        cleanJobs(site['jobs']);
-                    }
-
                     // Create uid
                     var uid = Math.floor((Math.random() * 100000));
-                    while (Object.keys(site['jobs']).indexOf(uid) !== -1) {
+                    while (Object.keys(site.jobs).indexOf(uid) !== -1) {
                         uid =  Math.floor((Math.random() * 100000));
                     }
 
                     // Init job
-                    site['jobs'][uid] = {
+                    site.jobs[uid] = {
                         'uid': uid,
                         'status': 'pending',
                         'completed': null,
@@ -304,16 +290,16 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     };
 
                     console.log('Added new job');
-                    console.log(site['jobs'][uid]);
+                    console.log(site.jobs[uid]);
 
                     // Emit maintence request with job
-                    me.emit('maintenanceRequested', site['jobs'][uid], request.path[1]);
+                    me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
 
                     response.writeHead(200, {'Content-Type':'application/json'});
                     response.end(JSON.stringify({
                         success: true,
                         message: 'maintenance request initiated',
-                        job: site['jobs'][uid]
+                        job: site.jobs[uid]
                     }));
                     return true;
 
