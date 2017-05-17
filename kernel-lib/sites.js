@@ -42,7 +42,7 @@ exports.Sites = function(config) {
             me.sites[handle] = {
                 handle: handle,
                 config: JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii')),
-                jobs: []
+                jobs: {}
             };
             console.log('-Loaded: '+me.sites[handle].primary_hostname);
         } catch (error) {
