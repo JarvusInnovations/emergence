@@ -168,7 +168,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             console.log('Added new job');
             console.log(site.jobs);
 
-            // Emit maintence request with job
+            // Emit maintenance request with job
             me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
 
             response.writeHead(200, {'Content-Type':'application/json'});
@@ -194,8 +194,60 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             requestData = request.content;
         }
 
+        // handle bulk maintenance request
+        if (request.path[1] == 'maintenance') {
+
+            console.log('Received bulk maintenance request');
+            console.log(requestData);
+
+            var uid, newJobs = [];
+
+            for (a=0; a<requestData.length; a++) {
+
+                // Find site by handle
+                site = me.sites[requestData[a].handle];
+
+                if (!site) {
+                    console.error('Site not found: ' + me.sites[requestData[a].handle]);
+                    continue;
+                }
+
+                // Prune jobs
+                pruneJobs(site.jobs);
+
+                // Create uid
+                uid = uuidV1();
+
+                // Init job
+                site.jobs[uid] = {
+                    'uid': uid,
+                    'handle': requestData[a].handle,
+                    'status': 'pending',
+                    'received': new Date().getTime(),
+                    'started': null,
+                    'completed': null,
+                    'command': requestData[a],
+                };
+
+                // Append new job
+                newJobs.push(site.jobs[uid]);
+                console.log('Added new job');
+                console.log(site.jobs[uid]);
+
+                // Emit maintenance request with job
+                me.emit('maintenanceRequested', site.jobs[uid], requestData[a].handle);
+            }
+
+            response.writeHead(200, {'Content-Type':'application/json'});
+            response.end(JSON.stringify({
+                success: true,
+                message: 'maintenance request initiated',
+                jobs: newJobs
+            }));
+            return true;
+
         // handle post to an individual site
-        if (request.path[1]) {
+        } else if (request.path[1]) {
             site = me.sites[request.path[1]];
 
             if (!site) {
@@ -302,7 +354,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                         console.log('Added new job');
                         console.log(site.jobs[uid]);
 
-                        // Emit maintence request with job
+                        // Emit maintenance request with job
                         me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
                     }
 
@@ -324,6 +376,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
             // apply existing site's properties in
             _.defaults(requestData, site);
+
         }
 
         // create new site
