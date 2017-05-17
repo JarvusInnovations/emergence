@@ -7,7 +7,8 @@ var _ = require('underscore'),
     posix = require('posix'),
     spawn = require('child_process').spawn,
     hostile = require('hostile'),
-    phpShellScript = path.resolve(__dirname, '../bin/shell');
+    phpShellScript = path.resolve(__dirname, '../bin/shell'),
+    uuidV1 = require('uuid/v1');
 
 
 exports.createSites = function(config) {
@@ -127,7 +128,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                 siteDir = me.options.sitesDir + '/' + handle,
                 siteConfigPath = siteDir + '/site.json',
                 params = JSON.parse(request.content),
-                siteData, siteDataTmp;
+                siteData, siteDataTmp, uid;
 
             // Get existing site config
             siteData = me.sites[handle];
@@ -148,10 +149,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             me.emit('siteUpdated', siteData);
 
             // Create uid
-            var uid = Math.floor((Math.random() * 100000));
-            while (Object.keys(site.jobs).indexOf(uid) !== -1) {
-                uid =  Math.floor((Math.random() * 100000));
-            }
+            uid = uuidV1();
 
             // Init maintenance job
             site.jobs[uid] = {
@@ -276,10 +274,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log(requestData);
 
                     // Create uid
-                    var uid = Math.floor((Math.random() * 100000));
-                    while (Object.keys(site.jobs).indexOf(uid) !== -1) {
-                        uid =  Math.floor((Math.random() * 100000));
-                    }
+                    var uid = uuidV1();
 
                     // Init job
                     site.jobs[uid] = {
