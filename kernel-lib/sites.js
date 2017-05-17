@@ -166,7 +166,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             };
 
             console.log('Added new job');
-            console.log(site);
+            console.log(site.jobs);
 
             // Emit maintence request with job
             me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
@@ -276,33 +276,40 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log('Received maintenance request for ' + request.path[1]);
                     console.log(requestData);
 
+                    var uid, newJobs = [];
+
                     // Prune jobs
                     pruneJobs(site.jobs);
 
-                    // Create uid
-                    var uid = uuidV1();
+                    for (i=0; i<requestData.length; i++) {
 
-                    // Init job
-                    site.jobs[uid] = {
-                        'uid': uid,
-                        'status': 'pending',
-                        'received': new Date().getTime(),
-                        'started': null,
-                        'completed': null,
-                        'command': requestData
-                    };
+                        // Create uid
+                        uid = uuidV1();
 
-                    console.log('Added new job');
-                    console.log(site.jobs[uid]);
+                        // Init job
+                        site.jobs[uid] = {
+                            'uid': uid,
+                            'status': 'pending',
+                            'received': new Date().getTime(),
+                            'started': null,
+                            'completed': null,
+                            'command': requestData[i]
+                        };
 
-                    // Emit maintence request with job
-                    me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
+                        // Append new job
+                        newJobs.push(site.jobs[uid]);
+                        console.log('Added new job');
+                        console.log(site.jobs[uid]);
+
+                        // Emit maintence request with job
+                        me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
+                    }
 
                     response.writeHead(200, {'Content-Type':'application/json'});
                     response.end(JSON.stringify({
                         success: true,
                         message: 'maintenance request initiated',
-                        job: site.jobs[uid]
+                        jobs: newJobs
                     }));
                     return true;
 
