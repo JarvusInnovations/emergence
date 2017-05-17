@@ -15,6 +15,9 @@ switch ($data['job']['command']['action'])
     case 'cache':
         $data['job']['command']['result'] = handleCacheRequest($command, $data['handle'], $data['siteRoot']);
         break;
+    case 'config-reload':
+        $data['job']['command']['result'] = handleConfigReload($command, $data['handle'], $data['siteRoot']);
+        break;
     case 'vfs-update':
         $data['job']['command']['result'] = handleVFSUpdateRequest($command, $data['handle'], $data['siteRoot']);
         break;
@@ -32,11 +35,7 @@ function handleCacheRequest($command, $handle, $siteRoot)
 {
     // Raw delete
     if (!empty($command['remove'])) {
-        if ($command['remove'] == '##SiteRoot##') {
-            Cache::rawDelete($siteRoot);
-        } else {
-            Cache::rawDelete($handle . ':' . $command['remove']);
-        }
+        Cache::rawDelete($handle . ':' . $command['remove']);
     }
 
     // Pattern delete
@@ -57,6 +56,13 @@ function handleCacheRequest($command, $handle, $siteRoot)
         );
     }
 
+    return true;
+}
+
+// Remove the site config cache
+function handleConfigReload($command, $handle, $siteRoot)
+{
+    Cache::rawDelete($siteRoot);
     return true;
 }
 

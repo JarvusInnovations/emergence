@@ -161,8 +161,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                 'started': null,
                 'completed': null,
                 'command': {
-                    'action': 'cache',
-                    'remove': '##SiteRoot##'
+                    'action': 'config-reload'
                 }
             };
 
