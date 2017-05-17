@@ -133,6 +133,9 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             // Get existing site config
             siteData = me.sites[handle];
 
+            // Prune jobs
+            pruneJobs(siteData.jobs);
+
             // Apply updates except handle
             for (var k in params) {
                 if (k !== 'handle') {
@@ -273,6 +276,9 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log('Received maintenance request for ' + request.path[1]);
                     console.log(requestData);
 
+                    // Prune jobs
+                    pruneJobs(site.jobs);
+
                     // Create uid
                     var uid = uuidV1();
 
@@ -367,13 +373,17 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 };
 
 // Clean up completed jobs
-cleanJobs = function(jobs) {
+function pruneJobs(jobs) {
     var jobKeys = Object.keys(jobs),
         cutoffTime = new Date().getTime() - (60 * 60 * 1000); // 1 hour ago
 
     for (i=0; i<jobKeys.length; i++) {
         if (jobs[jobKeys[i]].completed && jobs[jobKeys[i]].completed < cutoffTime) {
-            console.log('Remove job');
+            console.log('Remove completed job');
+            console.log(jobs[jobKeys[i]]);
+            delete jobs[jobKeys[i]];
+        } else if (jobs[jobKeys[i]].status == 'failed' && jobs[jobKeys[i]].received < cutoffTime) {
+            console.log('Remove failed job');
             console.log(jobs[jobKeys[i]]);
             delete jobs[jobKeys[i]];
         }
