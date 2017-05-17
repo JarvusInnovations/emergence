@@ -3,7 +3,9 @@ var _ = require('underscore'),
     path = require('path'),
     util = require('util'),
     spawn = require('child_process').spawn,
-    phpfpm = require('node-phpfpm');
+    phpfpm = require('node-phpfpm'),
+    async = require('async'),
+    maintenenceQueue;
 
 exports.createService = function(name, controller, options) {
     return new exports.PhpFpmService(name, controller, options);
@@ -196,9 +198,9 @@ exports.PhpFpmService.prototype.makeConfig = function() {
     return config.join('\n');
 };
 
-exports.PhpFpmService.prototype.onMaintenanceRequested = function(job, handle) {
-    var me = this,
-        siteRoot = me.controller.sites.options.sitesDir + '/' + handle,
+maintenenceQueue = async.queue(function(data, callback) {
+        var me = data.scope,
+        siteRoot = me.controller.sites.options.sitesDir + '/' + data.job.handle,
         phpClient;
 
     // Connect to FPM worker pool
@@ -207,24 +209,43 @@ exports.PhpFpmService.prototype.onMaintenanceRequested = function(job, handle) {
         documentRoot: me.options.bootstrapDir + '/'
     });
 
+    // Mark job as started
+    data.job.started = new Date().getTime();
+
     // Run maintenance request
     phpClient.run({
         uri: 'maintenance.php',
         json: {
-            'job': job,
-            'handle': handle,
+            'job': data.job,
+            'handle': data.job.handle,
             'siteRoot': siteRoot
         }
-    }, function(err, output, phpErrors) {
-        if (err == 99) console.error('PHPFPM server error');
-        if (phpErrors) console.error(phpErrors);
+    }, function(err, output, stderr) {
+        if (err == 99) {
+            data.job.status = 'failed';
+            data.job.message = 'PHPFPM server error';
+            console.error(data.job.message);
+            return callback(err);
+        }
+        if (stderr) {
+            data.job.status = 'failed';
+            data.job.message = stderr;
+            console.error(stderr);
+            return callback(stderr);
+        }
 
         // Parse job response
         var response = JSON.parse(output);
 
         // Update job with response
-        job.commands = response.commands;
-        job.status = 'completed';
-        job.completed = new Date().getTime();
+        data.job.command = response.command;
+        data.job.status = 'completed';
+        data.job.completed = new Date().getTime();
+
+        callback(null, data.job);
     });
+}, 5);
+
+exports.PhpFpmService.prototype.onMaintenanceRequested = function(job) {
+    maintenenceQueue.push({'job': job, 'scope': this});
 }

@@ -155,6 +155,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             // Init maintenance job
             site.jobs[uid] = {
                 'uid': uid,
+                'handle': request.path[1],
                 'status': 'pending',
                 'received': new Date().getTime(),
                 'started': null,
@@ -289,11 +290,12 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                         // Init job
                         site.jobs[uid] = {
                             'uid': uid,
+                            'handle': request.path[1],
                             'status': 'pending',
                             'received': new Date().getTime(),
                             'started': null,
                             'completed': null,
-                            'command': requestData[i]
+                            'command': requestData[i],
                         };
 
                         // Append new job

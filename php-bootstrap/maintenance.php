@@ -10,20 +10,17 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-foreach ($data['job']['commands'] as &$command) {
-
-    switch ($command['action'])
-    {
-        case 'cache':
-            $command['result'] = handleCacheRequest($command, $data['handle'], $data['siteRoot']);
-            break;
-        case 'vfs-update':
-            $command['result'] = handleVFSUpdateRequest($command, $data['handle'], $data['siteRoot']);
-            break;
-        case 'vfs-summary':
-            $command['result'] = handleVFSSummaryRequest($command, $data['handle'], $data['siteRoot']);
-            break;
-    }
+switch ($data['job']['command']['action'])
+{
+    case 'cache':
+        $data['job']['command']['result'] = handleCacheRequest($command, $data['handle'], $data['siteRoot']);
+        break;
+    case 'vfs-update':
+        $data['job']['command']['result'] = handleVFSUpdateRequest($command, $data['handle'], $data['siteRoot']);
+        break;
+    case 'vfs-summary':
+        $data['job']['command']['result'] = handleVFSSummaryRequest($command, $data['handle'], $data['siteRoot']);
+        break;
 }
 
 // Return results
