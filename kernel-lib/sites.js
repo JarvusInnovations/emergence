@@ -136,14 +136,12 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             // Apply updates except handle
             for (var k in params) {
                 if (k !== 'handle') {
-                    siteData[k] = params[k];
+                    siteData.config[k] = params[k];
                 }
             }
 
-            // Clone site data and remove jobs before writing sitedata to disk
-            siteDataTmp = JSON.parse(JSON.stringify(siteData));
-            delete siteDataTmp.jobs;
-            fs.writeFileSync(siteConfigPath, JSON.stringify(siteDataTmp, null, 4));
+            // Update config file
+            fs.writeFileSync(siteConfigPath, JSON.stringify(siteData.config, null, 4));
 
             // Restart nginx
             me.emit('siteUpdated', siteData);
@@ -155,11 +153,13 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             site.jobs[uid] = {
                 'uid': uid,
                 'status': 'pending',
+                'received': new Date().getTime(),
+                'started': null,
                 'completed': null,
-                'commands': [{
+                'command': {
                     'action': 'cache',
                     'remove': '##SiteRoot##'
-                }]
+                }
             };
 
             console.log('Added new job');
@@ -280,8 +280,10 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     site.jobs[uid] = {
                         'uid': uid,
                         'status': 'pending',
+                        'received': new Date().getTime(),
+                        'started': null,
                         'completed': null,
-                        'commands': requestData
+                        'command': requestData
                     };
 
                     console.log('Added new job');
