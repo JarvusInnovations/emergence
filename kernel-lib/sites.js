@@ -441,10 +441,19 @@ exports.Sites.prototype.handleJobsRequest = function(request, response, server) 
         return true;
     }
 
+    // Get all jobs
+    var jobs = {};
+    for (var handle in me.sites) {
+        if (Object.keys(me.sites[handle].jobs).length > 0) {
+            jobs[handle] = me.sites[handle].jobs;
+        }
+    }
+
     response.writeHead(200, {'Content-Type':'application/json'});
     response.end(JSON.stringify({
-        success: false,
-        message: 'post job request'
+        success: true,
+        message: 'get active jobs',
+        jobs: jobs
     }));
     return true;
 }
