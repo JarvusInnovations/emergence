@@ -158,6 +158,7 @@ var eServices = require('../kernel-lib/services.js').createServices(eSites, CONF
 // instantiate management server
 var eManagementServer = require('../kernel-lib/server.js').createServer({
     sites: eSites,
+    jobs: eSites.handleJobsRequest.bind(eSites),
     services: eServices
 }, CONFIG);
 

@@ -194,60 +194,8 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             requestData = request.content;
         }
 
-        // handle bulk maintenance request
-        if (request.path[1] == 'maintenance') {
-
-            console.log('Received bulk maintenance request');
-            console.log(requestData);
-
-            var uid, newJobs = [];
-
-            for (a=0; a<requestData.length; a++) {
-
-                // Find site by handle
-                site = me.sites[requestData[a].handle];
-
-                if (!site) {
-                    console.error('Site not found: ' + me.sites[requestData[a].handle]);
-                    continue;
-                }
-
-                // Prune jobs
-                pruneJobs(site.jobs);
-
-                // Create uid
-                uid = uuidV1();
-
-                // Init job
-                site.jobs[uid] = {
-                    'uid': uid,
-                    'handle': requestData[a].handle,
-                    'status': 'pending',
-                    'received': new Date().getTime(),
-                    'started': null,
-                    'completed': null,
-                    'command': requestData[a],
-                };
-
-                // Append new job
-                newJobs.push(site.jobs[uid]);
-                console.log('Added new job');
-                console.log(site.jobs[uid]);
-
-                // Emit maintenance request with job
-                me.emit('maintenanceRequested', site.jobs[uid], requestData[a].handle);
-            }
-
-            response.writeHead(200, {'Content-Type':'application/json'});
-            response.end(JSON.stringify({
-                success: true,
-                message: 'maintenance request initiated',
-                jobs: newJobs
-            }));
-            return true;
-
         // handle post to an individual site
-        } else if (request.path[1]) {
+        if (request.path[1]) {
             site = me.sites[request.path[1]];
 
             if (!site) {
@@ -432,6 +380,74 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
     return false;
 };
+
+// handle bulk maintenance request
+exports.Sites.prototype.handleJobsRequest = function(request, response, server) {
+    var me = this;
+
+    console.log('Received bulk job request');
+
+    if (request.method == 'POST') {
+        var requestData, cfgResult, phpProc, phpProcInitialized, site, uid, newJobs = [];
+
+        if (request.headers['content-type'] == 'application/json') {
+            requestData = JSON.parse(request.content);
+        } else {
+            requestData = request.content;
+        }
+
+        for (a=0; a<requestData.length; a++) {
+
+            // Find site by handle
+            site = me.sites[requestData[a].handle];
+
+            if (!site) {
+                console.error('Site not found: ' + me.sites[requestData[a].handle]);
+                continue;
+            }
+
+            // Prune jobs
+            pruneJobs(site.jobs);
+
+            // Create uid
+            uid = uuidV1();
+
+            // Init job
+            site.jobs[uid] = {
+                'uid': uid,
+                'handle': requestData[a].handle,
+                'status': 'pending',
+                'received': new Date().getTime(),
+                'started': null,
+                'completed': null,
+                'command': requestData[a],
+            };
+
+            // Append new job
+            newJobs.push(site.jobs[uid]);
+            console.log('Added new job');
+            console.log(site.jobs[uid]);
+
+            // Emit maintenance request with job
+            me.emit('maintenanceRequested', site.jobs[uid], requestData[a].handle);
+        }
+
+        response.writeHead(200, {'Content-Type':'application/json'});
+        response.end(JSON.stringify({
+            success: true,
+            message: 'maintenance request initiated',
+            jobs: newJobs
+        }));
+        return true;
+    }
+
+    response.writeHead(200, {'Content-Type':'application/json'});
+    response.end(JSON.stringify({
+        success: false,
+        message: 'post job request'
+    }));
+    return true;
+}
 
 // Clean up completed jobs
 function pruneJobs(jobs) {
