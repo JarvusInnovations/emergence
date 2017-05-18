@@ -235,12 +235,20 @@ jobQueue = async.queue(function(data, callback) {
         }
 
         // Parse job response
-        var response = JSON.parse(output);
+        try {
+            var response = JSON.parse(output);
 
-        // Update job with response
-        data.job.command = response.command;
-        data.job.status = 'completed';
-        data.job.completed = new Date().getTime();
+            // Update job with response
+            data.job.command = response.command;
+            data.job.status = 'completed';
+            data.job.completed = new Date().getTime();
+
+        } catch(e) {
+            data.job.status = 'failed';
+            data.job.message = 'PHPFPM server error';
+            console.error(output);
+            return callback(ouput);
+        }
 
         callback(null, data.job);
     });
