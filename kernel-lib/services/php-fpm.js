@@ -5,7 +5,7 @@ var _ = require('underscore'),
     spawn = require('child_process').spawn,
     phpfpm = require('node-phpfpm'),
     async = require('async'),
-    maintenenceQueue;
+    jobQueue;
 
 exports.createService = function(name, controller, options) {
     return new exports.PhpFpmService(name, controller, options);
@@ -46,8 +46,8 @@ exports.PhpFpmService = function(name, controller, options) {
         me.status = 'online';
     }
 
-    // listen for maintenance requests
-    controller.sites.on('maintenanceRequested', _.bind(me.onMaintenanceRequested, me));
+    // listen for job requests
+    controller.sites.on('jobRequested', _.bind(me.onJobRequested, me));
 };
 
 util.inherits(exports.PhpFpmService, require('./abstract.js').AbstractService);
@@ -198,7 +198,7 @@ exports.PhpFpmService.prototype.makeConfig = function() {
     return config.join('\n');
 };
 
-maintenenceQueue = async.queue(function(data, callback) {
+jobQueue = async.queue(function(data, callback) {
         var me = data.scope,
         siteRoot = me.controller.sites.options.sitesDir + '/' + data.job.handle,
         phpClient;
@@ -212,9 +212,9 @@ maintenenceQueue = async.queue(function(data, callback) {
     // Mark job as started
     data.job.started = new Date().getTime();
 
-    // Run maintenance request
+    // Run job request
     phpClient.run({
-        uri: 'maintenance.php',
+        uri: 'job.php',
         json: {
             'job': data.job,
             'handle': data.job.handle,
@@ -246,6 +246,6 @@ maintenenceQueue = async.queue(function(data, callback) {
     });
 }, 5);
 
-exports.PhpFpmService.prototype.onMaintenanceRequested = function(job) {
-    maintenenceQueue.push({'job': job, 'scope': this});
+exports.PhpFpmService.prototype.onJobRequested = function(job) {
+    jobQueue.push({'job': job, 'scope': this});
 }

@@ -72,15 +72,15 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             }
 
             if (request.path[2]) {
-                if (request.path[2] == 'maintenance') {
-                    console.log('Received maintenance GET request for ' + request.path[1]);
+                if (request.path[2] == 'jobs') {
+                    console.log('Received jobs GET request for ' + request.path[1]);
                     response.writeHead(200, {'Content-Type':'application/json'});
 
                     // Return specific uid
                     if (request.path[3]) {
                         response.end(JSON.stringify({
                             success: true,
-                            message: 'Maintenance get request finished',
+                            message: 'Jobs get request finished',
                             jobs: (site.jobs[request.path[3]]) ? site.jobs[request.path[3]] : false
                         }));
                         return true;
@@ -89,7 +89,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     } else {
                         response.end(JSON.stringify({
                             success: true,
-                            message: 'Maintenance get request finished',
+                            message: 'Jobs get request finished',
                             jobs: (site.jobs) ? site.jobs : false
                         }));
                         return true;
@@ -152,7 +152,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             // Create uid
             uid = uuidV1();
 
-            // Init maintenance job
+            // Init job
             site.jobs[uid] = {
                 'uid': uid,
                 'handle': request.path[1],
@@ -168,8 +168,8 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             console.log('Added new job');
             console.log(site.jobs);
 
-            // Emit maintenance request with job
-            me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
+            // Emit job request
+            me.emit('jobRequested', site.jobs[uid], request.path[1]);
 
             response.writeHead(200, {'Content-Type':'application/json'});
             response.end(JSON.stringify({
@@ -271,9 +271,9 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
                     return true;
 
-                } else if (request.path[2] == 'maintenance') {
+                } else if (request.path[2] == 'jobs') {
 
-                    console.log('Received maintenance request for ' + request.path[1]);
+                    console.log('Received job request for ' + request.path[1]);
                     console.log(requestData);
 
                     var uid, newJobs = [];
@@ -302,14 +302,14 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                         console.log('Added new job');
                         console.log(site.jobs[uid]);
 
-                        // Emit maintenance request with job
-                        me.emit('maintenanceRequested', site.jobs[uid], request.path[1]);
+                        // Emit job request
+                        me.emit('jobRequested', site.jobs[uid], request.path[1]);
                     }
 
                     response.writeHead(200, {'Content-Type':'application/json'});
                     response.end(JSON.stringify({
                         success: true,
-                        message: 'maintenance request initiated',
+                        message: 'job request initiated',
                         jobs: newJobs
                     }));
                     return true;
@@ -381,7 +381,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
     return false;
 };
 
-// handle bulk maintenance request
+// handle bulk job request
 exports.Sites.prototype.handleJobsRequest = function(request, response, server) {
     var me = this;
 
@@ -428,14 +428,14 @@ exports.Sites.prototype.handleJobsRequest = function(request, response, server) 
             console.log('Added new job');
             console.log(site.jobs[uid]);
 
-            // Emit maintenance request with job
-            me.emit('maintenanceRequested', site.jobs[uid], requestData[a].handle);
+            // Emit job request with job
+            me.emit('jobRequested', site.jobs[uid], requestData[a].handle);
         }
 
         response.writeHead(200, {'Content-Type':'application/json'});
         response.end(JSON.stringify({
             success: true,
-            message: 'maintenance request initiated',
+            message: 'bulk job request initiated',
             jobs: newJobs
         }));
         return true;
