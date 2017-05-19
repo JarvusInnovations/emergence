@@ -90,7 +90,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                         response.end(JSON.stringify({
                             success: true,
                             message: 'Jobs get request finished',
-                            jobs: (site.jobs) ? site.jobs : false
+                            jobs: site.jobs
                         }));
                         return true;
                     }
@@ -538,7 +538,7 @@ exports.Sites.prototype.writeSiteConfig = function(requestData) {
     this.sites[siteData.handle] = {
         handle: siteData.handle,
         config: siteData,
-        jobs: []
+        jobs: {}
     };
 
     var isNew = !fs.existsSync(siteConfigPath);
