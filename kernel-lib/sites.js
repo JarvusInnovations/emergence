@@ -45,7 +45,7 @@ exports.Sites = function(config) {
                 config: JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii')),
                 jobs: {}
             };
-            console.log('-Loaded: '+me.sites[handle].primary_hostname);
+            console.log('-Loaded: '+me.sites[handle].config.primary_hostname);
         } catch (error) {
             console.log('-FAILED to load: '+handle);
         }
