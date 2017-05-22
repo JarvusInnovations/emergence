@@ -247,7 +247,7 @@ jobQueue = async.queue(function(data, callback) {
             data.job.status = 'failed';
             data.job.message = 'PHPFPM server error';
             console.error(output);
-            return callback(ouput);
+            return callback(output);
         }
 
         callback(null, data.job);
