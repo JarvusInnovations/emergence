@@ -199,7 +199,7 @@ exports.PhpFpmService.prototype.makeConfig = function() {
 };
 
 jobQueue = async.queue(function(data, callback) {
-        var me = data.scope,
+    var me = data.scope,
         siteRoot = me.controller.sites.options.sitesDir + '/' + data.job.handle,
         phpClient;
 
