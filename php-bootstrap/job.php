@@ -1,5 +1,7 @@
 <?php
 
+set_time_limit(0);
+
 // bootstrap emergence
 require('bootstrap.inc.php');
 
@@ -72,7 +74,7 @@ function handleVFSSummaryRequest($command, $handle, $siteRoot)
     // Initialize site for Emergence FS commands
     Site::initialize($siteRoot);
 
-    // Update the file system
+    // Get file system summary
     return getFileSystemSummary($command['cursor']);
 }
 
