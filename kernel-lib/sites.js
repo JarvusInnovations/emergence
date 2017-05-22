@@ -294,7 +294,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                             'received': new Date().getTime(),
                             'started': null,
                             'completed': null,
-                            'command': requestData[i],
+                            'command': requestData[i]
                         };
 
                         // Append new job
@@ -420,7 +420,7 @@ exports.Sites.prototype.handleJobsRequest = function(request, response, server) 
                 'received': new Date().getTime(),
                 'started': null,
                 'completed': null,
-                'command': requestData[a],
+                'command': requestData[a]
             };
 
             // Append new job
