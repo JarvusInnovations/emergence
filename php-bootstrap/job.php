@@ -15,16 +15,16 @@ $data = json_decode(file_get_contents('php://input'), true);
 switch ($data['job']['command']['action'])
 {
     case 'cache':
-        $data['job']['command']['result'] = handleCacheRequest($command, $data['handle'], $data['siteRoot']);
+        $data['job']['command']['result'] = handleCacheRequest($data['job']['command'], $data['handle'], $data['siteRoot']);
         break;
     case 'config-reload':
-        $data['job']['command']['result'] = handleConfigReload($command, $data['handle'], $data['siteRoot']);
+        $data['job']['command']['result'] = handleConfigReload($data['job']['command'], $data['handle'], $data['siteRoot']);
         break;
     case 'vfs-update':
-        $data['job']['command']['result'] = handleVFSUpdateRequest($command, $data['handle'], $data['siteRoot']);
+        $data['job']['command']['result'] = handleVFSUpdateRequest($data['job']['command'], $data['handle'], $data['siteRoot']);
         break;
     case 'vfs-summary':
-        $data['job']['command']['result'] = handleVFSSummaryRequest($command, $data['handle'], $data['siteRoot']);
+        $data['job']['command']['result'] = handleVFSSummaryRequest($data['job']['command'], $data['handle'], $data['siteRoot']);
         break;
 }
 
@@ -85,7 +85,7 @@ function handleVFSUpdateRequest($command, $handle, $siteRoot)
     Site::initialize($siteRoot);
 
     // Update the file system
-    return updateFileSystem($handle, $command['cursor'], $siteRoot);
+    return updateFileSystem($handle, $command['cursor']);
 }
 
 function updateFileSystem($handle, $cursor = 0)
@@ -128,7 +128,7 @@ function getFileSystemSummary($cursor = 0)
     $localKeys = array_keys($localFiles);
 
     // Get parent files / keys
-    $parentVFSUrl = Emergence::buildUrl();
+    $parentVFSUrl = Emergence::buildUrl([], ['minId' => $cursor]);
     $curl = curl_init();
     curl_setopt_array($curl, array(
         CURLOPT_RETURNTRANSFER => 1,
