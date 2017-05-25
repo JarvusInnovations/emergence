@@ -75,7 +75,7 @@ function handleVFSSummaryRequest($command, $handle, $siteRoot)
     Site::initialize($siteRoot);
 
     // Get file system summary
-    return getFileSystemSummary($command['cursor']);
+    return getFileSystemSummary(intval($command['cursor']));
 }
 
 // Run full update of vfs
@@ -85,7 +85,7 @@ function handleVFSUpdateRequest($command, $handle, $siteRoot)
     Site::initialize($siteRoot);
 
     // Update the file system
-    return updateFileSystem($handle, $command['cursor']);
+    return updateFileSystem($handle, intval($command['cursor']));
 }
 
 function updateFileSystem($handle, $cursor = 0)
@@ -94,7 +94,7 @@ function updateFileSystem($handle, $cursor = 0)
     \Site::$autoPull = true;
 
     // Get update summary
-    $summary = getFileSystemSummary($cursor);
+    $summary = getFileSystemSummary(intval($cursor));
 
     // Precache files
     foreach ($summary['new'] as $path) {
@@ -128,7 +128,11 @@ function getFileSystemSummary($cursor = 0)
     $localKeys = array_keys($localFiles);
 
     // Get parent files / keys
-    $parentVFSUrl = Emergence::buildUrl([], ['minId' => $cursor]);
+    $parentVFSUrl = Emergence::buildUrl([], [
+        'minId' => $cursor,
+        'exclude' => 'sencha-workspace/(ext|touch)-.*'
+    ]);
+
     $curl = curl_init();
     curl_setopt_array($curl, array(
         CURLOPT_RETURNTRANSFER => 1,
