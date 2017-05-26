@@ -130,6 +130,7 @@ function getFileSystemSummary($cursor = 0)
     // Get parent files / keys
     $parentVFSUrl = Emergence::buildUrl([], [
         'minId' => $cursor,
+        'includeDeleted' => 1,
         'exclude' => 'sencha-workspace/(ext|touch)-.*'
     ]);
 

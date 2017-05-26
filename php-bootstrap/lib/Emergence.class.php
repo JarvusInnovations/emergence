@@ -24,6 +24,9 @@ class Emergence
             if (!empty($_REQUEST['exclude'])) {
                 $remoteParams['exclude'] = $_REQUEST['exclude'];
             }
+            if (!empty($_REQUEST['includeDeleted'])) {
+                $remoteParams['includeDeleted'] = true;
+            }
             if (!empty($_REQUEST['minId'])) {
                 $remoteParams['minId'] = $_REQUEST['minId'];
             }
@@ -82,13 +85,16 @@ class Emergence
             }
         }
 
+        // set include deleted
+        $includeDeleted = !empty($_REQUEST['includeDeleted']);
+
         // set minimum id
         if (!empty($_REQUEST['minId'])) {
             $fileConditions[] = 'ID > ' . intval($_REQUEST['minId']);
         }
 
         // get files
-        $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions);
+        $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions, $includeDeleted);
 
         header('HTTP/1.1 300 Multiple Choices');
         header('Content-Type: application/vnd.emergence.tree+json');
