@@ -21,6 +21,7 @@ pkg_deps=(
   core/zlib
 )
 pkg_build_deps=(
+  core/autoconf
   core/bison2
   core/gcc
   core/make
@@ -31,15 +32,43 @@ pkg_lib_dirs=(lib)
 pkg_include_dirs=(include)
 pkg_interpreters=(bin/php)
 
+apcu_version=5.1.8
+apcu_source=https://github.com/krakjoe/apcu/archive/v${apcu_version}.tar.gz
+apcu_filename=apcu-${apcu_version}.tar.gz
+apcu_shasum=09848619674a0871053cabba3907d2aade395772d54464d3aee45f519e217128
+apcu_dirname=apcu-${apcu_version}
+
+do_download() {
+  do_default_download
+
+  download_file $apcu_source $apcu_filename $apcu_shasum
+}
+
+do_verify() {
+  do_default_verify
+
+  verify_file $apcu_filename $apcu_shasum
+}
+
+do_unpack() {
+  do_default_unpack
+
+  unpack_file $apcu_filename
+  mv "$HAB_CACHE_SRC_PATH/$apcu_dirname" "$HAB_CACHE_SRC_PATH/$pkg_dirname/ext/apcu"
+}
+
 do_build() {
+  rm aclocal.m4
+  ./buildconf --force
+
   ./configure --prefix="$pkg_prefix" \
     --enable-exif \
     --enable-fpm \
     --with-fpm-user=hab \
     --with-fpm-group=hab \
+    --enable-apcu \
     --enable-mbstring \
     --enable-opcache \
-    --with-mysql=mysqlnd \
     --with-mysqli=mysqlnd \
     --with-pdo-mysql=mysqlnd \
     --with-curl="$(pkg_path_for curl)" \
