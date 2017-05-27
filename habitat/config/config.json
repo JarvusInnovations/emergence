@@ -1,0 +1,23 @@
+{
+    "user": "{{pkg.svc_user}}",
+    "group": "{{pkg.svc_group}}",
+    "server": {
+        "host": "{{cfg.kernel.host}}"
+    },
+    "services": {
+        "web": {
+            "type": "nginx",
+            "execPath": "{{pkgPathFor "core/nginx"}}/bin/nginx",
+            "bindHost": "{{cfg.web.host}}"
+        },
+        "sql": {
+            "type": "mariadb",
+            "execPath": "{{pkgPathFor "core/mariadb"}}/bin/mysqld",
+            "bindHost": "{{cfg.sql.host}}"
+        },
+        "php": {
+            "type": "php-fpm",
+            "execPath": "{{pkgPathFor "core/php"}}/sbin/php-fpm"
+        }
+    }
+}
