@@ -135,7 +135,7 @@ pkg_shasum="TODO"
 
 # Required for core plans, optional otherwise.
 # The project home page for the package.
-# pkg_upstream_url="http://example.com/project-name"
+pkg_upstream_url="https://github.com/JarvusInnovations/emergence"
 
 pkg_scaffolding=core/scaffolding-node
 
