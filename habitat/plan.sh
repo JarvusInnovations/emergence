@@ -25,13 +25,6 @@ pkg_version="0.1.0"
 # Please choose a license from http://spdx.org/licenses/
 # pkg_license=('Apache-2.0')
 
-# Required.
-# A URL that specifies where to download the source from. Any valid wget url
-# will work. Typically, the relative path for the URL is partially constructed
-# from the pkg_name and pkg_version values; however, this convention is not
-# required.
-pkg_source="http://some_source_url/releases/${pkg_name}-${pkg_version}.tar.gz"
-
 # Optional.
 # The resulting filename for the download, typically constructed from the
 # pkg_name and pkg_version values.
