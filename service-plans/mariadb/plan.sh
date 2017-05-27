@@ -1,5 +1,5 @@
 pkg_name=mariadb
-pkg_origin=core
+pkg_origin=emergence
 pkg_version=10.1.18
 pkg_description="An open source monitoring software for networks and applications"
 pkg_maintainer="The Habitat Maintainers <humans@habitat.sh>"
