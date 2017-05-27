@@ -28,5 +28,8 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/JarvusInnovations/Emergence.git"
+    },
+    "scripts": {
+        "start": "node bin/kernel"
     }
 }
