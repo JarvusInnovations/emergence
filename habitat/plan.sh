@@ -144,6 +144,8 @@ pkg_shasum="TODO"
 # The project home page for the package.
 # pkg_upstream_url="http://example.com/project-name"
 
+pkg_scaffolding=core/scaffolding-node
+
 
 # Callback Functions
 #
