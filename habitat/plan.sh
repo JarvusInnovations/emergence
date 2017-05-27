@@ -46,7 +46,11 @@ pkg_shasum="TODO"
 
 # Optional.
 # An array of the package dependencies needed only at build time.
-# pkg_build_deps=(core/make core/gcc)
+pkg_build_deps=(
+  core/make
+  core/gcc
+  core/python2
+)
 
 # Optional.
 # An array of paths, relative to the final install of the software, where
