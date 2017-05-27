@@ -1,6 +1,6 @@
 pkg_name=php
 pkg_distname=php
-pkg_origin=core
+pkg_origin=emergence
 pkg_version=7.1.4
 pkg_maintainer="The Habitat Maintainers <humans@habitat.sh>"
 pkg_license=('PHP-3.01')
