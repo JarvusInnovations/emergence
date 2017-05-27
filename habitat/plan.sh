@@ -42,7 +42,11 @@ pkg_shasum="TODO"
 # An array of package dependencies needed at runtime. You can refer to packages
 # at three levels of specificity: `origin/package`, `origin/package/version`, or
 # `origin/package/version/release`.
-# pkg_deps=(core/glibc)
+pkg_deps=(
+  core/mariadb
+  core/php
+  core/nginx
+)
 
 # Optional.
 # An array of the package dependencies needed only at build time.
