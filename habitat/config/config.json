@@ -7,17 +7,16 @@
     "services": {
         "web": {
             "type": "nginx",
-            "execPath": "{{pkgPathFor "core/nginx"}}/bin/nginx",
+            "packagePath": "{{pkgPathFor "emergence/nginx"}}",
             "bindHost": "{{cfg.web.host}}"
         },
         "sql": {
             "type": "mariadb",
-            "execPath": "{{pkgPathFor "core/mariadb"}}/bin/mysqld",
-            "bindHost": "{{cfg.sql.host}}"
+            "packagePath": "{{pkgPathFor "emergence/mariadb"}}"
         },
         "php": {
             "type": "php-fpm",
-            "execPath": "{{pkgPathFor "core/php"}}/sbin/php-fpm"
+            "packagePath": "{{pkgPathFor "emergence/php"}}"
         }
     }
 }

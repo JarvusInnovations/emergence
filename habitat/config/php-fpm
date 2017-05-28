@@ -1,0 +1,35 @@
+[global]
+pid                                            = {{pkg.svc_var_path}}/run/php-fpm.pid
+error_log                                      = {{pkg.svc_var_path}}/log/php-fpm.err
+
+
+[www]
+user                                           = hab
+group                                          = hab
+catch_workers_output                           = on
+
+listen                                         = {{pkg.svc_var_path}}/run/php-fpm.sock
+listen.owner                                   = {{pkg.svc_user}}
+listen.group                                   = {{pkg.svc_group}}
+
+pm                                             = dynamic
+pm.max_children                                = {{cfg.php.max_children}}
+pm.start_servers                               = {{cfg.php.start_servers}}
+pm.min_spare_servers                           = {{cfg.php.min_spare_servers}}
+pm.max_spare_servers                           = {{cfg.php.max_spare_servers}}
+
+{{~#if cfg.php.status_path}}
+pm.status_path                                 = {{cfg.php.status_path}}
+{{~/if}}
+
+php_admin_flag[short_open_tag]                 = on
+php_admin_value[apc.shm_size]                  = {{cfg.php.shm_size}}
+php_admin_value[apc.shm_segments]              = 1
+php_admin_value[apc.slam_defense]              = 0
+php_admin_value[apc.stat]                      = {{#if cfg.php.stat_scripts}}1{{else}}0{{/if}}
+php_admin_value[opcache.validate_timestamps]   = {{#if cfg.php.stat_scripts}}1{{else}}0{{/if}}
+php_admin_value[upload_max_filesize]           = {{cfg.php.upload_max_filesize}}
+php_admin_value[post_max_size]                 = {{cfg.php.post_max_size}}
+php_admin_value[memory_limit]                  = {{cfg.php.memory_limit}}
+php_admin_value[error_reporting]               = {{cfg.php.error_reporting}}
+php_admin_value[date.timezone]                 = {{cfg.php.timezone}}

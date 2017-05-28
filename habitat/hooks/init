@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# initialize users database
+AUTHFILE="{{pkg.svc_data_path}}/users.htpasswd"
+
+if [ ! -f "$AUTHFILE" ]; then
+    echo "Initializing $AUTHFILE with admin/admin user"
+    echo "admin:{SHA}0DPiKuNIrrVmD8IUCuw1hQxNqZc=" > "$AUTHFILE"
+    chown root:hab "$AUTHFILE"
+    chmod 640 "$AUTHFILE"
+fi
+
+# initialize var directories
+pushd "{{pkg.svc_var_path}}" > /dev/null
+chmod g+rX -R .
+for DIR in log run config tmp tmp/nginx; do
+    if [ ! -d "$DIR" ]; then
+        mkdir "$DIR"
+        chmod 770 "$DIR"
+        chown root:hab "$DIR"
+    fi
+done
+popd > /dev/null
+
+# initialize data directories
+pushd "{{pkg.svc_data_path}}" > /dev/null
+chmod g+rX -R .
+for DIR in sites services; do
+    if [ ! -d "$DIR" ]; then
+        mkdir "$DIR"
+        chmod 770 "$DIR"
+        chown root:hab "$DIR"
+    fi
+done
+popd > /dev/null
+
+# initialize static asset links
+ln -sf "{{pkg.path}}/app/php-bootstrap" "{{pkg.svc_static_path}}/"
+ln -sf "{{pkg.path}}/app/kernel-www" "{{pkg.svc_static_path}}/"

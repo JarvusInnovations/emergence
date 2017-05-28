@@ -6,160 +6,19 @@ var _ = require('underscore'),
     url = require('url'),
     path = require('path'),
     fs = require('fs'),
-    sitesLib = require('../kernel-lib/sites.js');
-
-
-var CONFIG;
-
-if (fs.existsSync('/emergence/config.json')) {
-    // try to load existing kernel config
-
-    CONFIG = JSON.parse(fs.readFileSync('/emergence/config.json', 'ascii'));
-} else {
-    // try to smart-init a new kernel config
-    var issueFile = "",
-        platform = require('os').platform(),
-        distro = platform;
-
-    // detect ubuntu
-    // TODO: find better ways to determine default options than platform detection
-    if (platform == 'linux') {
-        try {
-            issueFile = fs.readFileSync('/etc/issue', 'ascii');
-            if (issueFile.match(/Ubuntu/)) {
-                distro = 'ubuntu';
-            }
-        } catch (err) {
-            // ignore any failure to real /etc/issue and leave platform set to linux
-        }
-    }
-
-    console.log('Initializing new emergence environment for distro="'+distro+'"...');
-
-    if (!fs.existsSync('/emergence')) {
-        fs.mkdirSync('/emergence', '775');
-    }
-
-    CONFIG = {
-        user: distro=='ubuntu' ? 'www-data' : 'nobody',
-        group: distro=='ubuntu' ? 'www-data' : 'nobody',
-
-        server: {
-            host: "0.0.0.0"
-        },
-        services: {
-            plugins: { }
-        }
-    };
-
-
-
-
-    // detect nginx
-    if (fs.existsSync('/usr/sbin/nginx')) {
-        CONFIG.services.plugins.web = {
-            type: 'nginx',
-            autoStart: true,
-            execPath: '/usr/sbin/nginx',
-            bindHost: '0.0.0.0'
-        };
-    } else if (fs.existsSync('/usr/local/sbin/nginx')) {
-        CONFIG.services.plugins.web = {
-            type: 'nginx',
-            autoStart: true,
-            execPath: '/usr/local/sbin/nginx',
-            bindHost: '0.0.0.0'
-        };
-    }
-
-    // detect mysql
-    if (fs.existsSync('/usr/sbin/mysqld')) {
-        CONFIG.services.plugins.sql = {
-            type: 'mysql',
-            autoStart: true,
-            execPath: '/usr/sbin/mysqld',
-            managerUser: 'root',
-            managerPassword: sitesLib.generatePassword()
-        };
-    } else if (fs.existsSync('/usr/local/bin/mysqld')) {
-        CONFIG.services.plugins.sql = {
-            type: 'mysql',
-            autoStart: true,
-            execPath: '/usr/local/bin/mysqld',
-            managerUser: 'root',
-            managerPassword: sitesLib.generatePassword()
-        };
-    } else if (fs.existsSync('/usr/bin/mysqld_safe')) {
-        CONFIG.services.plugins.sql = {
-            type: 'mysql',
-            autoStart: true,
-            execPath: '/usr/bin/mysqld_safe',
-            managerUser: 'root',
-            managerPassword: sitesLib.generatePassword()
-        };
-    }
-
-    // detect php-fpm
-    if (fs.existsSync('/usr/sbin/php-fpm5.6')) {
-        CONFIG.services.plugins.php = {
-            type: 'php-fpm',
-            autoStart: true,
-            execPath: '/usr/sbin/php-fpm5.6'
-        };
-    } else if (fs.existsSync('/usr/sbin/php-fpm7.0')) {
-        CONFIG.services.plugins.php = {
-            type: 'php-fpm',
-            autoStart: true,
-            execPath: '/usr/sbin/php-fpm7.0'
-        };
-    } else if (fs.existsSync('/usr/bin/php-fpm')) {
-        CONFIG.services.plugins.php = {
-            type: 'php-fpm',
-            autoStart: true,
-            execPath: '/usr/bin/php-fpm'
-        };
-    } else if (fs.existsSync('/usr/sbin/php5-fpm')) {
-        CONFIG.services.plugins.php = {
-            type: 'php-fpm',
-            autoStart: true,
-            execPath: '/usr/sbin/php5-fpm'
-        };
-    } else if (fs.existsSync('/usr/local/sbin/php-fpm')) {
-        CONFIG.services.plugins.php = {
-            type: 'php-fpm',
-            autoStart: true,
-            execPath: '/usr/local/sbin/php-fpm'
-        };
-    } else if (fs.existsSync('/usr/sbin/php-fpm')) {
-        CONFIG.services.plugins.php = {
-            type: 'php-fpm',
-            autoStart: true,
-            execPath: '/usr/sbin/php-fpm'
-        };
-    }
-
-    fs.writeFileSync('/emergence/config.json', JSON.stringify(CONFIG, null, 4));
-    fs.chmodSync('/emergence/config.json', '600');
-    console.log('Generated and wrote initial config: /emergence/config.json');
-}
-
-// create default admin user
-if (!fs.existsSync('/emergence/admins.htpasswd')) {
-    console.log('Creating default administrative user: admin/admin');
-    fs.writeFileSync('/emergence/admins.htpasswd', 'admin:{SHA}0DPiKuNIrrVmD8IUCuw1hQxNqZc=');
-    fs.chmodSync('/emergence/admins.htpasswd', '600');
-}
+    sitesLib = require('../kernel-lib/sites.js'),
+    kernelConfig = require('/hab/svc/emergence-kernel/config/config.json');
 
 
 // load core modules
-var eSites = sitesLib.createSites(CONFIG);
-var eServices = require('../kernel-lib/services.js').createServices(eSites, CONFIG);
+var eSites = sitesLib.createSites(kernelConfig);
+var eServices = require('../kernel-lib/services.js').createServices(eSites, kernelConfig);
 
 // instantiate management server
 var eManagementServer = require('../kernel-lib/server.js').createServer({
     sites: eSites,
     services: eServices
-}, CONFIG);
+}, kernelConfig);
 
 
 // start server

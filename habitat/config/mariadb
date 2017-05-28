@@ -1,0 +1,37 @@
+[mysqld]
+character-set-server               = utf8
+user                               = hab
+port                               = 3306
+socket                             = {{pkg.svc_var_path}}/run/mariadb.sock
+pid-file                           = {{pkg.svc_var_path}}/run/mariadb.pid
+datadir                            = {{pkg.svc_data_path}}/services/mariadb
+basedir                            = {{pkgPathFor "emergence/mariadb"}}
+skip-external-locking
+key_buffer_size                    = 16M
+max_allowed_packet                 = 1M
+sort_buffer_size                   = 512K
+net_buffer_length                  = 8K
+read_buffer_size                   = 256K
+read_rnd_buffer_size               = 512K
+myisam_sort_buffer_size            = 8M
+log-bin                            = mysqld-bin
+expire_logs_days                   = 2
+server-id                          = 1
+tmpdir                             = /tmp/
+innodb_buffer_pool_size            = 16M
+innodb_data_file_path              = ibdata1:10M:autoextend:max:128M
+innodb_log_file_size               = 5M
+innodb_log_buffer_size             = 8M
+innodb_log_files_in_group          = 2
+innodb_flush_log_at_trx_commit     = 1
+innodb_lock_wait_timeout           = 50
+innodb_file_per_table
+max_binlog_size                    = 100M
+binlog_format                      = row
+table_open_cache                   = 64
+
+{{#if cfg.sql.host~}}
+    bind-address                       = {{cfg.sql.host}}
+{{~else~}}
+    skip-networking
+{{~/if}}

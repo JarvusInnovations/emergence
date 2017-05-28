@@ -5,49 +5,17 @@ var _ = require('underscore'),
     events = require('events');
 
 exports.ServicesController = function(sites, config) {
-    var me = this,
-       options = config.services;
+    var me = this;
 
     me.sites = sites;
+    me.services = config.services;
 
     // call events constructor
     events.EventEmitter.call(me);
 
-    // initialize options and apply defaults
-    me.options = options || {};
-    me.options.plugins = me.options.plugins || {};
-    me.options.servicesDir = me.options.servicesDir || '/emergence/services';
-    me.options.logsDir = me.options.logsDir || me.options.servicesDir+'/logs';
-    me.options.configDir = me.options.configDir || me.options.servicesDir+'/etc';
-    me.options.runDir = me.options.runDir || me.options.servicesDir+'/run';
-    me.options.dataDir = me.options.dataDir || me.options.servicesDir+'/data';
-    me.options.user = me.options.user || config.user;
-    me.options.group = me.options.group || config.group;
-
-    // create required directories
-    if (!fs.existsSync(me.options.servicesDir)) {
-        fs.mkdirSync(me.options.servicesDir, '775');
-    }
-
-    if (!fs.existsSync(me.options.logsDir)) {
-        fs.mkdirSync(me.options.logsDir, '775');
-    }
-
-    if (!fs.existsSync(me.options.configDir)) {
-        fs.mkdirSync(me.options.configDir, '775');
-    }
-
-    if (!fs.existsSync(me.options.runDir)) {
-        fs.mkdirSync(me.options.runDir, '775');
-    }
-
-    if (!fs.existsSync(me.options.dataDir)) {
-        fs.mkdirSync(me.options.dataDir, '775');
-    }
-
-    // load service plugins
+    // load services
     me.services = {};
-    _.each(me.options.plugins, function(plugin, name) {
+    _.each(config.services, function(plugin, name) {
         console.log('Loading service: '+name);
 
         if (_.isString(plugin)) {
@@ -59,12 +27,10 @@ exports.ServicesController = function(sites, config) {
         me.services[name] = plugin;
     });
 
-    // auto-start service plugins
+    // start services
     _.each(me.services, function(service, name) {
-        if (service.options.autoStart) {
-            console.log('Autostarting service: '+name);
-            service.start();
-        }
+        console.log('Starting service: '+name);
+        service.start();
     });
 };
 

@@ -21,7 +21,7 @@ SITE_HANDLE=$1
 SITE_LAYER=$2
 
 UNDERSCORE=$DIR/../node_modules/.bin/underscore
-EMERGENCE_USER=`cat /emergence/config.json | $UNDERSCORE extract user --outfmt text`
+EMERGENCE_USER=`cat /hab/svc/emergence-kernel/config/config.json | $UNDERSCORE extract user --outfmt text`
 
 BLACK="\033[01;30m"
 MAGENTA="\033[1;31m"
@@ -49,7 +49,7 @@ test -n "$SITE_HANDLE" -a -n "$SITE_LAYER"|| die "usage: emergence-git-shell sit
 
 
 # get site directory
-SITE_DIR="/emergence/sites/$SITE_HANDLE"
+SITE_DIR="/hab/svc/emergence-kernel/data/sites/$SITE_HANDLE"
 test -d "$SITE_DIR" || die "site $SITE_HANDLE not found at $SITE_DIR"
 
 

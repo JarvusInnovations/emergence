@@ -20,7 +20,7 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 [ -n "$1" ] || die "Usage: emergence-kernel site-handle"
 
 siteHandle=$1
-siteDir="/emergence/sites/$siteHandle"
+siteDir="/hab/svc/emergence-kernel/data/sites/$siteHandle"
 
 [ -d "$siteDir" ] || die "Site '$siteHandle' not found at '$siteDir'"
 
@@ -33,8 +33,8 @@ echo "require('`dirname $DIR`/php-bootstrap/bootstrap.inc.php');" >> $autoPrepen
 echo "Site::initialize('$siteDir');" >> $autoPrependScript
 
 
-# give www-data access to script
-chgrp www-data $autoPrependScript
+# give hab access to script
+chgrp hab $autoPrependScript
 chmod g+r $autoPrependScript
 
 
@@ -55,7 +55,13 @@ fi
 
 
 # execute interactive shell
-TERM=$TERM sudo -E -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -d apc.enable_cli=on $INPUT_ARGS
+PHP_ARGS="-d auto_prepend_file=$autoPrependScript -d apc.enable_cli=on $INPUT_ARGS"
+
+if [ "$(whoami)" == "hab" ]; then
+    TERM=$TERM php $PHP_ARGS
+else
+    TERM=$TERM sudo -E -u hab -g hab php $PHP_ARGS
+fi
 
 
 # clean up

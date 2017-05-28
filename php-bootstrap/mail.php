@@ -10,26 +10,26 @@ if (!$hostname || !$recipient || !$sender || !$queueId) {
 
 // get hostmap
 // TODO: have the kernel maintain this file
-$hostmapPath = '/emergence/services/hostmap.inc.php';
+$hostmapPath = '/hab/svc/emergence-kernel/var/hostmap.inc.php';
 if (is_readable($hostmapPath)) {
     $hostmap = require($hostmapPath);
 } else {
     $hostmap = [];
-    
-    foreach (glob('/emergence/sites/*', GLOB_ONLYDIR) AS $sitePath) {
+
+    foreach (glob('/hab/svc/emergence-kernel/data/sites/*', GLOB_ONLYDIR) AS $sitePath) {
         $configPath = "$sitePath/site.json";
         if (!is_readable($configPath)) {
             continue;
         }
-    
+
         $config = @json_decode(file_get_contents($configPath), true);
-    
+
         if (!$config) {
             continue;
         }
-    
+
         $hostnames = array_unique(array_merge([$config['primary_hostname']], $config['hostnames']));
-        
+
         foreach ($hostnames AS $hostname) {
             $hostmap['/^' . str_replace('\\*', '.*', preg_quote($hostname)) . '$/i'] = basename($sitePath);
         }
@@ -58,7 +58,7 @@ if (!$siteHandle) {
 // bootstrap emergence
 require('bootstrap.inc.php');
 Site::$debug = true;
-Site::initialize("/emergence/sites/$siteHandle", $hostname);
+Site::initialize("/hab/svc/emergence-kernel/data/sites/$siteHandle", $hostname);
 
 
 // delegate remainder of request to email router

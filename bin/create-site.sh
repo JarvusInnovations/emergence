@@ -82,7 +82,7 @@ if [ "$GENERATE_TABLES" ] || [ "$PRECACHE_TREES" ] || [ "$ENTER_SHELL" ]; then
 fi
 
 if [ -z "$KERNEL_SOCKET" ]; then
-    KERNEL_SOCKET="/emergence/kernel.sock"
+    KERNEL_SOCKET="/hab/svc/emergence-kernel/var/run/kernel.sock"
 fi
 
 if [ ! -S "$KERNEL_SOCKET" ]; then

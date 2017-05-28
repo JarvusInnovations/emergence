@@ -15,17 +15,17 @@ exports.Server = function(paths, config) {
     // call events constructor
     events.EventEmitter.call(me);
 
-    // initialize options and apply defaults
-    me.paths = paths || {};
-    me.options = options || {};
-    me.options.host = me.options.host || '0.0.0.0';
-    me.options.port = me.options.port || 9083;
-    me.options.sslKey = me.options.sslKey || null;
-    me.options.sslCert = me.options.sslCert || null;
-    me.options.staticDir = me.options.staticDir || path.resolve(__dirname, '../kernel-www');
-    me.options.socketPath = 'socketPath' in me.options ? me.options.socketPath : '/emergence/kernel.sock';
+    // initialize configuration
+    me.socketPath = '/hab/svc/emergence-kernel/var/run/kernel.sock';
+    me.staticDir = '/hab/svc/emergence-kernel/static/kernel-www';
+    me.usersPath = '/hab/svc/emergence-kernel/data/users.htpasswd';
 
-    // initialize state
+    me.paths = paths || {};
+    me.host = options.host || '0.0.0.0';
+    me.port = options.port || 9083;
+    me.defaultSuffix = options.defaultSuffix || null;
+    me.sslKey = options.sslKey || null;
+    me.sslCert = options.sslCert || null;
 };
 
 util.inherits(exports.Server, events.EventEmitter);
@@ -35,36 +35,36 @@ exports.Server.prototype.start = function() {
     // create authenticator
     this.httpAuth = require('http-auth')({
         authRealm: 'Emergence Node Management',
-        authFile: '/emergence/admins.htpasswd'
+        authFile: this.usersPath
     });
 
     // create static fileserver
-    this.fileServer = new static.Server(this.options.staticDir);
+    this.fileServer = new static.Server(this.staticDir);
 
     // listen on web port
-    if (this.options.sslKey && this.options.sslCert) {
+    if (this.sslKey && this.sslCert) {
         this.webServer = require('https').createServer({
-            key: fs.readFileSync(this.options.sslKey),
-            cert: fs.readFileSync(this.options.sslCert)
-        }, this.handleWebRequest.bind(this)).listen(this.options.port, this.options.host);
+            key: fs.readFileSync(this.sslKey),
+            cert: fs.readFileSync(this.sslCert)
+        }, this.handleWebRequest.bind(this)).listen(this.port, this.host);
 
         this.webProtocol = 'https';
     } else {
-        this.webServer = require('http').createServer(this.handleWebRequest.bind(this)).listen(this.options.port, this.options.host);
+        this.webServer = require('http').createServer(this.handleWebRequest.bind(this)).listen(this.port, this.host);
 
         this.webProtocol = 'http';
     }
 
     // listen on unix socket
-    if (this.options.socketPath) {
-        this.socketServer = require('http').createServer(this.handleRequest.bind(this)).listen(this.options.socketPath);
-        fs.chmodSync(this.options.socketPath, '400');
+    if (this.socketPath) {
+        this.socketServer = require('http').createServer(this.handleRequest.bind(this)).listen(this.socketPath);
+        fs.chmodSync(this.socketPath, '400');
     }
 
     // clean up on exit
     process.on('exit', this.close.bind(this));
 
-    console.log('Management server listening on '+this.webProtocol+'://'+this.options.host+':'+this.options.port);
+    console.log('Management server listening on '+this.webProtocol+'://'+this.host+':'+this.port);
 };
 
 exports.createServer = function(paths, options) {
@@ -96,7 +96,11 @@ exports.Server.prototype.handleRequest = function(request, response) {
 
         if (request.path[0] == 'server-config') {
             response.writeHead(200, {'Content-Type':'application/json'});
-            response.end(JSON.stringify(me.options));
+            response.end(JSON.stringify({
+                host: me.host,
+                port: me.port,
+                defaultSuffix: me.defaultSuffix
+            }));
             return;
         }
 
