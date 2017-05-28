@@ -165,19 +165,19 @@ class Site
         }
 
         // handle CORS headers
-        if (isset($_SERVER['HTTP_ORIGIN'])) {
-            $hostname = strtolower(parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST));
-            if ($hostname == strtolower(static::$hostname) || static::$permittedOrigins == '*' || in_array($hostname, static::$permittedOrigins)) {
-                header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-                header('Access-Control-Allow-Credentials: true');
-                //header('Access-Control-Max-Age: 86400')
-            } else {
-                header('HTTP/1.1 403 Forbidden');
-                exit();
-            }
-        }
-
         if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS' && isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
+            if (isset($_SERVER['HTTP_ORIGIN'])) {
+                $hostname = strtolower(parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST));
+                if ($hostname == strtolower(static::$hostname) || static::$permittedOrigins == '*' || in_array($hostname, static::$permittedOrigins)) {
+                    header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+                    header('Access-Control-Allow-Credentials: true');
+                    //header('Access-Control-Max-Age: 86400')
+                } else {
+                    header('HTTP/1.1 403 Forbidden');
+                    die('CORS access denied for given origin');
+                }
+            }
+
             header('Access-Control-Allow-Methods: ' . $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']);
 
             if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
