@@ -17,7 +17,7 @@
         },
         "php": {
             "type": "php-fpm",
-            "packagePath": "{{pkgPathFor "emergence/php"}}"
+            "packagePath": "{{pkgPathFor "emergence/php5"}}"
         }
     }
 }

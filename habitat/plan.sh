@@ -14,5 +14,5 @@ pkg_build_deps=(
 pkg_deps=(
   emergence/nginx
   emergence/mariadb
-  emergence/php
+  emergence/php5
 )
