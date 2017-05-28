@@ -35,5 +35,8 @@ done
 popd > /dev/null
 
 # initialize static asset links
-ln -sf "{{pkg.path}}/app/php-bootstrap" "{{pkg.svc_static_path}}/"
-ln -sf "{{pkg.path}}/app/kernel-www" "{{pkg.svc_static_path}}/"
+pushd "{{pkg.svc_static_path}}" > /dev/null
+chmod g+rX -R .
+ln -sf "{{pkg.path}}/app/php-bootstrap"
+ln -sf "{{pkg.path}}/app/kernel-www"
+popd > /dev/null
