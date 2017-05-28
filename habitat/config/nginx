@@ -52,8 +52,17 @@ http {
     fastcgi_buffers 32 64k;
     server_tokens off;
 
-    index index.php;
-    fastcgi_index index.php;
+    server {
+        listen {{cfg.web.host}}:{{cfg.web.port}};
+        server_name localhost;
+        access_log off;
+
+        location / {
+            root  {{pkg.path}}/app/default-site;
+            index index.html;
+            error_page 404 index.html;
+        }
+    }
 
     include {{pkg.svc_var_path}}/config/nginx.sites;
 }
