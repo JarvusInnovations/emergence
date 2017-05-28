@@ -66,6 +66,7 @@ do_build() {
     --enable-fpm \
     --with-fpm-user=hab \
     --with-fpm-group=hab \
+    --with-gettext="$(pkg_path_for glibc)" \
     --enable-apcu \
     --enable-mbstring \
     --enable-opcache \
