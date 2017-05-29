@@ -10,6 +10,9 @@ if [ ! -f "$AUTHFILE" ]; then
     chmod 640 "$AUTHFILE"
 fi
 
+# fix permissions on config directory
+chmod g+rX -R "{{pkg.svc_config_path}}"
+
 # initialize var directories
 pushd "{{pkg.svc_var_path}}" > /dev/null
 chmod g+rX -R .
