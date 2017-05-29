@@ -17,7 +17,8 @@
         },
         "php": {
             "type": "php-fpm",
-            "packagePath": "{{pkgPathFor "emergence/php5"}}"
+            "packagePath": "{{pkgPathFor "emergence/php5"}}",
+            "timezone": "{{cfg.php.timezone}}"
         }
     }
 }

@@ -29,6 +29,8 @@ siteDir="/hab/svc/emergence-kernel/data/sites/$siteHandle"
 autoPrependScript=$(mktemp);
 
 echo "<?php" > $autoPrependScript
+echo "\$serverConfig = json_decode(file_get_contents('/hab/svc/emergence-kernel/config/config.json'), true);" >> $autoPrependScript
+echo "date_default_timezone_set(\$serverConfig['services']['php']['timezone']);" >> $autoPrependScript
 echo "require('`dirname $DIR`/php-bootstrap/bootstrap.inc.php');" >> $autoPrependScript
 echo "Site::initialize('$siteDir');" >> $autoPrependScript
 
