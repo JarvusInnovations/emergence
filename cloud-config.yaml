@@ -63,6 +63,8 @@ write_files:
     /emergence/services/etc/my.cnf r,
     /emergence/services/data/mysql/ r,
     /emergence/services/data/mysql/** rwk,
+    /emergence/services/logs/mysql/ r,
+    /emergence/services/logs/mysql/** rwk,
     /emergence/services/run/mysqld/mysqld.sock w,
     /emergence/services/run/mysqld/mysqld.pid rw,
     /emergence/services/run/mysqld/mysqld.sock.lock rw,
