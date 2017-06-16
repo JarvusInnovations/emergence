@@ -244,13 +244,10 @@ class Site
                 ));
             }
 
-            // switch collection result to its _index.php if found
+            // switch collection result to its _index.php if foundF
             if (
                 is_a($resolvedNode, 'SiteCollection') &&
-                (
-                    ($indexNode = $resolvedNode->getChild('_index.php')) ||
-                    ($indexNode = Emergence::resolveFileFromParent('site-root', array_merge(static::$resolvedPath, array('_index.php'))))
-                )
+                ($indexNode = static::resolvePath(array_merge(array('site-root'), static::$resolvedPath, array('_index.php'))))
             ) {
                 $resolvedNode = $indexNode;
             }
