@@ -21,15 +21,3 @@ pm.max_spare_servers                           = {{cfg.php.max_spare_servers}}
 {{~#if cfg.php.status_path}}
 pm.status_path                                 = {{cfg.php.status_path}}
 {{~/if}}
-
-php_admin_flag[short_open_tag]                 = on
-php_admin_value[apc.shm_size]                  = {{cfg.php.shm_size}}
-php_admin_value[apc.shm_segments]              = 1
-php_admin_value[apc.slam_defense]              = 0
-php_admin_value[apc.stat]                      = {{#if cfg.php.stat_scripts}}1{{else}}0{{/if}}
-php_admin_value[opcache.validate_timestamps]   = {{#if cfg.php.stat_scripts}}1{{else}}0{{/if}}
-php_admin_value[upload_max_filesize]           = {{cfg.php.upload_max_filesize}}
-php_admin_value[post_max_size]                 = {{cfg.php.post_max_size}}
-php_admin_value[memory_limit]                  = {{cfg.php.memory_limit}}
-php_admin_value[error_reporting]               = {{cfg.php.error_reporting}}
-php_admin_value[date.timezone]                 = {{cfg.php.timezone}}

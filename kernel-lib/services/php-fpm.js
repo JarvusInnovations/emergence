@@ -19,7 +19,8 @@ exports.PhpFpmService = function(name, controller, options) {
     me.packagePath = options.packagePath;
     me.execPath = me.packagePath + '/sbin/php-fpm';
 
-    me.configPath = '/hab/svc/emergence-kernel/config/php-fpm';
+    me.phpConfigPath = '/hab/svc/emergence-kernel/config/php.ini';
+    me.fpmConfigPath = '/hab/svc/emergence-kernel/config/php-fpm';
     me.pidPath = '/hab/svc/emergence-kernel/var/run/php-fpm.pid';
     me.socketPath = '/hab/svc/emergence-kernel/var/run/php-fpm.sock';
     me.errorLogPath = '/hab/svc/emergence-kernel/var/log/php-fpm.err';
@@ -52,7 +53,7 @@ exports.PhpFpmService.prototype.start = function() {
         return false;
     }
 
-    me.proc = spawn(me.execPath, ['--fpm-config', me.configPath]);
+    me.proc = spawn(me.execPath, ['-c', me.phpConfigPath, '--fpm-config', me.fpmConfigPath]);
 
     me.proc.on('exit', function (code) {
 
