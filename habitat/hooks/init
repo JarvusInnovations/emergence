@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # initialize users database
 AUTHFILE="{{pkg.svc_data_path}}/users.htpasswd"
@@ -14,7 +14,7 @@ fi
 chmod g+rX -R "{{pkg.svc_config_path}}"
 
 # initialize var directories
-pushd "{{pkg.svc_var_path}}" > /dev/null
+cd "{{pkg.svc_var_path}}"
 chmod g+rX -R .
 for DIR in log run config tmp tmp/nginx; do
     if [ ! -d "$DIR" ]; then
@@ -23,10 +23,9 @@ for DIR in log run config tmp tmp/nginx; do
         chown root:hab "$DIR"
     fi
 done
-popd > /dev/null
 
 # initialize data directories
-pushd "{{pkg.svc_data_path}}" > /dev/null
+cd "{{pkg.svc_data_path}}"
 chmod g+rX -R .
 for DIR in sites services; do
     if [ ! -d "$DIR" ]; then
@@ -35,11 +34,9 @@ for DIR in sites services; do
         chown root:hab "$DIR"
     fi
 done
-popd > /dev/null
 
 # initialize static asset links
-pushd "{{pkg.svc_static_path}}" > /dev/null
+cd "{{pkg.svc_static_path}}"
 chmod g+rX -R .
 ln -sf "{{pkg.path}}/app/php-bootstrap"
 ln -sf "{{pkg.path}}/app/kernel-www"
-popd > /dev/null
