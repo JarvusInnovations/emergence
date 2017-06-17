@@ -18,3 +18,8 @@ pkg_deps=(
   emergence/mariadb
   emergence/php5
 )
+
+do_install() {
+  do_default_install
+  fix_interpreter "$scaffolding_app_prefix/bin/*" core/bash bin/bash
+}
