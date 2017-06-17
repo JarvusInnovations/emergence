@@ -26,6 +26,7 @@ pkg_build_deps=(
   core/gcc
   core/make
   core/re2c
+  core/readline
 )
 pkg_bin_dirs=(bin sbin)
 pkg_lib_dirs=(lib)
@@ -66,6 +67,7 @@ do_build() {
     --enable-fpm \
     --with-fpm-user=hab \
     --with-fpm-group=hab \
+    --with-readline="$(pkg_path_for readline)" \
     --with-gettext="$(pkg_path_for glibc)" \
     --enable-apcu \
     --enable-mbstring \
