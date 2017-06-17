@@ -62,7 +62,7 @@ PHP_ARGS="-d auto_prepend_file=$autoPrependScript -d apc.enable_cli=on $INPUT_AR
 if [ "$(whoami)" == "hab" ]; then
     TERM=$TERM php $PHP_ARGS
 else
-    TERM=$TERM sudo -E -u hab -g hab php $PHP_ARGS
+    TERM=$TERM su hab -c "php $PHP_ARGS"
 fi
 
 
