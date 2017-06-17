@@ -12,6 +12,7 @@ pkg_build_deps=(
 )
 
 pkg_deps=(
+  core/bash
   emergence/nginx
   emergence/mariadb
   emergence/php5
