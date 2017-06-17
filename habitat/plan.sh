@@ -12,6 +12,7 @@ pkg_build_deps=(
 )
 
 pkg_deps=(
+  core/coreutils
   core/bash
   emergence/nginx
   emergence/mariadb
