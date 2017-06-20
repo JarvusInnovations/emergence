@@ -148,7 +148,7 @@ RESPONSE=$(
     --unix-socket "${KERNEL_SOCKET}" \
     -H "Content-Type: application/json" \
     -d "${REQUEST_BODY}" \
-    "http:/sites"
+    "http://localhost/sites"
 )
 
 echo "$RESPONSE"
