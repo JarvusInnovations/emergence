@@ -40,3 +40,7 @@ cd "{{pkg.svc_static_path}}"
 chmod g+rX -R .
 ln -sf "{{pkg.path}}/app/php-bootstrap"
 ln -sf "{{pkg.path}}/app/kernel-www"
+
+# initialize bin links
+hab pkg binlink core/hab hab
+hab pkg binlink core/git git
