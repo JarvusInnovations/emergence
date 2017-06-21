@@ -45,3 +45,4 @@ ln -sf "{{pkg.path}}/app/kernel-www"
 hab pkg binlink core/hab hab
 hab pkg binlink core/git git
 hab pkg binlink core/openssh ssh-keygen
+hab pkg binlink core/openssh ssh
