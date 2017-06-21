@@ -44,3 +44,4 @@ ln -sf "{{pkg.path}}/app/kernel-www"
 # initialize bin links
 hab pkg binlink core/hab hab
 hab pkg binlink core/git git
+hab pkg binlink core/openssh ssh-keygen

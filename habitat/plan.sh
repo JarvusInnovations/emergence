@@ -16,6 +16,7 @@ pkg_deps=(
   core/bash
   core/git
   core/curl
+  core/openssh
   emergence/nginx
   emergence/mariadb
   emergence/php5
