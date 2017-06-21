@@ -19,55 +19,43 @@ exports.MysqlService = function(name, controller, options) {
     // call parent constructor
     exports.MysqlService.super_.apply(me, arguments);
 
-    // default options
-    me.options.configPath = me.options.configPath || controller.options.configDir + '/my.cnf';
-    me.options.execPath = me.options.execPath || '/usr/sbin/mysqld';
-    me.options.bindHost = me.options.bindHost || false;
-    me.options.runDir = me.options.runDir || controller.options.runDir + '/mysqld';
-    me.options.pidPath = me.options.pidPath || me.options.runDir + '/mysqld.pid';
-    me.options.socketPath = me.options.socketPath || me.options.runDir + '/mysqld.sock';
-    me.options.dataDir = me.options.dataDir || controller.options.dataDir + '/mysql';
-    me.options.logsDir = me.options.logsDir || controller.options.logsDir + '/mysql';
-    me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/mysqld.err';
-    me.options.managerUser = me.options.managerUser || 'emergence';
-    me.options.managerPassword = me.options.managerPassword || '';
+    // initialize configuration
+    me.packagePath = options.packagePath;
+    me.execPath = me.packagePath + '/bin/mysqld';
 
+    me.configPath = '/hab/svc/emergence-kernel/config/mariadb';
+    me.pidPath = '/hab/svc/emergence-kernel/var/run/mariadb.pid';
+    me.socketPath = '/hab/svc/emergence-kernel/var/run/mariadb.sock';
+    me.dataDir = '/hab/svc/emergence-kernel/data/services/mariadb';
+    me.statePath = me.dataDir+'/state.json';
 
-    // verify binary
-    if (!fs.existsSync(me.options.execPath)) {
-        throw 'execPath not found: ' + me.options.execPath;
+    me.execOptions = ['--defaults-file='+me.configPath, '--basedir='+me.packagePath];
+
+    // load state
+    if (fs.existsSync(me.statePath)) {
+        me.state = JSON.parse(fs.readFileSync(me.statePath, 'ascii'));
     }
-
-    // check binary version
-    console.log(me.name+': detecting mysqld version...');
-    versionMatch = shell.exec(me.options.execPath+' --version').output.match(/mysqld\s+Ver\s+(\d+(\.\d+)*)(-MariaDB)?/);
-
-    if (!versionMatch) {
-        throw 'Failed to detect mysql version';
-    }
-
-    me.mysqldVersion = versionMatch[1];
-    me.mysqldIsMaria = versionMatch[3] == '-MariaDB';
-    console.log('%s: determined mysqld version: %s', me.name, me.mysqldVersion + (me.mysqldIsMaria ? ' (MariaDB)' : ''));
 
     // check for existing mysqld process
-    if (fs.existsSync(me.options.pidPath)) {
-        me.pid = parseInt(fs.readFileSync(me.options.pidPath, 'ascii'));
+    if (fs.existsSync(me.pidPath)) {
+        me.pid = parseInt(fs.readFileSync(me.pidPath, 'ascii'));
         console.log(me.name+': found existing PID: '+me.pid+', checking /proc/'+me.pid);
 
         if (fs.existsSync('/proc/'+me.pid)) {
             me.status = 'online';
 
             // instantiate MySQL client
-            me.client = new mariasql({
-                unixSocket: me.options.socketPath,
-                user: me.options.managerUser,
-                password: me.options.managerPassword,
-                multiStatements: true
-            });
+            if (me.state) {
+                me.client = new mariasql({
+                    unixSocket: me.socketPath,
+                    user: 'root',
+                    password: me.state.rootPassword,
+                    multiStatements: true
+                });
+            }
         } else {
             console.log(me.name+': process '+me.pid + ' not found, deleting .pid file');
-            fs.unlinkSync(me.options.pidPath);
+            fs.unlinkSync(me.pidPath);
         }
     }
 
@@ -87,55 +75,53 @@ exports.MysqlService.prototype.start = function(firstRun) {
         return false;
     }
 
-    // write configuration file
-    this.writeConfig();
-
-    // init logs directory if needed
-    if (!fs.existsSync(me.options.logsDir)) {
-        console.log(me.name+': initializing new log directory');
-        fs.mkdirSync(me.options.logsDir, '775');
-        exec('chown -R mysql:mysql '+me.options.logsDir);
-    }
-
-
-    // init run directory if needed
-    if (!fs.existsSync(me.options.runDir)) {
-        console.log(me.name+': initializing new run directory');
-        fs.mkdirSync(me.options.runDir, '775');
-        exec('chown -R mysql:mysql '+me.options.runDir);
-    }
-
     // init data directory if needed
-    if (!fs.existsSync(me.options.dataDir)) {
-        console.log(me.name+': initializing new data directory...');
-        fs.mkdirSync(me.options.dataDir, '775');
-        exec('chown -R mysql:mysql '+me.options.dataDir);
-
-        if (semver.lt(me.mysqldVersion, '5.7.6') || me.mysqldIsMaria) {
-            exec('mysql_install_db --defaults-file='+me.options.configPath, function(error, stdout, stderr) {
-                me.start(true);
-            });
-        } else {
-            exec('mysqld --initialize-insecure --user=mysql --datadir='+me.options.dataDir, function(error, stdout, stderr) {
-                me.start(true);
-            });
-        }
-
+    if (!fs.existsSync(me.dataDir)) {
+        console.log('creating datadir as ', require("os").userInfo().username);
         me.status = 'configuring';
+
+        console.log(me.name+': initializing new data directory...');
+        fs.mkdirSync(me.dataDir);
+        fs.chownSync(me.dataDir, me.controller.sites.dataUid, me.controller.sites.dataGid);
+        fs.chmodSync(me.dataDir, '750');
+
+        // initialize state
+        me.state = {
+            rootPassword: me.controller.sites.generatePassword()
+        };
+
+        fs.writeFileSync(me.statePath, JSON.stringify(me.state, null, 4));
+        fs.chmodSync(me.statePath, '600');
+
+        // use mysql_install_db to finish init
+        exec(
+            me.packagePath + '/scripts/mysql_install_db '+me.execOptions.join(' '),
+            function(error, stdout, stderr) {
+                if (error) {
+                    console.log(me.name+': failed to initialize data directory', error);
+                    return;
+                }
+
+                me.start(true);
+            }
+        );
+
         return true; // not really started, we have to try again after mysql_install_db is done
     }
 
     // instantiate MySQL client
-    me.client = new mariasql({
-        unixSocket: me.options.socketPath,
-        user: me.options.managerUser,
-        password: me.options.managerPassword,
-        multiStatements: true
-    });
+    if (me.state) {
+        me.client = new mariasql({
+            unixSocket: me.socketPath,
+            user: 'root',
+            password: me.state.rootPassword,
+            multiStatements: true
+        });
+    }
 
     // spawn process
-    console.log(me.name+': spawning mysql: '+me.options.execPath);
-    me.proc = spawn(me.options.execPath, ['--defaults-file='+me.options.configPath, '--console'], {detached: true});
+    console.log(me.name+': spawning mysql: '+me.execPath);
+    me.proc = spawn(me.execPath, me.execOptions.concat(['--console']), {detached: true});
     me.pid = me.proc.pid;
     me.status = 'online';
 
@@ -208,7 +194,7 @@ exports.MysqlService.prototype.restart = function() {
 
     // wait for pid to disappear before attempting start
     process.stdout.write(me.name+': waiting for shutdown');
-    while (fs.existsSync(me.options.pidPath)) {
+    while (fs.existsSync(me.pidPath)) {
         process.stdout.write('.');
         now = new Date().getTime();
 
@@ -222,70 +208,6 @@ exports.MysqlService.prototype.restart = function() {
     return me.start();
 };
 
-exports.MysqlService.prototype.writeConfig = function() {
-    fs.writeFileSync(this.options.configPath, this.makeConfig());
-};
-
-exports.MysqlService.prototype.makeConfig = function() {
-    var me = this,
-        config = [];
-
-    config.push(
-        '[mysqld]',
-        'character-set-server               = utf8',
-        'user                               = mysql',
-        'port                               = 3306',
-        'socket                             = '+me.options.socketPath,
-        'pid-file                           = '+me.options.pidPath,
-//      'log-error                          = '+me.options.errorLogPath, // disabled due to http://bugs.mysql.com/bug.php?id=65592 -- errors output to STDIN will usually go into emergence-kernel's log
-        'basedir                            = /usr',
-        'datadir                            = '+me.options.dataDir,
-        'skip-external-locking',
-        'key_buffer_size                    = 16M',
-        'max_allowed_packet                 = 1M',
-        'sort_buffer_size                   = 512K',
-        'net_buffer_length                  = 8K',
-        'read_buffer_size                   = 256K',
-        'read_rnd_buffer_size               = 512K',
-        'myisam_sort_buffer_size            = 8M',
-//      'lc-messages-dir                    = /usr/local/share/mysql',
-
-        'log-bin                            = mysqld-bin',
-        'expire_logs_days                   = 2',
-        'server-id                          = 1',
-
-        'tmpdir                             = /tmp/',
-
-        'innodb_buffer_pool_size            = 16M',
-        'innodb_data_file_path              = ibdata1:10M:autoextend:max:128M',
-        'innodb_log_file_size               = 5M',
-        'innodb_log_buffer_size             = 8M',
-        'innodb_log_files_in_group          = 2',
-        'innodb_flush_log_at_trx_commit     = 1',
-        'innodb_lock_wait_timeout           = 50',
-        'innodb_file_per_table',
-        'max_binlog_size                    = 100M',
-        'binlog_format                      = row'
-    );
-
-    if (semver.gt(me.mysqldVersion, '5.6.0')) {
-        config.push('table_open_cache                   = 64');
-    } else {
-        config.push('table_cache                        = 64');
-    }
-
-    if (semver.lt(me.mysqldVersion, '5.7.4')) {
-        config.push('innodb_additional_mem_pool_size    = 2M');
-    }
-
-    if (me.options.bindHost) {
-        config.push('bind-address               = '+me.options.bindHost);
-    } else {
-        config.push('skip-networking');
-    }
-
-    return config.join('\n');
-};
 
 exports.MysqlService.prototype.secureInstallation = function() {
     var me = this,
@@ -294,11 +216,7 @@ exports.MysqlService.prototype.secureInstallation = function() {
     console.log(me.name+': securing installation...');
 
     // set root password
-    if (semver.lt(me.mysqldVersion, '5.7.0') || me.mysqldIsMaria) {
-        sql += 'UPDATE mysql.user SET Password=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
-    } else {
-        sql += 'UPDATE mysql.user SET authentication_string=PASSWORD("'+me.options.managerPassword+'") WHERE User="root";';
-    }
+    sql += 'UPDATE mysql.user SET Password=PASSWORD("'+me.state.rootPassword+'") WHERE User="root";';
 
     // remove anonymous users
     sql += 'DELETE FROM mysql.user WHERE User="";';
@@ -315,7 +233,7 @@ exports.MysqlService.prototype.secureInstallation = function() {
 
     // open a temporary connection to the new non-secured installation
     (new mariasql({
-        unixSocket: me.options.socketPath,
+        unixSocket: me.socketPath,
         user: 'root',
         password: '',
         multiStatements: true
@@ -334,7 +252,7 @@ exports.MysqlService.prototype.onSiteCreated = function(siteData, requestData, c
     var me = this,
         sql = '',
         dbConfig = {
-            socket: me.options.socketPath,
+            socket: me.socketPath,
             database: siteData.handle,
             username: siteData.handle,
             password: me.controller.sites.generatePassword()

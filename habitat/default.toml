@@ -1,0 +1,29 @@
+# Use this file to templatize your application's native configuration files.
+# See the docs at https://www.habitat.sh/docs/create-packages-configure/.
+# You can safely delete this file if you don't need it.
+
+[kernel]
+host="0.0.0.0"
+
+[web]
+host="0.0.0.0"
+port=80
+
+[sql]
+host="127.0.0.1"
+
+[php]
+stat_scripts=false
+status_path=false
+error_reporting="E_ALL & ~E_NOTICE"
+timezone="America/New_York"
+
+max_children=50
+start_servers=5
+min_spare_servers=5
+max_spare_servers=10
+
+upload_max_filesize="200M"
+post_max_size="200M"
+memory_limit="200M"
+shm_size="512M"

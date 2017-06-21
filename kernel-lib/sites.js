@@ -6,7 +6,6 @@ var _ = require('underscore'),
     events = require('events'),
     posix = require('posix'),
     spawn = require('child_process').spawn,
-    hostile = require('hostile'),
     phpShellScript = path.resolve(__dirname, '../bin/shell');
 
 
@@ -21,25 +20,19 @@ exports.Sites = function(config) {
     // call events constructor
     events.EventEmitter.call(me);
 
-    // initialize options and apply defaults
-    me.options = options || {};
-    me.options.sitesDir = me.options.sitesDir || '/emergence/sites';
-    me.options.dataUID = me.options.dataUID || posix.getpwnam(config.user).uid;
-    me.options.dataGID = me.options.dataGID || posix.getgrnam(config.group).gid;
-    me.options.dataMode = me.options.dataMode || '775';
+    // initialize configuration
+    me.sitesDir = '/hab/svc/emergence-kernel/data/sites';
+    me.dataUid = posix.getpwnam('hab').uid;
+    me.dataGid = posix.getgrnam('hab').gid;
 
-    // create required directories
-    if (!fs.existsSync(me.options.sitesDir)) {
-        fs.mkdirSync(me.options.sitesDir, '775');
-    }
 
     // load sites
-    console.log('Loading sites from '+me.options.sitesDir+'...');
+    console.log('Loading sites from '+me.sitesDir+'...');
 
     me.sites = {};
-    _.each(fs.readdirSync(me.options.sitesDir), function(handle) {
+    _.each(fs.readdirSync(me.sitesDir), function(handle) {
         try {
-            me.sites[handle] = JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii'));
+            me.sites[handle] = JSON.parse(fs.readFileSync(me.sitesDir+'/'+handle+'/site.json', 'ascii'));
             me.sites[handle].handle = handle;
             console.log('-Loaded: '+me.sites[handle].primary_hostname);
         } catch (error) {
@@ -86,7 +79,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             }
 
             var handle = request.path[1],
-                siteDir = me.options.sitesDir + '/' + handle,
+                siteDir = me.sitesDir + '/' + handle,
                 siteConfigPath = siteDir + '/site.json',
                 params = JSON.parse(request.content),
                 siteData;
@@ -145,7 +138,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log('Executing shell post for ' + request.path[1] + ':');
                     console.log(requestData);
 
-                    phpProc = spawn(phpShellScript, [request.path[1]]);
+                    phpProc = spawn(phpShellScript, [request.path[1]], { uid: me.dataUid, gid: me.dataGid });
                     phpProcInitialized = false;
 
                     phpProc.stderr.on('data', function(data) {
@@ -178,7 +171,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     console.log('Creating developer for ' + request.path[1] + ':' + phpShellScript);
                     response.writeHead(200, {'Content-Type':'application/json'});
 
-                    phpProc = spawn(phpShellScript, [request.path[1], '--stdin']);
+                    phpProc = spawn(phpShellScript, [request.path[1], '--stdin'], { uid: me.dataUid, gid: me.dataGid });
 
                     phpProc.stdout.on('data', function(data) {
                         console.log('php-cli stdout: ' + data);
@@ -220,16 +213,12 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             cfgResult = me.writeSiteConfig(requestData);
 
             if (cfgResult.isNew) {
-                // write primary hostname to /etc/hosts
-                hostile.set('127.0.0.1', cfgResult.site.primary_hostname);
-                console.log('added ' + cfgResult.site.primary_hostname + ' to /etc/hosts');
-
                 // notify plugins
                 me.emit('siteCreated', cfgResult.site, requestData, {
                     databaseReady: function() {
                         // execute onSiteCreated within site's container
                         console.log('Executing Site::onSiteCreated() via php-cli');
-                        phpProc = spawn(phpShellScript, [cfgResult.site.handle]);
+                        phpProc = spawn(phpShellScript, [cfgResult.site.handle], { uid: me.dataUid, gid: me.dataGid });
 
                         phpProc.stdout.on('data', function(data) { console.log('php-cli stdout: ' + data); });
                         phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
@@ -307,7 +296,7 @@ exports.Sites.prototype.writeSiteConfig = function(requestData) {
     }
 
     // create site directory
-    var siteDir = me.options.sitesDir+'/'+siteData.handle,
+    var siteDir = me.sitesDir+'/'+siteData.handle,
         dataDir = siteDir + '/data',
         siteDataDir = siteDir + '/site-data',
         siteConfigPath = siteDir + '/site.json';
@@ -318,13 +307,13 @@ exports.Sites.prototype.writeSiteConfig = function(requestData) {
     }
 
     if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, me.options.dataMode);
-        fs.chownSync(dataDir, me.options.dataUID, me.options.dataGID);
+        fs.mkdirSync(dataDir, '775');
+        fs.chownSync(dataDir, me.dataUid, me.dataGid);
     }
 
     if (!fs.existsSync(siteDataDir)) {
-        fs.mkdirSync(siteDataDir, me.options.dataMode);
-        fs.chownSync(siteDataDir, me.options.dataUID, me.options.dataGID);
+        fs.mkdirSync(siteDataDir, '775');
+        fs.chownSync(siteDataDir, me.dataUid, me.dataGid);
     }
 
     // write site config to file
@@ -341,7 +330,7 @@ exports.Sites.prototype.writeSiteConfig = function(requestData) {
 
 exports.Sites.prototype.updateSiteConfig = function(handle, changes) {
     var me = this,
-        siteDir = me.options.sitesDir+'/'+handle,
+        siteDir = me.sitesDir+'/'+handle,
         filename = siteDir+'/site.json',
         siteData = this.sites[handle],
         create_user;

@@ -1,15 +1,17 @@
 {
     "name": "emergence",
     "preferGlobal": true,
-    "version": "0.0.3",
+    "version": "1.0.0",
     "license": "MIT",
+    "engines": {
+        "node": "6.10.3"
+    },
     "dependencies": {
         "underscore": "1.3.x",
         "mariasql": "^0.2.6",
         "node-static": "0.6.x",
         "http-auth": "1.2.7",
         "posix": "^4.0.2",
-        "hostile": "^1.0.2",
         "shelljs": "^0.5.3",
         "semver": "^5.1.0",
         "underscore-cli": "^0.2.19",
@@ -25,5 +27,8 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/JarvusInnovations/Emergence.git"
+    },
+    "scripts": {
+        "start": "node bin/kernel"
     }
 }

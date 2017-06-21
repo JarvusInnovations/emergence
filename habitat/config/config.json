@@ -1,0 +1,24 @@
+{
+    "user": "{{pkg.svc_user}}",
+    "group": "{{pkg.svc_group}}",
+    "server": {
+        "host": "{{cfg.kernel.host}}"
+    },
+    "services": {
+        "web": {
+            "type": "nginx",
+            "packagePath": "{{pkgPathFor "emergence/nginx"}}",
+            "bindHost": "{{cfg.web.host}}",
+            "bindPort": "{{cfg.web.port}}"
+        },
+        "sql": {
+            "type": "mariadb",
+            "packagePath": "{{pkgPathFor "emergence/mariadb"}}"
+        },
+        "php": {
+            "type": "php-fpm",
+            "packagePath": "{{pkgPathFor "emergence/php5"}}",
+            "timezone": "{{cfg.php.timezone}}"
+        }
+    }
+}

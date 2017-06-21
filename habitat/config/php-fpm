@@ -1,0 +1,23 @@
+[global]
+pid                                            = {{pkg.svc_var_path}}/run/php-fpm.pid
+error_log                                      = {{pkg.svc_var_path}}/log/php-fpm.err
+
+
+[www]
+user                                           = hab
+group                                          = hab
+catch_workers_output                           = on
+
+listen                                         = {{pkg.svc_var_path}}/run/php-fpm.sock
+listen.owner                                   = {{pkg.svc_user}}
+listen.group                                   = {{pkg.svc_group}}
+
+pm                                             = dynamic
+pm.max_children                                = {{cfg.php.max_children}}
+pm.start_servers                               = {{cfg.php.start_servers}}
+pm.min_spare_servers                           = {{cfg.php.min_spare_servers}}
+pm.max_spare_servers                           = {{cfg.php.max_spare_servers}}
+
+{{~#if cfg.php.status_path}}
+pm.status_path                                 = {{cfg.php.status_path}}
+{{~/if}}

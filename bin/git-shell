@@ -21,7 +21,6 @@ SITE_HANDLE=$1
 SITE_LAYER=$2
 
 UNDERSCORE=$DIR/../node_modules/.bin/underscore
-EMERGENCE_USER=`cat /emergence/config.json | $UNDERSCORE extract user --outfmt text`
 
 BLACK="\033[01;30m"
 MAGENTA="\033[1;31m"
@@ -43,13 +42,12 @@ PS2="\[$ORANGE\]→ \[$RESET\]" \
 
 
 # check environment
-test $EUID -eq 0 || die "emergence-git-shell must be run with sudo"
 test -x "$UNDERSCORE" || die "unable to execute $UNDERSCORE"
 test -n "$SITE_HANDLE" -a -n "$SITE_LAYER"|| die "usage: emergence-git-shell site_handle layer_id"
 
 
 # get site directory
-SITE_DIR="/emergence/sites/$SITE_HANDLE"
+SITE_DIR="/hab/svc/emergence-kernel/data/sites/$SITE_HANDLE"
 test -d "$SITE_DIR" || die "site $SITE_HANDLE not found at $SITE_DIR"
 
 
@@ -89,6 +87,20 @@ if [ -n "$GIT_USER_DIRTY" ]; then
 fi
 
 
+# setup environment
+export PS1
+export PS2
+export SITE_HOSTNAME
+export SITE_LAYER
+export GIT_SSH
+
+export HISTFILE="$GIT_DIR.bash_history"
+export GIT_AUTHOR_NAME="$GIT_NAME"
+export GIT_AUTHOR_EMAIL="$GIT_EMAIL"
+export GIT_COMMITTER_NAME="$GIT_NAME"
+export GIT_COMMITTER_EMAIL="$GIT_EMAIL"
+
+
 # execute subshell
 echo "Opening git shell at $GIT_DIR"
 cd $GIT_DIR
@@ -97,16 +109,8 @@ git status
 
 echo "Committing as $GIT_NAME <$GIT_EMAIL>"
 
-exec sudo -u $EMERGENCE_USER \
-    HOME="$GIT_DIR" \
-    HISTFILE="$GIT_DIR.bash_history" \
-    GIT_SSH="$GIT_SSH" \
-    GIT_AUTHOR_NAME="$GIT_NAME" \
-    GIT_AUTHOR_EMAIL="$GIT_EMAIL" \
-    GIT_COMMITTER_NAME="$GIT_NAME" \
-    GIT_COMMITTER_EMAIL="$GIT_EMAIL" \
-    PS1="$PS1" \
-    PS2="$PS2" \
-    SITE_HOSTNAME="$SITE_HOSTNAME" \
-    SITE_LAYER="$SITE_LAYER" \
-    /bin/bash --norc
+if [ "$(whoami)" == "hab" ]; then
+    HOME="$GIT_DIR" exec bash --norc
+else
+    exec su hab -c "HOME='$GIT_DIR' bash --norc"
+fi
