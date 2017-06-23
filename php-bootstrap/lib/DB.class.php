@@ -398,11 +398,11 @@ class DB
         $backtrace = debug_backtrace();
         while ($backtick = array_shift($backtrace)) {
             // skip the log routine itself
-            if ($backtick['function'] == __FUNCTION__) {
+            if (!empty($backtick['function']) && $backtick['function'] == __FUNCTION__) {
                 continue;
             }
 
-            if ($backtick['class'] != __CLASS__) {
+            if (empty($backtick['class']) || $backtick['class'] != __CLASS__) {
                 break;
             }
 
