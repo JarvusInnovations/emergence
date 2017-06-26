@@ -124,7 +124,7 @@ function updateFileSystem($handle, $cursor = 0)
 function getFileSystemSummary($cursor = 0)
 {
     // Local files / keys
-    $localFiles = Emergence_FS::getTreeFiles(null, false);
+    $localFiles = Emergence_FS::getTreeFiles(null, false, [], [], true);
     $localKeys = array_keys($localFiles);
 
     // Get parent files / keys
@@ -161,11 +161,11 @@ function getFileSystemSummary($cursor = 0)
         // and won't require the connection to the local /emergence endpoint
 
         // Find new files
-        if (!in_array($path, $localKeys)) {
+        if (!in_array($path, $localKeys) && $data['SHA1'] != null) {
             array_push($newFiles, $path);
 
         // Find deleted files
-        } elseif ($data['SHA1'] == null && $localFiles[$path]['Site'] == 'Remote') {
+        } elseif ($data['SHA1'] == null && $localFiles[$path]['Site'] == 'Remote' && $localFiles[$path]['SHA1'] != null) {
             array_push($deletedFiles, $path);
 
         // Find updated files by mismatched SHA1s
