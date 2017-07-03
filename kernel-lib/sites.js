@@ -166,7 +166,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             };
 
             console.log('Added new job');
-            console.log(site.jobs);
+            console.log(site.jobs[uid]);
 
             // Emit job request
             me.emit('jobRequested', site.jobs[uid], request.path[1]);
