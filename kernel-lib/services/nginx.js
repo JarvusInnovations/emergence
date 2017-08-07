@@ -178,7 +178,8 @@ exports.NginxService.prototype.makeConfig = function() {
         'user '+me.options.user+' '+me.options.group+';',
         'worker_processes auto;',
         'pid '+me.options.pidPath+';',
-        'error_log '+me.options.errorLogPath+' info;'
+        'error_log '+me.options.errorLogPath+' info;',
+        'worker_rlimit_nofile 100000;'
     );
 
 
