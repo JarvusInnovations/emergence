@@ -248,6 +248,7 @@ exports.MysqlService.prototype.makeConfig = function() {
         'read_buffer_size                   = 256K',
         'read_rnd_buffer_size               = 512K',
         'myisam_sort_buffer_size            = 8M',
+        'explicit_defaults_for_timestamp    = 1',
 //      'lc-messages-dir                    = /usr/local/share/mysql',
 
         'log-bin                            = mysqld-bin',
