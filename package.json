@@ -20,7 +20,8 @@
         "emergence-shell": "./bin/shell",
         "emergence-git-shell": "./bin/git-shell",
         "emergence-su": "./bin/su",
-        "emergence-create-site": "./bin/create-site.sh"
+        "emergence-create-site": "./bin/create-site.sh",
+        "emergence-mysql-shell": "./bin/mysql-shell"
     },
     "repository": {
         "type": "git",
