@@ -77,10 +77,6 @@ case $i in
 esac
 done
 
-if [ "$GENERATE_TABLES" ] || [ "$PRECACHE_TREES" ] || [ "$ENTER_SHELL" ]; then
-    command -v underscore >/dev/null 2>&1 || { echo >&2 "underscore must be installed to use --precache-trees or --generate-tables"; exit 1; }
-fi
-
 if [ -z "$KERNEL_SOCKET" ]; then
     KERNEL_SOCKET="/emergence/kernel.sock"
 fi
@@ -145,7 +141,20 @@ if [ -z "$PRECACHE_TREES" ] && [ -z "$GENERATE_TABLES" ] && [ -z "$ENTER_SHELL" 
     exit 0
 fi
 
-SITE_HANDLE=$(echo "${RESPONSE}" | underscore --outfmt=text extract data.handle)
+# determine location of this script
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+# determine path to underscore
+UNDERSCORE="$DIR/../node_modules/.bin/underscore"
+
+# extract site handle from response
+SITE_HANDLE=$(echo "${RESPONSE}" | $UNDERSCORE --outfmt=text extract data.handle)
 
 if [ "$PRECACHE_TREES" ]; then
     emergence-shell $SITE_HANDLE 1>&2 << END_OF_PHP
