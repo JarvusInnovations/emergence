@@ -181,6 +181,7 @@ exports.PhpFpmService.prototype.makeConfig = function() {
 
     config.push(
         'php_admin_flag[short_open_tag]                 = on',
+        'php_admin_value[always_populate_raw_post_data] = -1',
         'php_admin_value[apc.shm_size]                  = 512M',
         'php_admin_value[apc.shm_segments]              = 1',
         'php_admin_value[apc.slam_defense]              = 0',
