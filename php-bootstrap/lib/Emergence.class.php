@@ -75,11 +75,11 @@ class Emergence
                     $excludedFiles[] = $node->ID;
                 }
             }
- 
+
             if (count($excludedCollections)) {
                 $collectionConditions['excludeTrees'] = $excludedCollections;
             }
-            
+
             if (count($excludedFiles)) {
                 $fileConditions[] = 'ID NOT IN ('.implode(',', $excludedFiles).')';
             }
@@ -116,6 +116,31 @@ class Emergence
         return $url;
     }
 
+    public static function executeRequest($url)
+    {
+        $fp = fopen('php://memory', 'w+');
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+
+        if (curl_exec($ch) === false || curl_errno($ch)) {
+            throw new Exception('Failed to query parent site for file: '.curl_error($ch));
+        }
+
+        // read response
+        fseek($fp, 0);
+
+        // read and check status
+        list($protocol, $status, $message) = explode(' ', trim(fgetss($fp)));
+
+        return array(
+            'status' => (int)$status,
+            'protocol' => $protocol,
+            'message' => $message,
+            'resource' => $fp
+        );
+    }
+
     public static function resolveFileFromParent($collection, $path, $forceRemote = false, $params = array())
     {
         if (!Site::getConfig('parent_hostname')) {
@@ -147,29 +172,29 @@ class Emergence
                 return false;
             }
 
-            $fp = fopen('php://memory', 'w+');
-            $ch = curl_init($remoteURL);
-            curl_setopt($ch, CURLOPT_FILE, $fp);
-            curl_setopt($ch, CURLOPT_HEADER, true);
+            $remoteResponse = static::executeRequest($remoteURL);
 
-            if (curl_exec($ch) === false || curl_errno($ch)) {
-                throw new Exception('Failed to query parent site for file: '.curl_error($ch));
+            // if 500, back off for a couple seconds and try once more
+            if ($remoteResponse['status'] == 500) {
+                usleep(mt_rand(1000000, 3000000));
+                $remoteResponse = static::executeRequest($remoteURL);
             }
 
-            // read response
-            fseek($fp, 0);
+            // a collection was found, cache it
+            if ($remoteResponse['status'] == 300) {
+                return SiteCollection::getOrCreatePath($path, $collection);
+            }
 
-            // read and check status
-            list($protocol, $status, $message) = explode(' ', trim(fgetss($fp)));
 
-            if ($status != '200') {
-                fclose($fp);
-                Cache::rawStore($remoteURL, (int)$status);
+            // any status but 300 or 200 is failure,remember and don't try again
+            if ($remoteResponse['status'] != 200) {
+                fclose($remoteResponse['resource']);
+                Cache::rawStore($remoteURL, $remoteResponse['status']);
                 return false;
             }
 
             // read headers until a blank line is found
-            while ($header = trim(fgetss($fp))) {
+            while ($header = trim(fgetss($remoteResponse['resource']))) {
                 if (!$header) {
                     break;
                 }
@@ -178,13 +203,13 @@ class Emergence
 
                 // if etag found, use it to skip write if existing file matches
                 if ($key == 'etag' && $fileNode && $fileNode->SHA1 == $value) {
-                    fclose($fp);
+                    fclose($remoteResponse['resource']);
                     return $fileNode;
                 }
             }
 
             // write remaining buffer to file
-            $fileRecord = $collection->createFile($path, $fp);
+            $fileRecord = $collection->createFile($path, $remoteResponse['resource']);
 
             $fileNode = new SiteFile($fileRecord['Handle'], $fileRecord);
         }
