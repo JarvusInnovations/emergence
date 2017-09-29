@@ -519,8 +519,10 @@ class Site
             // look for composite config files first
             $collectionPath = "php-config/$path.config.d";
             Emergence_FS::cacheTree($collectionPath);
+            $collectionNodes = Emergence_FS::getAggregateChildren($collectionPath);
+            ksort($collectionNodes);
 
-            foreach (Emergence_FS::getAggregateChildren($collectionPath) AS $filename => $node) {
+            foreach ($collectionNodes AS $filename => $node) {
                 if ($node->Type == 'application/php') {
                     $configFileIds[] = $node->ID;
                 }
