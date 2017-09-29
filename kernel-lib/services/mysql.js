@@ -242,7 +242,7 @@ exports.MysqlService.prototype.makeConfig = function() {
         'datadir                            = '+me.options.dataDir,
         'skip-external-locking',
         'key_buffer_size                    = 16M',
-        'max_allowed_packet                 = 1M',
+        'max_allowed_packet                 = 512M',
         'sort_buffer_size                   = 512K',
         'net_buffer_length                  = 8K',
         'read_buffer_size                   = 256K',
