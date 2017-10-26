@@ -301,7 +301,7 @@ class Emergence_FS
 
 
         // build map of subtrees to be written and create directories
-        $prefixLen = strlen($sourcePath);
+        $prefixLen = strlen($destinationPath);
         $tree = static::getTree($sourcePath, $options['localOnly']);
 
         foreach ($tree AS $collectionID => &$node) {
