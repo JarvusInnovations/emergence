@@ -137,6 +137,7 @@ class Emergence
             'status' => (int)$status,
             'protocol' => $protocol,
             'message' => $message,
+            'type' => curl_getinfo($ch, CURLINFO_CONTENT_TYPE),
             'resource' => $fp
         );
     }
@@ -223,22 +224,18 @@ class Emergence
             return false;
         }
 
-        $fp = fopen('php://memory', 'w+');
-        $ch = curl_init(static::buildUrl($path));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, $fp);
+        $remoteResponse = static::executeRequest(static::buildUrl($path));
 
-        $responseText = curl_exec($ch);
-        $responseStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $responseType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-
-        if ($responseText === false || curl_errno($ch)) {
-            throw new Exception('Failed to query parent site for collection: '.curl_error($ch));
-        }
-
-        if ($responseStatus != 300 || $responseType != 'application/vnd.emergence.tree+json') {
+        if ($remoteResponse['status'] != 300 || $remoteResponse['type'] != 'application/vnd.emergence.tree+json') {
             return false;
         }
 
-        return json_decode($responseText, true);
+        while ($header = trim(fgetss($remoteResponse['resource']))) {
+            if (!$header) {
+                break;
+            }
+        }
+
+        return json_decode(stream_get_contents($remoteResponse['resource']), true);
     }
 }
