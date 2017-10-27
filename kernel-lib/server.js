@@ -1,4 +1,5 @@
 var http = require('http'),
+    https = require('https'),
     util = require('util'),
     fs = require('fs'),
     path = require('path'),
@@ -6,7 +7,8 @@ var http = require('http'),
     util = require('util'),
     url = require('url'),
     static = require('node-static'),
-    events = require('events');
+    events = require('events'),
+    nodeCleanup = require('node-cleanup');
 
 exports.Server = function(paths, config) {
     var me = this,
@@ -26,6 +28,7 @@ exports.Server = function(paths, config) {
     me.options.socketPath = 'socketPath' in me.options ? me.options.socketPath : '/emergence/kernel.sock';
 
     // initialize state
+    nodeCleanup(this.close.bind(this));
 };
 
 util.inherits(exports.Server, events.EventEmitter);
@@ -43,26 +46,23 @@ exports.Server.prototype.start = function() {
 
     // listen on web port
     if (this.options.sslKey && this.options.sslCert) {
-        this.webServer = require('https').createServer({
+        this.webServer = https.createServer({
             key: fs.readFileSync(this.options.sslKey),
             cert: fs.readFileSync(this.options.sslCert)
         }, this.handleWebRequest.bind(this)).listen(this.options.port, this.options.host);
 
         this.webProtocol = 'https';
     } else {
-        this.webServer = require('http').createServer(this.handleWebRequest.bind(this)).listen(this.options.port, this.options.host);
+        this.webServer = http.createServer(this.handleWebRequest.bind(this)).listen(this.options.port, this.options.host);
 
         this.webProtocol = 'http';
     }
 
     // listen on unix socket
     if (this.options.socketPath) {
-        this.socketServer = require('http').createServer(this.handleRequest.bind(this)).listen(this.options.socketPath);
+        this.socketServer = http.createServer(this.handleRequest.bind(this)).listen(this.options.socketPath);
         fs.chmodSync(this.options.socketPath, '400');
     }
-
-    // clean up on exit
-    process.on('exit', this.close.bind(this));
 
     console.log('Management server listening on '+this.webProtocol+'://'+this.options.host+':'+this.options.port);
 };

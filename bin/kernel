@@ -164,14 +164,3 @@ var eManagementServer = require('../kernel-lib/server.js').createServer({
 
 // start server
 eManagementServer.start();
-
-// handle exiting cleanly
-process.on('SIGINT', function () {
-    process.exit(2);
-});
-
-process.on('uncaughtException', function(error) {
-    console.log('Uncaught Exception...');
-    console.log(error.stack);
-    process.exit(99);
-});
