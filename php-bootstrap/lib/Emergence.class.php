@@ -112,8 +112,14 @@ class Emergence
 
     public static function executeRequest($url)
     {
+        static $ch = null;
+
+        if (!$ch) {
+            $ch = curl_init();
+        }
+
         $fp = fopen('php://memory', 'w+');
-        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_FILE, $fp);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
