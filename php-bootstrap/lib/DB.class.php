@@ -1,8 +1,9 @@
 <?php
 
-class DuplicateKeyException extends Exception { }
-class TableNotFoundException extends Exception { }
-class QueryException extends Exception { }
+require_once('DuplicateKeyException.class.php');
+require_once('TableNotFoundException.class.php');
+require_once('QueryException.class.php');
+
 
 class DB
 {
