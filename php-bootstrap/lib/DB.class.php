@@ -379,7 +379,7 @@ class DB
 
     protected static function finishQueryLog(&$queryLog, $result = null)
     {
-        if ($queryLog == false) {
+        if ($queryLog == false || static::$suspendCount > 0) {
             return false;
         }
 
@@ -478,5 +478,23 @@ class DB
             'SET time_zone = "%s"',
             self::escape(date('P'))
         );
+    }
+
+
+    // API to suspend/resume query logging
+    protected static $suspendCount = 0;
+
+    public static function suspendQueryLogging()
+    {
+        static::$suspendCount++;
+    }
+
+    public static function resumeQueryLogging()
+    {
+        static::$suspendCount--;
+
+        if (static::$suspendCount < 0) {
+            static::$suspendCount = 0;
+        }
     }
 }
