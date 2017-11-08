@@ -609,7 +609,7 @@ class Site
             die($report);
         } else {
             if (class_exists('Email')) {
-                Email::send(static::$webmasterEmail, 'Unhandled exception on '.static::$hostname, $report);
+                Email::send(static::$webmasterEmail, 'Unhandled '.get_class($e).' on '.static::$hostname, $report);
             }
             die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
         }
