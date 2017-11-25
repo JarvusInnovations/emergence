@@ -475,6 +475,7 @@ class SiteCollection
     {
         Cache::delete(static::getCacheKey($this->Handle, $this->ParentID, $this->Site == 'Remote'));
         Cache::delete(static::getCacheKey($handle, $this->ParentID, $this->Site == 'Remote'));
+        Cache::delete('efs:col:'.$this->ID);
 
         DB::nonQuery('UPDATE `%s` SET Handle = "%s" WHERE ID = %u', array(
             static::$tableName
@@ -486,6 +487,7 @@ class SiteCollection
     public function setStatus($status)
     {
         Cache::delete(static::getCacheKey($this->Handle, $this->ParentID, $this->Site == 'Remote'));
+        Cache::delete('efs:col:'.$this->ID);
 
         DB::nonQuery('UPDATE `%s` SET Status = "%s" WHERE ID = %u', array(
             static::$tableName
