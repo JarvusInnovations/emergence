@@ -306,7 +306,7 @@ class Emergence_FS
 
         foreach ($tree AS $collectionID => &$node) {
 
-            if ($node['ParentID'] && $tree[$node['ParentID']]) {
+            if ($node['ParentID'] && !empty($tree[$node['ParentID']])) {
                 $node['_path'] = $tree[$node['ParentID']]['_path'] . '/' . $node['Handle'];
             } else {
                 $node['_path'] = $destinationPath;
@@ -631,6 +631,8 @@ class Emergence_FS
 
         if (!$localOnly) {
             $remoteCollection = SiteCollection::getByHandle($rootHandle, null, true);
+        } else {
+            $remoteCollection = null;
         }
 
         while ($handle = array_shift($path)) {
