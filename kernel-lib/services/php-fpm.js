@@ -3,7 +3,9 @@ var _ = require('underscore'),
     path = require('path'),
     util = require('util'),
     spawn = require('child_process').spawn,
-    phpfpm = require('node-phpfpm');
+    phpfpm = require('node-phpfpm'),
+    async = require('async'),
+    jobQueue;
 
 exports.createService = function(name, controller, options) {
     return new exports.PhpFpmService(name, controller, options);
@@ -44,8 +46,8 @@ exports.PhpFpmService = function(name, controller, options) {
         me.status = 'online';
     }
 
-    // listen for site updated
-    controller.sites.on('siteUpdated', _.bind(me.onSiteUpdated, me));
+    // listen for job requests
+    controller.sites.on('jobRequested', _.bind(me.onJobRequested, me));
 };
 
 util.inherits(exports.PhpFpmService, require('./abstract.js').AbstractService);
@@ -197,12 +199,10 @@ exports.PhpFpmService.prototype.makeConfig = function() {
     return config.join('\n');
 };
 
-exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
-    var me = this,
-        siteRoot = me.controller.sites.options.sitesDir + '/' + siteData.handle,
+jobQueue = async.queue(function(data, callback) {
+    var me = data.scope,
+        siteRoot = me.controller.sites.options.sitesDir + '/' + data.job.handle,
         phpClient;
-
-    console.log(me.name+': clearing config cache for '+siteRoot);
 
     // Connect to FPM worker pool
     phpClient = new phpfpm({
@@ -210,15 +210,51 @@ exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
         documentRoot: me.options.bootstrapDir + '/'
     });
 
-    // Clear cached site.json
+    // Mark job as started
+    data.job.started = new Date().getTime();
+
+    // Run job request
     phpClient.run({
-        uri: 'cache.php',
-        json: [
-            { action: 'delete', key: siteRoot }
-        ]
-    }, function(err, output, phpErrors) {
-        if (err == 99) console.error('PHPFPM server error');
-        console.log(output);
-        if (phpErrors) console.error(phpErrors);
+        uri: 'job.php',
+        json: {
+            'job': data.job,
+            'handle': data.job.handle,
+            'siteRoot': siteRoot
+        }
+    }, function(err, output, stderr) {
+        if (err == 99) {
+            data.job.status = 'failed';
+            data.job.message = 'PHPFPM server error';
+            console.error(data.job.message);
+            return callback(err);
+        }
+        if (stderr) {
+            data.job.status = 'failed';
+            data.job.message = stderr;
+            console.error(stderr);
+            return callback(stderr);
+        }
+
+        // Parse job response
+        try {
+            var response = JSON.parse(output);
+
+            // Update job with response
+            data.job.command = response.command;
+            data.job.status = 'completed';
+            data.job.completed = new Date().getTime();
+
+        } catch(e) {
+            data.job.status = 'failed';
+            data.job.message = 'PHPFPM server error';
+            console.error(output);
+            return callback(output);
+        }
+
+        callback(null, data.job);
     });
-};
+}, 5);
+
+exports.PhpFpmService.prototype.onJobRequested = function(job) {
+    jobQueue.push({'job': job, 'scope': this});
+}
