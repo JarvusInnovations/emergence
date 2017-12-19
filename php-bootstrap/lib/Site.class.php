@@ -519,8 +519,10 @@ class Site
             // look for composite config files first
             $collectionPath = "php-config/$path.config.d";
             Emergence_FS::cacheTree($collectionPath);
+            $collectionNodes = Emergence_FS::getAggregateChildren($collectionPath);
+            ksort($collectionNodes);
 
-            foreach (Emergence_FS::getAggregateChildren($collectionPath) AS $filename => $node) {
+            foreach ($collectionNodes AS $filename => $node) {
                 if ($node->Type == 'application/php') {
                     $configFileIds[] = $node->ID;
                 }
@@ -607,7 +609,7 @@ class Site
             die($report);
         } else {
             if (class_exists('Email')) {
-                Email::send(static::$webmasterEmail, 'Unhandled exception on '.static::$hostname, $report);
+                Email::send(static::$webmasterEmail, 'Unhandled '.get_class($e).' on '.static::$hostname, $report);
             }
             die('A problem has occurred and this request could not be handled, the webmaster has been sent a diagnostic report.');
         }
