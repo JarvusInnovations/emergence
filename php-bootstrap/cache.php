@@ -12,6 +12,7 @@ $commands = json_decode(file_get_contents('php://input'), true);
 
 foreach ($commands AS $command) {
     $key = $command['key'];
+    $action = $command['action'];
 
     if (!empty($command['site'])) {
         $key = $command['site'].':'.$key;
@@ -19,6 +20,12 @@ foreach ($commands AS $command) {
 
     if ($action == 'delete') {
         Cache::rawDelete($key);
+
+    } elseif ($action == 'delete-pattern') {
+        foreach (CacheIterator::createFromPattern($pattern) as $cacheEntry) {
+            Cache::rawDelete($cacheEntry['key']);
+        }
+
     } else {
         Cache::rawStore(
             $key,

@@ -46,6 +46,9 @@ exports.PhpFpmService = function(name, controller, options) {
 
     // listen for site updated
     controller.sites.on('siteUpdated', _.bind(me.onSiteUpdated, me));
+
+    // listen for cache cleared
+    controller.sites.on('cacheCleared', _.bind(me.onCacheCleared, me));
 };
 
 util.inherits(exports.PhpFpmService, require('./abstract.js').AbstractService);
@@ -215,6 +218,32 @@ exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
         uri: 'cache.php',
         json: [
             { action: 'delete', key: siteRoot }
+        ]
+    }, function(err, output, phpErrors) {
+        if (err == 99) console.error('PHPFPM server error');
+        console.log(output);
+        if (phpErrors) console.error(phpErrors);
+    });
+};
+
+exports.PhpFpmService.prototype.onCacheCleared = function(data) {
+    var me = this,
+        siteRoot = me.controller.sites.options.sitesDir + '/' + data.handle,
+        phpClient;
+
+    console.log(me.name+': clearing cache for '+siteRoot);
+
+    // Connect to FPM worker pool
+    phpClient = new phpfpm({
+        sockFile: me.options.socketPath,
+        documentRoot: me.options.bootstrapDir + '/'
+    });
+
+    // Clear cached site.json
+    phpClient.run({
+        uri: 'cache.php',
+        json: [
+            { action: data.action, key: data.key, site: data.handle }
         ]
     }, function(err, output, phpErrors) {
         if (err == 99) console.error('PHPFPM server error');

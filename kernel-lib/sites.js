@@ -203,6 +203,23 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     });
 
                     return true;
+
+                } else if (request.path[2] == 'cache') {
+
+                    requestData.handle = request.path[1];
+                    console.log('Executing cache post for ' + request.path[1] + ':');
+                    console.log(requestData);
+
+                    // Clear cache
+                    me.emit('cacheCleared', requestData);
+
+                    response.writeHead(200, {'Content-Type':'application/json'});
+                    response.end(JSON.stringify({
+                        success: true,
+                        message: 'cache cleared request finished',
+                    }));
+                    return true;
+
                 } else {
                     console.error('Unhandled site sub-resource: ' + request.path[2]);
                     response.writeHead(404, {'Content-Type':'application/json'});
