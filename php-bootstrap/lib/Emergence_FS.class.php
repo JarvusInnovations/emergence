@@ -128,7 +128,7 @@ class Emergence_FS
             ,'SELECT ID, Site, Handle, ParentID, Status FROM `%s` WHERE (%s) ORDER BY Site = "Remote", PosLeft'
             ,array(
                 SiteCollection::$tableName
-                ,join(') AND (', $mappedConditions)
+                ,count($mappedConditions) ? join(') AND (', $mappedConditions) : '1'
             )
         );
 
@@ -139,13 +139,18 @@ class Emergence_FS
         return $tree;
     }
 
-    public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array()) {
-        return static::getTreeFilesFromTree(static::getTree($path, $localOnly, false, $collectionConditions), $fileConditions);
+    public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array(), $includeDeleted = false) {
+        return static::getTreeFilesFromTree(static::getTree($path, $localOnly, $includeDeleted, $collectionConditions), $fileConditions, $includeDeleted);
     }
 
-    public static function getTreeFilesFromTree($tree, $conditions = array()) {
+    public static function getTreeFilesFromTree($tree, $conditions = array(), $includeDeleted = false) {
 
-        $conditions['Status'] = 'Normal';
+        // allow for includeDeleted
+        if ($includeDeleted) {
+            $conditions[] = 'Status IN ("Normal", "Deleted")';
+        } else {
+            $conditions['Status'] = 'Normal';
+        }
 
         // map conditions
         $mappedConditions = array();
