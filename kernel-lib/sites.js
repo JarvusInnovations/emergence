@@ -24,6 +24,7 @@ exports.Sites = function(config) {
     // initialize options and apply defaults
     me.options = options || {};
     me.options.sitesDir = me.options.sitesDir || '/emergence/sites';
+    me.options.localhost = me.options.localhost || '127.0.0.1';
     me.options.dataUID = me.options.dataUID || posix.getpwnam(config.user).uid;
     me.options.dataGID = me.options.dataGID || posix.getgrnam(config.group).gid;
     me.options.dataMode = me.options.dataMode || '775';
@@ -221,8 +222,10 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
             if (cfgResult.isNew) {
                 // write primary hostname to /etc/hosts
-                hostile.set('127.0.0.1', cfgResult.site.primary_hostname);
-                console.log('added ' + cfgResult.site.primary_hostname + ' to /etc/hosts');
+                if (me.options.localhost) {
+                    hostile.set(me.options.localhost, cfgResult.site.primary_hostname);
+                    console.log('added ' + cfgResult.site.primary_hostname + ' to /etc/hosts');
+                }
 
                 // notify plugins
                 me.emit('siteCreated', cfgResult.site, requestData, {
