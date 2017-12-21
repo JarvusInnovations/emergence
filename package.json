@@ -6,7 +6,7 @@
   "dependencies": {
     "hostile": "^1.0.2",
     "http-auth": "1.2.7",
-    "mariasql": "^0.2.6",
+    "mysql2": "^1.5.1",
     "node-cleanup": "^2.1.2",
     "node-phpfpm": "^1.0.1",
     "node-static": "git+https://github.com/JarvusInnovations/node-static.git",
