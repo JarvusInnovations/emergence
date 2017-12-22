@@ -6,7 +6,7 @@ var _ = require('underscore'),
     exec = require('child_process').exec,
     shell = require('shelljs'),
     semver = require('semver'),
-    mariasql = require('mariasql');
+    mysql = require('mysql2');
 
 exports.createService = function(name, controller, options) {
     return new exports.MysqlService(name, controller, options);
@@ -57,14 +57,6 @@ exports.MysqlService = function(name, controller, options) {
 
         if (fs.existsSync('/proc/'+me.pid)) {
             me.status = 'online';
-
-            // instantiate MySQL client
-            me.client = new mariasql({
-                unixSocket: me.options.socketPath,
-                user: me.options.managerUser,
-                password: me.options.managerPassword,
-                multiStatements: true
-            });
         } else {
             console.log(me.name+': process '+me.pid + ' not found, deleting .pid file');
             fs.unlinkSync(me.options.pidPath);
@@ -125,14 +117,6 @@ exports.MysqlService.prototype.start = function(firstRun) {
         return true; // not really started, we have to try again after mysql_install_db is done
     }
 
-    // instantiate MySQL client
-    me.client = new mariasql({
-        unixSocket: me.options.socketPath,
-        user: me.options.managerUser,
-        password: me.options.managerPassword,
-        multiStatements: true
-    });
-
     // spawn process
     console.log(me.name+': spawning mysql: '+me.options.execPath);
     me.proc = spawn(me.options.execPath, ['--defaults-file='+me.options.configPath, '--console'], {detached: true});
@@ -177,12 +161,6 @@ exports.MysqlService.prototype.stop = function() {
 
     if (!me.pid) {
         return false;
-    }
-
-    // disconnect client
-    if (me.client && me.client.connected) {
-        me.client.end();
-        console.log(me.name+': mysql client disconnected');
     }
 
     try {
@@ -315,19 +293,22 @@ exports.MysqlService.prototype.secureInstallation = function() {
     sql += 'FLUSH PRIVILEGES;';
 
     // open a temporary connection to the new non-secured installation
-    (new mariasql({
-        unixSocket: me.options.socketPath,
+    var connection = mysql.createConnection({
+        socketPath: me.options.socketPath,
         user: 'root',
         password: '',
-        multiStatements: true
-    })).query(sql, function(error) {
+        multipleStatements: true
+    });
+
+    connection.query(sql, function(error) {
+        connection.end();
+
         if (error) {
             console.log(me.name+': failed to secure installation: ' + error);
         } else {
             console.log(me.name+': securing complete, mysql ready.');
         }
     });
-
 };
 
 
@@ -348,7 +329,7 @@ exports.MysqlService.prototype.onSiteCreated = function(siteData, requestData, c
     sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, LOCK TABLES ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
     sql += 'FLUSH PRIVILEGES;';
 
-    me.client.query(sql, function(error, results) {
+    me.executeSQL(sql, function(error, results) {
         if (error) {
             console.log(me.name+': failed to setup database `'+siteData.handle+'`: '+error);
             return;
@@ -409,7 +390,7 @@ exports.MysqlService.prototype.createSkeletonTables = function(siteData, callbac
     sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
 
     // run tables
-    me.client.query(sql, function(error, results) {
+    me.executeSQL(sql, function(error, results) {
         if (error) {
             console.log(me.name+': failed to setup skeleton tables on `'+siteData.handle+'`: '+error);
             return;
@@ -418,5 +399,22 @@ exports.MysqlService.prototype.createSkeletonTables = function(siteData, callbac
         console.log(me.name+': skeleton table schema setup');
 
         callback();
+    });
+};
+
+
+
+exports.MysqlService.prototype.executeSQL = function(sql, callback) {
+    var connection = mysql.createConnection({
+        socketPath: this.options.socketPath,
+        user: this.options.managerUser,
+        password: this.options.managerPassword,
+        multipleStatements: true
+    });
+
+    connection.query(sql, function(err, results) {
+        connection.end();
+
+        callback(err, results);
     });
 };
