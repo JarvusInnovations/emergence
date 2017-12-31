@@ -1,0 +1,23 @@
+{
+    "env": {
+        "node": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 8
+    },
+    "rules": {
+        "no-const-assign": "warn",
+        "no-this-before-super": "warn",
+        "no-undef": "warn",
+        "no-unreachable": "warn",
+        "no-unused-vars": "warn",
+        "constructor-super": "warn",
+        "valid-typeof": "warn",
+        "semi": "warn",
+        "keyword-spacing": "warn",
+        "space-before-function-paren": "warn",
+        "space-before-blocks": "warn",
+        "indent": ["warn", 4],
+        "no-trailing-spaces": "warn"
+    }
+}
