@@ -107,7 +107,8 @@ exports.Server.prototype.handleRequest = function(request, response) {
         }
 
         if (me.paths.hasOwnProperty(request.path[0])) {
-            var result = me.paths[request.path[0]].handleRequest(request, response, me);
+            var handler = me.paths[request.path[0]];
+            var result = (typeof handler == 'function' ? handler(request, response, me) : handler.handleRequest(request, response, me));
 
             if (result===false)  {
                 response.writeHead(404);

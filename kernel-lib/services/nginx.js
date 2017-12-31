@@ -178,7 +178,8 @@ exports.NginxService.prototype.makeConfig = function() {
         'user '+me.options.user+' '+me.options.group+';',
         'worker_processes auto;',
         'pid '+me.options.pidPath+';',
-        'error_log '+me.options.errorLogPath+' info;'
+        'error_log '+me.options.errorLogPath+' info;',
+        'worker_rlimit_nofile 100000;'
     );
 
 
@@ -256,15 +257,15 @@ exports.NginxService.prototype.makeConfig = function() {
     );
 
     _.each(me.controller.sites.sites, function(site, handle) {
-        var hostnames = site.hostnames.slice(),
+        var hostnames = site.config.hostnames.slice(),
             siteDir = me.controller.sites.options.sitesDir+'/'+handle,
             logsDir = siteDir+'/logs',
             siteConfig = [],
             sslHostnames, sslHostname;
 
         // process hostnames
-        if (_.indexOf(hostnames, site.primary_hostname) == -1) {
-            hostnames.unshift(site.primary_hostname);
+        if (_.indexOf(hostnames, site.config.primary_hostname) == -1) {
+            hostnames.unshift(site.config.primary_hostname);
         }
 
         // process directories
@@ -302,15 +303,15 @@ exports.NginxService.prototype.makeConfig = function() {
             '    }'
         );
 
-        if (site.ssl) {
-            if (site.ssl.hostnames) {
-                sslHostnames = site.ssl.hostnames;
+        if (site.config.ssl) {
+            if (site.config.ssl.hostnames) {
+                sslHostnames = site.config.ssl.hostnames;
             } else {
                 sslHostnames = {};
-                sslHostnames[site.primary_hostname] = site.ssl;
+                sslHostnames[site.config.primary_hostname] = site.config.ssl;
 
-                site.hostnames.forEach(function(hostname) {
-                    sslHostnames[hostname] = site.ssl;
+                site.config.hostnames.forEach(function(hostname) {
+                    sslHostnames[hostname] = site.config.ssl;
                 });
             }
 

@@ -7,7 +7,8 @@ var _ = require('underscore'),
     posix = require('posix'),
     spawn = require('child_process').spawn,
     hostile = require('hostile'),
-    phpShellScript = path.resolve(__dirname, '../bin/shell');
+    phpShellScript = path.resolve(__dirname, '../bin/shell'),
+    uuidV1 = require('uuid/v1');
 
 
 exports.createSites = function(config) {
@@ -40,9 +41,12 @@ exports.Sites = function(config) {
     me.sites = {};
     _.each(fs.readdirSync(me.options.sitesDir), function(handle) {
         try {
-            me.sites[handle] = JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii'));
-            me.sites[handle].handle = handle;
-            console.log('-Loaded: '+me.sites[handle].primary_hostname);
+            me.sites[handle] = {
+                handle: handle,
+                config: JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii')),
+                jobs: {}
+            };
+            console.log('-Loaded: '+me.sites[handle].config.primary_hostname);
         } catch (error) {
             console.log('-FAILED to load: '+handle);
         }
@@ -52,34 +56,69 @@ exports.Sites = function(config) {
 
 util.inherits(exports.Sites, events.EventEmitter);
 
-
 exports.Sites.prototype.handleRequest = function(request, response, server) {
-    var me = this;
+    var me = this,
+        site;
 
     if (request.method == 'GET') {
 
         if (request.path[1]) {
-            if (!me.sites[request.path[1]]) {
+            site = me.sites[request.path[1]];
+
+            if (!site) {
                 console.error('Site not found: ' + request.path[1]);
                 response.writeHead(404, {'Content-Type':'application/json'});
                 response.end(JSON.stringify({success: false, message: 'Site not found'}));
                 return;
             }
 
+            if (request.path[2]) {
+                if (request.path[2] == 'jobs') {
+                    console.log('Received jobs GET request for ' + request.path[1]);
+                    response.writeHead(200, {'Content-Type':'application/json'});
+
+                    // Return specific uid
+                    if (request.path[3]) {
+                        response.end(JSON.stringify({
+                            success: true,
+                            message: 'Jobs get request finished',
+                            jobs: (site.jobs[request.path[3]]) ? site.jobs[request.path[3]] : false
+                        }));
+                        return true;
+
+                    // Return all jobs
+                    } else {
+                        response.end(JSON.stringify({
+                            success: true,
+                            message: 'Jobs get request finished',
+                            jobs: site.jobs
+                        }));
+                        return true;
+                    }
+
+                } else {
+                    console.error('Unhandled site sub-resource: ' + request.path[2]);
+                    response.writeHead(404, {'Content-Type':'application/json'});
+                    response.end(JSON.stringify({success: false, message: 'Site resource not found'}));
+                    return;
+                }
+            }
+
             response.writeHead(200, {'Content-Type':'application/json'});
-            response.end(JSON.stringify({data: me.sites[request.path[1]]}));
+            response.end(JSON.stringify({data: site.config}));
             return true;
         }
 
         response.writeHead(200, {'Content-Type':'application/json'});
-        response.end(JSON.stringify({data: _.values(me.sites)}));
+        response.end(JSON.stringify({data: _.pluck(_.values(me.sites), 'config')}));
         return true;
 
     } else if (request.method == 'PATCH') {
 
         if (request.path[1]) {
+            site = me.sites[request.path[1]];
 
-            if (!me.sites[request.path[1]]) {
+            if (!site) {
                 console.error('Site not found: ' + request.path[1]);
                 response.writeHead(404, {'Content-Type':'application/json'});
                 response.end(JSON.stringify({success: false, message: 'Site not found'}));
@@ -90,28 +129,54 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                 siteDir = me.options.sitesDir + '/' + handle,
                 siteConfigPath = siteDir + '/site.json',
                 params = JSON.parse(request.content),
-                siteData;
+                siteData, siteDataTmp, uid;
 
             // Get existing site config
             siteData = me.sites[handle];
 
+            // Prune jobs
+            pruneJobs(siteData.jobs);
+
             // Apply updates except handle
             for (var k in params) {
                 if (k !== 'handle') {
-                    siteData[k] = params[k];
+                    siteData.config[k] = params[k];
                 }
             }
 
-            // Update file
-            fs.writeFileSync(siteConfigPath, JSON.stringify(siteData, null, 4));
+            // Update config file
+            fs.writeFileSync(siteConfigPath, JSON.stringify(siteData.config, null, 4));
 
             // Restart nginx
             me.emit('siteUpdated', siteData);
 
-            response.writeHead(404, {'Content-Type':'application/json'});
+            // Create uid
+            uid = uuidV1();
+
+            // Init job
+            site.jobs[uid] = {
+                'uid': uid,
+                'handle': request.path[1],
+                'status': 'pending',
+                'received': new Date().getTime(),
+                'started': null,
+                'completed': null,
+                'command': {
+                    'action': 'config-reload'
+                }
+            };
+
+            console.log('Added new job');
+            console.log(site.jobs[uid]);
+
+            // Emit job request
+            me.emit('jobRequested', site.jobs[uid], request.path[1]);
+
+            response.writeHead(200, {'Content-Type':'application/json'});
             response.end(JSON.stringify({
                 success: true,
                 message: 'Processed patch request',
+                job: site.jobs[uid]
             }));
             return;
         }
@@ -132,7 +197,9 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
         // handle post to an individual site
         if (request.path[1]) {
-            if (!me.sites[request.path[1]]) {
+            site = me.sites[request.path[1]];
+
+            if (!site) {
                 console.error('Site not found: ' + request.path[1]);
                 response.writeHead(404, {'Content-Type':'application/json'});
                 response.end(JSON.stringify({success: false, message: 'Site not found'}));
@@ -204,6 +271,50 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     });
 
                     return true;
+
+                } else if (request.path[2] == 'jobs') {
+
+                    console.log('Received job request for ' + request.path[1]);
+                    console.log(requestData);
+
+                    var uid, newJobs = [];
+
+                    // Prune jobs
+                    pruneJobs(site.jobs);
+
+                    for (i=0; i<requestData.length; i++) {
+
+                        // Create uid
+                        uid = uuidV1();
+
+                        // Init job
+                        site.jobs[uid] = {
+                            'uid': uid,
+                            'handle': request.path[1],
+                            'status': 'pending',
+                            'received': new Date().getTime(),
+                            'started': null,
+                            'completed': null,
+                            'command': requestData[i]
+                        };
+
+                        // Append new job
+                        newJobs.push(site.jobs[uid]);
+                        console.log('Added new job');
+                        console.log(site.jobs[uid]);
+
+                        // Emit job request
+                        me.emit('jobRequested', site.jobs[uid], request.path[1]);
+                    }
+
+                    response.writeHead(200, {'Content-Type':'application/json'});
+                    response.end(JSON.stringify({
+                        success: true,
+                        message: 'job request initiated',
+                        jobs: newJobs
+                    }));
+                    return true;
+
                 } else {
                     console.error('Unhandled site sub-resource: ' + request.path[2]);
                     response.writeHead(404, {'Content-Type':'application/json'});
@@ -213,11 +324,13 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
             }
 
             // apply existing site's properties in
-            _.defaults(requestData, me.sites[request.path[1]]);
+            _.defaults(requestData, site);
+
         }
 
         // create new site
         try {
+
             cfgResult = me.writeSiteConfig(requestData);
 
             if (cfgResult.isNew) {
@@ -271,6 +384,100 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
     return false;
 };
 
+// handle bulk job request
+exports.Sites.prototype.handleJobsRequest = function(request, response, server) {
+    var me = this;
+
+    console.log('Received bulk job request');
+
+    if (request.method == 'POST') {
+        var requestData, cfgResult, phpProc, phpProcInitialized, site, uid, newJobs = [];
+
+        if (request.headers['content-type'] == 'application/json') {
+            requestData = JSON.parse(request.content);
+        } else {
+            requestData = request.content;
+        }
+
+        for (a=0; a<requestData.length; a++) {
+
+            // Find site by handle
+            site = me.sites[requestData[a].handle];
+
+            if (!site) {
+                console.error('Site not found: ' + me.sites[requestData[a].handle]);
+                continue;
+            }
+
+            // Prune jobs
+            pruneJobs(site.jobs);
+
+            // Create uid
+            uid = uuidV1();
+
+            // Init job
+            site.jobs[uid] = {
+                'uid': uid,
+                'handle': requestData[a].handle,
+                'status': 'pending',
+                'received': new Date().getTime(),
+                'started': null,
+                'completed': null,
+                'command': requestData[a]
+            };
+
+            // Append new job
+            newJobs.push(site.jobs[uid]);
+            console.log('Added new job');
+            console.log(site.jobs[uid]);
+
+            // Emit job request with job
+            me.emit('jobRequested', site.jobs[uid], requestData[a].handle);
+        }
+
+        response.writeHead(200, {'Content-Type':'application/json'});
+        response.end(JSON.stringify({
+            success: true,
+            message: 'bulk job request initiated',
+            jobs: newJobs
+        }));
+        return true;
+    }
+
+    // Get all jobs
+    var jobs = {};
+    for (var handle in me.sites) {
+        if (Object.keys(me.sites[handle].jobs).length > 0) {
+            jobs[handle] = me.sites[handle].jobs;
+        }
+    }
+
+    response.writeHead(200, {'Content-Type':'application/json'});
+    response.end(JSON.stringify({
+        success: true,
+        message: 'get active jobs',
+        jobs: jobs
+    }));
+    return true;
+}
+
+// Clean up completed jobs
+function pruneJobs(jobs) {
+    var jobKeys = Object.keys(jobs),
+        cutoffTime = new Date().getTime() - (60 * 60 * 1000); // 1 hour ago
+
+    for (i=0; i<jobKeys.length; i++) {
+        if (jobs[jobKeys[i]].completed && jobs[jobKeys[i]].completed < cutoffTime) {
+            console.log('Remove completed job');
+            console.log(jobs[jobKeys[i]]);
+            delete jobs[jobKeys[i]];
+        } else if (jobs[jobKeys[i]].status == 'failed' && jobs[jobKeys[i]].received < cutoffTime) {
+            console.log('Remove failed job');
+            console.log(jobs[jobKeys[i]]);
+            delete jobs[jobKeys[i]];
+        }
+    }
+}
 
 exports.Sites.prototype.writeSiteConfig = function(requestData) {
     var me = this,
@@ -331,7 +538,11 @@ exports.Sites.prototype.writeSiteConfig = function(requestData) {
     }
 
     // write site config to file
-    this.sites[siteData.handle] = siteData;
+    this.sites[siteData.handle] = {
+        handle: siteData.handle,
+        config: siteData,
+        jobs: {}
+    };
 
     var isNew = !fs.existsSync(siteConfigPath);
 
@@ -349,12 +560,12 @@ exports.Sites.prototype.updateSiteConfig = function(handle, changes) {
         siteData = this.sites[handle],
         create_user;
 
-    _.extend(siteData, changes);
+    _.extend(siteData.config, changes);
 
-    create_user = siteData.create_user;
-    delete siteData.create_user;
+    create_user = siteData.config.create_user;
+    delete siteData.config.create_user;
 
-    fs.writeFileSync(filename, JSON.stringify(this.sites[handle], null, 4));
+    fs.writeFileSync(filename, JSON.stringify(this.sites[handle].config, null, 4));
 
     if (create_user) {
         siteData.create_user = create_user;
