@@ -1,9 +1,9 @@
-var _ = require('underscore')
-    ,util = require('util')
-    ,events = require('events');
+var _ = require('underscore'),
+    util = require('util'),
+    events = require('events');
 
 
-exports.AbstractService = function(name, controller, options) {
+exports.AbstractService = function (name, controller, options) {
     var me = this;
 
     // call events constructor
@@ -22,22 +22,22 @@ exports.AbstractService = function(name, controller, options) {
 util.inherits(exports.AbstractService, events.EventEmitter);
 
 
-exports.AbstractService.prototype.getStatus = function() {
+exports.AbstractService.prototype.getStatus = function () {
     return {
-        name: this.name
-        ,status: this.status
+        name: this.name,
+        status: this.status
     };
-}
+};
 
-exports.AbstractService.prototype.start = function() {
+exports.AbstractService.prototype.start = function () {
     throw new Error('start() not implemented in '+this.name);
 };
 
-exports.AbstractService.prototype.stop = function() {
+exports.AbstractService.prototype.stop = function () {
     throw new Error('start() not implemented in '+this.name);
 };
 
-exports.AbstractService.prototype.restart = function() {
+exports.AbstractService.prototype.restart = function () {
     if (this.stop()) {
         return this.start();
     } else {

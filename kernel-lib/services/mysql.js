@@ -1,6 +1,5 @@
 var _ = require('underscore'),
     fs = require('fs'),
-    path = require('path'),
     util = require('util'),
     spawn = require('child_process').spawn,
     exec = require('child_process').exec,
@@ -8,11 +7,11 @@ var _ = require('underscore'),
     semver = require('semver'),
     mysql = require('mysql2');
 
-exports.createService = function(name, controller, options) {
+exports.createService = function (name, controller, options) {
     return new exports.MysqlService(name, controller, options);
 };
 
-exports.MysqlService = function(name, controller, options) {
+exports.MysqlService = function (name, controller) {
     var me = this,
         versionMatch;
 
@@ -71,7 +70,7 @@ util.inherits(exports.MysqlService, require('./abstract.js').AbstractService);
 
 
 
-exports.MysqlService.prototype.start = function(firstRun) {
+exports.MysqlService.prototype.start = function (firstRun) {
     var me = this;
 
     if (me.pid) {
@@ -104,11 +103,11 @@ exports.MysqlService.prototype.start = function(firstRun) {
         exec('chown -R mysql:mysql '+me.options.dataDir);
 
         if (semver.lt(me.mysqldVersion, '5.7.6') || me.mysqldIsMaria) {
-            exec('mysql_install_db --defaults-file='+me.options.configPath, function(error, stdout, stderr) {
+            exec('mysql_install_db --defaults-file='+me.options.configPath, function () {
                 me.start(true);
             });
         } else {
-            exec('mysqld --initialize-insecure --user=mysql --datadir='+me.options.dataDir, function(error, stdout, stderr) {
+            exec('mysqld --initialize-insecure --user=mysql --datadir='+me.options.dataDir, function () {
                 me.start(true);
             });
         }
@@ -156,7 +155,7 @@ exports.MysqlService.prototype.start = function(firstRun) {
 };
 
 
-exports.MysqlService.prototype.stop = function() {
+exports.MysqlService.prototype.stop = function () {
     var me = this;
 
     if (!me.pid) {
@@ -176,7 +175,7 @@ exports.MysqlService.prototype.stop = function() {
     return true;
 };
 
-exports.MysqlService.prototype.restart = function() {
+exports.MysqlService.prototype.restart = function () {
     var me = this,
         now;
 
@@ -200,11 +199,11 @@ exports.MysqlService.prototype.restart = function() {
     return me.start();
 };
 
-exports.MysqlService.prototype.writeConfig = function() {
+exports.MysqlService.prototype.writeConfig = function () {
     fs.writeFileSync(this.options.configPath, this.makeConfig());
 };
 
-exports.MysqlService.prototype.makeConfig = function() {
+exports.MysqlService.prototype.makeConfig = function () {
     var me = this,
         config = [];
 
@@ -215,7 +214,7 @@ exports.MysqlService.prototype.makeConfig = function() {
         'port                               = 3306',
         'socket                             = '+me.options.socketPath,
         'pid-file                           = '+me.options.pidPath,
-//      'log-error                          = '+me.options.errorLogPath, // disabled due to http://bugs.mysql.com/bug.php?id=65592 -- errors output to STDIN will usually go into emergence-kernel's log
+        //      'log-error                          = '+me.options.errorLogPath, // disabled due to http://bugs.mysql.com/bug.php?id=65592 -- errors output to STDIN will usually go into emergence-kernel's log
         'basedir                            = /usr',
         'datadir                            = '+me.options.dataDir,
         'skip-external-locking',
@@ -226,7 +225,7 @@ exports.MysqlService.prototype.makeConfig = function() {
         'read_buffer_size                   = 256K',
         'read_rnd_buffer_size               = 512K',
         'myisam_sort_buffer_size            = 8M',
-//      'lc-messages-dir                    = /usr/local/share/mysql',
+        //      'lc-messages-dir                    = /usr/local/share/mysql',
 
         'log-bin                            = mysqld-bin',
         'expire_logs_days                   = 2',
@@ -265,7 +264,7 @@ exports.MysqlService.prototype.makeConfig = function() {
     return config.join('\n');
 };
 
-exports.MysqlService.prototype.secureInstallation = function() {
+exports.MysqlService.prototype.secureInstallation = function () {
     var me = this,
         sql = '';
 
@@ -299,7 +298,7 @@ exports.MysqlService.prototype.secureInstallation = function() {
         multipleStatements: true
     });
 
-    connection.query(sql, function(error) {
+    connection.query(sql, function (error) {
         connection.end();
 
         if (error) {
@@ -311,7 +310,7 @@ exports.MysqlService.prototype.secureInstallation = function() {
 };
 
 
-exports.MysqlService.prototype.onSiteCreated = function(siteData, requestData, callbacks) {
+exports.MysqlService.prototype.onSiteCreated = function (siteData, requestData, callbacks) {
     var me = this,
         sql = '',
         dbConfig = {
@@ -328,7 +327,7 @@ exports.MysqlService.prototype.onSiteCreated = function(siteData, requestData, c
     sql += 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, LOCK TABLES ON `'+siteData.handle+'`.* TO \''+siteData.handle+'\'@\'localhost\';';
     sql += 'FLUSH PRIVILEGES;';
 
-    me.executeSQL(sql, function(error, results) {
+    me.executeSQL(sql, function (error) {
         if (error) {
             console.log(me.name+': failed to setup database `'+siteData.handle+'`: '+error);
             return;
@@ -340,7 +339,7 @@ exports.MysqlService.prototype.onSiteCreated = function(siteData, requestData, c
         });
 
         // populate tables
-        me.createSkeletonTables(siteData, function() {
+        me.createSkeletonTables(siteData, function () {
             if (callbacks.databaseReady) {
                 callbacks.databaseReady(dbConfig, siteData, requestData);
             }
@@ -350,7 +349,7 @@ exports.MysqlService.prototype.onSiteCreated = function(siteData, requestData, c
 
 
 
-exports.MysqlService.prototype.createSkeletonTables = function(siteData, callback) {
+exports.MysqlService.prototype.createSkeletonTables = function (siteData, callback) {
     var me = this,
         sql = '';
 
@@ -389,7 +388,7 @@ exports.MysqlService.prototype.createSkeletonTables = function(siteData, callbac
     sql += ') ENGINE=MyISAM DEFAULT CHARSET=utf8;';
 
     // run tables
-    me.executeSQL(sql, function(error, results) {
+    me.executeSQL(sql, function (error) {
         if (error) {
             console.log(me.name+': failed to setup skeleton tables on `'+siteData.handle+'`: '+error);
             return;
@@ -403,7 +402,7 @@ exports.MysqlService.prototype.createSkeletonTables = function(siteData, callbac
 
 
 
-exports.MysqlService.prototype.executeSQL = function(sql, callback) {
+exports.MysqlService.prototype.executeSQL = function (sql, callback) {
     var connection = mysql.createConnection({
         socketPath: this.options.socketPath,
         user: this.options.managerUser,
@@ -411,7 +410,7 @@ exports.MysqlService.prototype.executeSQL = function(sql, callback) {
         multipleStatements: true
     });
 
-    connection.query(sql, function(err, results) {
+    connection.query(sql, function (err, results) {
         connection.end();
 
         callback(err, results);

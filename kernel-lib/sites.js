@@ -10,13 +10,13 @@ var _ = require('underscore'),
     phpShellScript = path.resolve(__dirname, '../bin/shell');
 
 
-exports.createSites = function(config) {
+exports.createSites = function (config) {
     return new exports.Sites(config);
 };
 
-exports.Sites = function(config) {
+exports.Sites = function (config) {
     var me = this,
-       options = config.sites;
+        options = config.sites;
 
     // call events constructor
     events.EventEmitter.call(me);
@@ -38,7 +38,7 @@ exports.Sites = function(config) {
     console.log('Loading sites from '+me.options.sitesDir+'...');
 
     me.sites = {};
-    _.each(fs.readdirSync(me.options.sitesDir), function(handle) {
+    _.each(fs.readdirSync(me.options.sitesDir), function (handle) {
         try {
             me.sites[handle] = JSON.parse(fs.readFileSync(me.options.sitesDir+'/'+handle+'/site.json', 'ascii'));
             me.sites[handle].handle = handle;
@@ -53,7 +53,7 @@ exports.Sites = function(config) {
 util.inherits(exports.Sites, events.EventEmitter);
 
 
-exports.Sites.prototype.handleRequest = function(request, response, server) {
+exports.Sites.prototype.handleRequest = function (request, response) {
     var me = this;
 
     if (request.method == 'GET') {
@@ -149,11 +149,11 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
                     phpProc = spawn(phpShellScript, [request.path[1]]);
                     phpProcInitialized = false;
 
-                    phpProc.stderr.on('data', function(data) {
+                    phpProc.stderr.on('data', function (data) {
                         console.log('php-cli stderr: ' + data);
                     });
 
-                    phpProc.stdout.on('data', function(data) {
+                    phpProc.stdout.on('data', function (data) {
                         console.log('php-cli stdout: ' + data);
 
                         // skip first chunk from PHP process
@@ -181,11 +181,11 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
                     phpProc = spawn(phpShellScript, [request.path[1], '--stdin']);
 
-                    phpProc.stdout.on('data', function(data) {
+                    phpProc.stdout.on('data', function (data) {
                         console.log('php-cli stdout: ' + data);
                         response.write(data);
                     });
-                    phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
+                    phpProc.stderr.on('data', function (data) { console.log('php-cli stderr: ' + data); });
 
                     requestData.AccountLevel = 'Developer';
 
@@ -229,15 +229,15 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 
                 // notify plugins
                 me.emit('siteCreated', cfgResult.site, requestData, {
-                    databaseReady: function() {
+                    databaseReady: function () {
                         // execute onSiteCreated within site's container
                         console.log('Executing Site::onSiteCreated() via php-cli');
                         phpProc = spawn(phpShellScript, [cfgResult.site.handle]);
 
-                        phpProc.stdout.on('data', function(data) { console.log('php-cli stdout: ' + data); });
-                        phpProc.stderr.on('data', function(data) { console.log('php-cli stderr: ' + data); });
+                        phpProc.stdout.on('data', function (data) { console.log('php-cli stdout: ' + data); });
+                        phpProc.stderr.on('data', function (data) { console.log('php-cli stderr: ' + data); });
 
-                        function _phpExec(code) {
+                        function _phpExec (code) {
                             //console.log('php> '+code);
                             phpProc.stdin.write(code+'\n');
                         }
@@ -272,7 +272,7 @@ exports.Sites.prototype.handleRequest = function(request, response, server) {
 };
 
 
-exports.Sites.prototype.writeSiteConfig = function(requestData) {
+exports.Sites.prototype.writeSiteConfig = function (requestData) {
     var me = this,
         siteData = _.clone(requestData);
 
@@ -342,7 +342,7 @@ exports.Sites.prototype.writeSiteConfig = function(requestData) {
     return {site: siteData, isNew: isNew};
 };
 
-exports.Sites.prototype.updateSiteConfig = function(handle, changes) {
+exports.Sites.prototype.updateSiteConfig = function (handle, changes) {
     var me = this,
         siteDir = me.options.sitesDir+'/'+handle,
         filename = siteDir+'/site.json',
@@ -362,7 +362,7 @@ exports.Sites.prototype.updateSiteConfig = function(handle, changes) {
 };
 
 
-exports.generatePassword = exports.Sites.prototype.generatePassword = function(length) {
+exports.generatePassword = exports.Sites.prototype.generatePassword = function (length) {
     length = length || 16;
 
     var pass = '',

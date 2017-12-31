@@ -18,6 +18,8 @@
         "space-before-function-paren": "warn",
         "space-before-blocks": "warn",
         "indent": ["warn", 4],
-        "no-trailing-spaces": "warn"
+        "no-trailing-spaces": "warn",
+        "comma-style": ["error", "last"],
+        "eol-last": ["error", "always"]
     }
 }

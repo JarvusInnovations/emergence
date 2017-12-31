@@ -1,12 +1,11 @@
 var _ = require('underscore'),
     util = require('util'),
     fs = require('fs'),
-    path = require('path'),
     events = require('events');
 
-exports.ServicesController = function(sites, config) {
+exports.ServicesController = function (sites, config) {
     var me = this,
-       options = config.services;
+        options = config.services;
 
     me.sites = sites;
 
@@ -47,7 +46,7 @@ exports.ServicesController = function(sites, config) {
 
     // load service plugins
     me.services = {};
-    _.each(me.options.plugins, function(plugin, name) {
+    _.each(me.options.plugins, function (plugin, name) {
         console.log('Loading service: '+name);
 
         if (_.isString(plugin)) {
@@ -60,7 +59,7 @@ exports.ServicesController = function(sites, config) {
     });
 
     // auto-start service plugins
-    _.each(me.services, function(service, name) {
+    _.each(me.services, function (service, name) {
         if (service.options.autoStart) {
             console.log('Autostarting service: '+name);
             service.start();
@@ -71,7 +70,7 @@ exports.ServicesController = function(sites, config) {
 util.inherits(exports.ServicesController, events.EventEmitter);
 
 
-exports.ServicesController.prototype.handleRequest = function(request, response, server) {
+exports.ServicesController.prototype.handleRequest = function (request) {
     var me = this;
 
     if (request.path[1]) {
@@ -83,7 +82,7 @@ exports.ServicesController.prototype.handleRequest = function(request, response,
             services: []
         };
 
-        _.each(me.services, function(service, name) {
+        _.each(me.services, function (service) {
             statusData.services.push(service.getStatus());
         });
 
@@ -93,7 +92,7 @@ exports.ServicesController.prototype.handleRequest = function(request, response,
     return false;
 };
 
-exports.ServicesController.prototype.handleServiceRequest = function(request, response, server) {
+exports.ServicesController.prototype.handleServiceRequest = function (request) {
     var me = this,
         service = me.services[request.path[1]];
 
@@ -125,6 +124,6 @@ exports.ServicesController.prototype.handleServiceRequest = function(request, re
     return false;
 };
 
-exports.createServices = function(sites, config) {
+exports.createServices = function (sites, config) {
     return new exports.ServicesController(sites, config);
 };

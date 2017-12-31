@@ -1,6 +1,5 @@
 Ext.define('eMan.store.Log', {
-	extend: 'Ext.data.Store'
+    extend: 'Ext.data.Store',
 
-	,model: 'eMan.model.LogEntry'
-
+    model: 'eMan.model.LogEntry'
 });
