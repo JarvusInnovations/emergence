@@ -42,3 +42,24 @@ From within studio: `hab sup start emergence/emergence-kernel`
 
 - Start a container from new image: `docker run -it -p 9080:80 -p 9083:9083 --name myemergence emergence/emergence-kernel`
 
+
+## Habitat Migration Todo
+
+- [X] Use habitat config system to generate base service configs, add `include .../var/nginx.sites` to nginx, stick dynamic ish there
+- [ ] Compare stock services configs with hab-provided configs
+- [ ] Pull Request mariadb fix
+- [ ] Get nginx running with configured external config
+- [X] Move stock nginx config bodies to .include files (e.g. http.include)
+- [X] Add default static nginx site to nginx.conf before sites include
+- [ ] Review all initialized permissions
+- [ ] Remove shelljs
+- [ ] Upgrade dwoo and see if php7 works
+
+- Get docker container working
+  - [X] Run new docker container
+  - [X] Check that Zend is loaded now
+  - [X] get shell wrapper working
+  - [X] Figure out why cookies dont work -- set from console for now
+  - [X] Commit changes
+
+- [ ] PR readline into core-plans php and php5
