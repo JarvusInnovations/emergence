@@ -1,13 +1,12 @@
-var _ = require('underscore'),
-    util = require('util'),
+var util = require('util'),
     events = require('events');
 
 
-exports.AbstractService = function (name, controller, options) {
+function AbstractService (name, controller, options) {
     var me = this;
 
     // call events constructor
-    exports.AbstractService.super_.apply(me, arguments);
+    AbstractService.super_.apply(me, arguments);
 
     // initialize options and apply defaults
     me.name = name;
@@ -19,25 +18,27 @@ exports.AbstractService = function (name, controller, options) {
     me.status = 'offline';
 };
 
-util.inherits(exports.AbstractService, events.EventEmitter);
+util.inherits(AbstractService, events.EventEmitter);
+
+module.exports = AbstractService;
 
 
-exports.AbstractService.prototype.getStatus = function () {
+AbstractService.prototype.getStatus = function () {
     return {
         name: this.name,
         status: this.status
     };
 };
 
-exports.AbstractService.prototype.start = function () {
+AbstractService.prototype.start = function () {
     throw new Error('start() not implemented in '+this.name);
 };
 
-exports.AbstractService.prototype.stop = function () {
+AbstractService.prototype.stop = function () {
     throw new Error('start() not implemented in '+this.name);
 };
 
-exports.AbstractService.prototype.restart = function () {
+AbstractService.prototype.restart = function () {
     if (this.stop()) {
         return this.start();
     } else {

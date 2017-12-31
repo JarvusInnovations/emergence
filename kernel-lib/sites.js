@@ -11,10 +11,11 @@ var _ = require('underscore'),
 
 
 exports.createSites = function (config) {
-    return new exports.Sites(config);
+    return new Sites(config);
 };
 
-exports.Sites = function (config) {
+
+function Sites (config) {
     var me = this,
         options = config.sites;
 
@@ -50,10 +51,10 @@ exports.Sites = function (config) {
 
 };
 
-util.inherits(exports.Sites, events.EventEmitter);
+util.inherits(Sites, events.EventEmitter);
 
 
-exports.Sites.prototype.handleRequest = function (request, response) {
+Sites.prototype.handleRequest = function (request, response) {
     var me = this;
 
     if (request.method == 'GET') {
@@ -271,8 +272,7 @@ exports.Sites.prototype.handleRequest = function (request, response) {
     return false;
 };
 
-
-exports.Sites.prototype.writeSiteConfig = function (requestData) {
+Sites.prototype.writeSiteConfig = function (requestData) {
     var me = this,
         siteData = _.clone(requestData);
 
@@ -342,7 +342,7 @@ exports.Sites.prototype.writeSiteConfig = function (requestData) {
     return {site: siteData, isNew: isNew};
 };
 
-exports.Sites.prototype.updateSiteConfig = function (handle, changes) {
+Sites.prototype.updateSiteConfig = function (handle, changes) {
     var me = this,
         siteDir = me.options.sitesDir+'/'+handle,
         filename = siteDir+'/site.json',
@@ -361,8 +361,7 @@ exports.Sites.prototype.updateSiteConfig = function (handle, changes) {
     }
 };
 
-
-exports.generatePassword = exports.Sites.prototype.generatePassword = function (length) {
+Sites.prototype.generatePassword = function (length) {
     length = length || 16;
 
     var pass = '',
@@ -374,3 +373,6 @@ exports.generatePassword = exports.Sites.prototype.generatePassword = function (
 
     return pass;
 };
+
+
+exports.generatePassword = Sites.prototype.generatePassword;

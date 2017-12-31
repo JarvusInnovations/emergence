@@ -7,16 +7,18 @@ var _ = require('underscore'),
     semver = require('semver'),
     mysql = require('mysql2');
 
+
 exports.createService = function (name, controller, options) {
-    return new exports.MysqlService(name, controller, options);
+    return new MysqlService(name, controller, options);
 };
 
-exports.MysqlService = function (name, controller) {
+
+function MysqlService (name, controller) {
     var me = this,
         versionMatch;
 
     // call parent constructor
-    exports.MysqlService.super_.apply(me, arguments);
+    MysqlService.super_.apply(me, arguments);
 
     // default options
     me.options.configPath = me.options.configPath || controller.options.configDir + '/my.cnf';
@@ -66,11 +68,10 @@ exports.MysqlService = function (name, controller) {
     controller.sites.on('siteCreated', _.bind(me.onSiteCreated, me));
 };
 
-util.inherits(exports.MysqlService, require('./abstract.js').AbstractService);
+util.inherits(MysqlService, require('./abstract.js'));
 
 
-
-exports.MysqlService.prototype.start = function (firstRun) {
+MysqlService.prototype.start = function (firstRun) {
     var me = this;
 
     if (me.pid) {
@@ -154,8 +155,7 @@ exports.MysqlService.prototype.start = function (firstRun) {
     return true;
 };
 
-
-exports.MysqlService.prototype.stop = function () {
+MysqlService.prototype.stop = function () {
     var me = this;
 
     if (!me.pid) {
@@ -175,7 +175,7 @@ exports.MysqlService.prototype.stop = function () {
     return true;
 };
 
-exports.MysqlService.prototype.restart = function () {
+MysqlService.prototype.restart = function () {
     var me = this,
         now;
 
@@ -199,11 +199,11 @@ exports.MysqlService.prototype.restart = function () {
     return me.start();
 };
 
-exports.MysqlService.prototype.writeConfig = function () {
+MysqlService.prototype.writeConfig = function () {
     fs.writeFileSync(this.options.configPath, this.makeConfig());
 };
 
-exports.MysqlService.prototype.makeConfig = function () {
+MysqlService.prototype.makeConfig = function () {
     var me = this,
         config = [];
 
@@ -264,7 +264,7 @@ exports.MysqlService.prototype.makeConfig = function () {
     return config.join('\n');
 };
 
-exports.MysqlService.prototype.secureInstallation = function () {
+MysqlService.prototype.secureInstallation = function () {
     var me = this,
         sql = '';
 
@@ -309,8 +309,7 @@ exports.MysqlService.prototype.secureInstallation = function () {
     });
 };
 
-
-exports.MysqlService.prototype.onSiteCreated = function (siteData, requestData, callbacks) {
+MysqlService.prototype.onSiteCreated = function (siteData, requestData, callbacks) {
     var me = this,
         sql = '',
         dbConfig = {
@@ -347,9 +346,7 @@ exports.MysqlService.prototype.onSiteCreated = function (siteData, requestData, 
     });
 };
 
-
-
-exports.MysqlService.prototype.createSkeletonTables = function (siteData, callback) {
+MysqlService.prototype.createSkeletonTables = function (siteData, callback) {
     var me = this,
         sql = '';
 
@@ -400,9 +397,7 @@ exports.MysqlService.prototype.createSkeletonTables = function (siteData, callba
     });
 };
 
-
-
-exports.MysqlService.prototype.executeSQL = function (sql, callback) {
+MysqlService.prototype.executeSQL = function (sql, callback) {
     var connection = mysql.createConnection({
         socketPath: this.options.socketPath,
         user: this.options.managerUser,

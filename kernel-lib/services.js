@@ -3,7 +3,13 @@ var _ = require('underscore'),
     fs = require('fs'),
     events = require('events');
 
-exports.ServicesController = function (sites, config) {
+
+exports.createServices = function (sites, config) {
+    return new ServicesController(sites, config);
+};
+
+
+function ServicesController (sites, config) {
     var me = this,
         options = config.services;
 
@@ -67,10 +73,10 @@ exports.ServicesController = function (sites, config) {
     });
 };
 
-util.inherits(exports.ServicesController, events.EventEmitter);
+util.inherits(ServicesController, events.EventEmitter);
 
 
-exports.ServicesController.prototype.handleRequest = function (request) {
+ServicesController.prototype.handleRequest = function (request) {
     var me = this;
 
     if (request.path[1]) {
@@ -92,7 +98,7 @@ exports.ServicesController.prototype.handleRequest = function (request) {
     return false;
 };
 
-exports.ServicesController.prototype.handleServiceRequest = function (request) {
+ServicesController.prototype.handleServiceRequest = function (request) {
     var me = this,
         service = me.services[request.path[1]];
 
@@ -122,8 +128,4 @@ exports.ServicesController.prototype.handleServiceRequest = function (request) {
     }
 
     return false;
-};
-
-exports.createServices = function (sites, config) {
-    return new exports.ServicesController(sites, config);
 };
