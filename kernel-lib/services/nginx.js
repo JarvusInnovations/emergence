@@ -278,6 +278,7 @@ exports.NginxService.prototype.makeConfig = function() {
 
             '        location / {',
             '            include '+me.options.miscConfigDir+'/fastcgi_params;',
+            '            fastcgi_keep_conn on;',
             '            fastcgi_param HTTPS $php_https;',
             '            fastcgi_pass '+phpSocketPath+';',
             '            fastcgi_param PATH_INFO $fastcgi_script_name;',
