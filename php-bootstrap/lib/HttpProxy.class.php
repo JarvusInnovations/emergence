@@ -58,7 +58,7 @@ class HttpProxy
         // build URL
         $baseUrl = $options['url'];
         if (!empty(Site::$pathStack) && (!isset($options['autoAppend']) || $options['autoAppend'] != false)) {
-            $options['url'] .= '/' . implode('/', Site::$pathStack);
+            $options['url'] .= '/'.implode('/', Site::$pathStack);
         }
 
         // get cookies
@@ -68,15 +68,15 @@ class HttpProxy
 
         // add query string
         if (!empty($_SERVER['QUERY_STRING']) && (!isset($options['autoQuery']) || $options['autoQuery'] != false)) {
-            $options['url'] .= '?' . $_SERVER['QUERY_STRING'];
+            $options['url'] .= '?'.$_SERVER['QUERY_STRING'];
         }
 
         // build headers
         foreach ($options['forwardHeaders'] AS $header) {
-            $headerKey = 'HTTP_' . str_replace('-', '_', strtoupper($header));
+            $headerKey = 'HTTP_'.str_replace('-', '_', strtoupper($header));
 
             if (!empty($_SERVER[$headerKey])) {
-                $options['headers'][] = $header . ': ' . $_SERVER[$headerKey];
+                $options['headers'][] = $header.': '.$_SERVER[$headerKey];
             }
         }
 
@@ -113,7 +113,7 @@ class HttpProxy
         } else {
             $responseHeaders = array();
             curl_setopt($ch, CURLOPT_HEADER, false);
-            curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $header) use($options, &$responseHeaders) {
+            curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $header) use ($options, &$responseHeaders) {
                 $headerLength = strlen($header);
                 @list($headerKey, $headerValue) = preg_split('/:\s*/', $header, 2);
                 if ($headerKey && $headerValue) {
@@ -133,7 +133,7 @@ class HttpProxy
 
                         if (!empty($options['debug'])) {
                             print("<p>Response Header: $header</p>");
-                        } elseif(empty($options['returnResponse'])) {
+                        } elseif (empty($options['returnResponse'])) {
                             header($header);
                         }
 
@@ -183,7 +183,7 @@ class HttpProxy
         if (!empty($options['debug'])) {
             print('<h1>Response Info</h1><pre>');
             print_r(curl_getinfo($ch));
-                        print('</pre>');
+            print('</pre>');
             print('<h1>cURL error</h1><pre>'.var_export(curl_error($ch), true).'</pre>');
             print('<h1>Response Length</h1>'.strlen($responseBody));
             print('<h1>Response Body</h1><pre>');

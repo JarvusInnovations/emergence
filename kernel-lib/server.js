@@ -3,14 +3,19 @@ var http = require('http'),
     util = require('util'),
     fs = require('fs'),
     path = require('path'),
-    _ = require('underscore'),
     util = require('util'),
     url = require('url'),
     static = require('node-static'),
     events = require('events'),
     nodeCleanup = require('node-cleanup');
 
-exports.Server = function(paths, config) {
+
+exports.createServer = function (paths, options) {
+    return new Server(paths, options);
+};
+
+
+function Server (paths, config) {
     var me = this,
         options = config.server;
 
@@ -31,10 +36,10 @@ exports.Server = function(paths, config) {
     nodeCleanup(this.close.bind(this));
 };
 
-util.inherits(exports.Server, events.EventEmitter);
+util.inherits(Server, events.EventEmitter);
 
 
-exports.Server.prototype.start = function() {
+Server.prototype.start = function () {
     // create authenticator
     this.httpAuth = require('http-auth')({
         authRealm: 'Emergence Node Management',
@@ -67,30 +72,25 @@ exports.Server.prototype.start = function() {
     console.log('Management server listening on '+this.webProtocol+'://'+this.options.host+':'+this.options.port);
 };
 
-exports.createServer = function(paths, options) {
-    return new exports.Server(paths, options);
-};
-
-
-exports.Server.prototype.handleWebRequest = function(request, response) {
+Server.prototype.handleWebRequest = function (request, response) {
     var me = this;
 
-    me.httpAuth.apply(request, response, function(username) {
+    me.httpAuth.apply(request, response, function () {
         me.handleRequest(request, response);
     });
 };
 
-exports.Server.prototype.handleRequest = function(request, response) {
+Server.prototype.handleRequest = function (request, response) {
     var me = this;
 
     request.content = '';
 
-    request.addListener('data', function(chunk) {
+    request.addListener('data', function (chunk) {
         request.content += chunk;
     });
 
-    request.addListener('end', function() {
-        request.urlInfo = url.parse(request.url)
+    request.addListener('end', function () {
+        request.urlInfo = url.parse(request.url);
         request.path = request.urlInfo.pathname.substr(1).split('/');
         console.log(request.method+' '+request.url);
 
@@ -122,7 +122,7 @@ exports.Server.prototype.handleRequest = function(request, response) {
     });
 };
 
-exports.Server.prototype.close = function(options, error) {
+Server.prototype.close = function () {
     console.log('Shutting down management server...');
 
     if (this.webServer) {

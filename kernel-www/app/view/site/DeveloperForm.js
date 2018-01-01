@@ -32,7 +32,7 @@ Ext.define('eMan.view.site.DeveloperForm', {
         fieldLabel: 'Email',
         name: 'Email',
         listeners: {
-            blur: function(emailField) {
+            blur: function (emailField) {
                 var userField = this.next('field[name=Username]'),
                     email = emailField.getValue();
 

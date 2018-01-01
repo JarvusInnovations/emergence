@@ -84,7 +84,7 @@ class Emergence
 
         // set minimum id
         if (!empty($_REQUEST['minId'])) {
-            $fileConditions[] = 'ID > ' . intval($_REQUEST['minId']);
+            $fileConditions[] = 'ID > '.intval($_REQUEST['minId']);
         }
 
         // get files
@@ -104,8 +104,8 @@ class Emergence
         $params['accessKey'] = Site::getConfig('parent_key');
 
         $url  = 'http://'.Site::getConfig('parent_hostname').'/emergence';
-        $url .= '/' . implode('/', $path);
-        $url .= '?' . http_build_query($params);
+        $url .= '/'.implode('/', $path);
+        $url .= '?'.http_build_query($params);
 
         return $url;
     }

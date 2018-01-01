@@ -106,7 +106,7 @@ class SiteFile
 
     public static function getByID($fileID)
     {
-        $cacheKey = 'efs:file:' . $fileID;
+        $cacheKey = 'efs:file:'.$fileID;
 
         if (false === ($record = Cache::fetch($cacheKey))) {
             $record = DB::oneRecord(
@@ -211,7 +211,7 @@ class SiteFile
 
     public static function getRealPathByID($ID)
     {
-        return Site::$rootPath . '/' . static::$dataPath . '/' . $ID;
+        return Site::$rootPath.'/'.static::$dataPath.'/'.$ID;
     }
 
     public function getName()
@@ -273,7 +273,7 @@ class SiteFile
         return $record;
     }
 
-    function put($data, $ancestorID = null)
+    public function put($data, $ancestorID = null)
     {
         $record = null;
         $tempPath = tempnam(static::getRealPathByID(''), 'uploading');
@@ -512,7 +512,7 @@ class SiteFile
         if (!empty($_GET['_sha1']) && $_GET['_sha1'] == $this->SHA1) {
             $expires = 60*60*24*365;
             header('Cache-Control: public, max-age='.$expires);
-            header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time()+$expires));
+            header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time()+$expires));
             header('Pragma: public');
         }
 
@@ -530,7 +530,7 @@ class SiteFile
         header('Last-Modified: '.gmdate('D, d M Y H:i:s \G\M\T', $this->Timestamp));
 
         if ($includeAuthor && $this->Author) {
-          header('Author: '.$this->Author->EmailRecipient);
+            header('Author: '.$this->Author->EmailRecipient);
         }
 
         readfile($this->RealPath);

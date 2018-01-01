@@ -5,15 +5,17 @@ var _ = require('underscore'),
     spawn = require('child_process').spawn,
     phpfpm = require('node-phpfpm');
 
-exports.createService = function(name, controller, options) {
-    return new exports.PhpFpmService(name, controller, options);
+
+exports.createService = function (name, controller, options) {
+    return new PhpFpmService(name, controller, options);
 };
 
-exports.PhpFpmService = function(name, controller, options) {
+
+function PhpFpmService (name, controller) {
     var me = this;
 
     // call parent constructor
-    exports.PhpFpmService.super_.apply(me, arguments);
+    PhpFpmService.super_.apply(me, arguments);
 
     // default options
     me.options.bootstrapDir = me.options.bootstrapDir || path.resolve(__dirname, '../../php-bootstrap');
@@ -48,11 +50,10 @@ exports.PhpFpmService = function(name, controller, options) {
     controller.sites.on('siteUpdated', _.bind(me.onSiteUpdated, me));
 };
 
-util.inherits(exports.PhpFpmService, require('./abstract.js').AbstractService);
+util.inherits(PhpFpmService, require('./abstract.js'));
 
 
-
-exports.PhpFpmService.prototype.start = function() {
+PhpFpmService.prototype.start = function () {
     var me = this;
 
     console.log(me.name+': spawning daemon: '+me.options.execPath);
@@ -101,10 +102,10 @@ exports.PhpFpmService.prototype.start = function() {
 
     this.status = 'online';
     return true;
-}
+};
 
 
-exports.PhpFpmService.prototype.stop = function() {
+PhpFpmService.prototype.stop = function () {
     var me = this;
 
     if (!me.pid) {
@@ -124,7 +125,7 @@ exports.PhpFpmService.prototype.stop = function() {
 };
 
 
-exports.PhpFpmService.prototype.restart = function() {
+PhpFpmService.prototype.restart = function () {
     var me = this;
 
     if (!me.pid) {
@@ -146,11 +147,11 @@ exports.PhpFpmService.prototype.restart = function() {
 };
 
 
-exports.PhpFpmService.prototype.writeConfig = function() {
+PhpFpmService.prototype.writeConfig = function () {
     fs.writeFileSync(this.options.configPath, this.makeConfig());
 };
 
-exports.PhpFpmService.prototype.makeConfig = function() {
+PhpFpmService.prototype.makeConfig = function () {
     var me = this,
         config = [];
 
@@ -197,7 +198,7 @@ exports.PhpFpmService.prototype.makeConfig = function() {
     return config.join('\n');
 };
 
-exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
+PhpFpmService.prototype.onSiteUpdated = function (siteData) {
     var me = this,
         siteRoot = me.controller.sites.options.sitesDir + '/' + siteData.handle,
         phpClient;
@@ -216,7 +217,7 @@ exports.PhpFpmService.prototype.onSiteUpdated = function(siteData) {
         json: [
             { action: 'delete', key: siteRoot }
         ]
-    }, function(err, output, phpErrors) {
+    }, function (err, output, phpErrors) {
         if (err == 99) console.error('PHPFPM server error');
         console.log(output);
         if (phpErrors) console.error(phpErrors);

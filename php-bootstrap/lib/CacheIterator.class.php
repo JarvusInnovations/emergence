@@ -1,6 +1,6 @@
 <?php
 
-if (class_exists('APCUIterator', false)){
+if (class_exists('APCUIterator', false)) {
     class CacheIterator extends APCUIterator
     {
         public static function createFromPattern($pattern)
