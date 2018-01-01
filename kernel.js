@@ -27,4 +27,10 @@ const habitatRequired = '>=0.50';
 
     // install services
     await habitat('pkg', 'install', 'emergence/php5', 'emergence/nginx', 'emergence/mysql', { passthrough: true, wait: true });
+
+
+    // load services
+    await habitat('svc', 'load', 'emergence/nginx', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
+    await habitat('svc', 'load', 'emergence/php5', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
+    await habitat('svc', 'load', 'emergence/mysql', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
 })();
