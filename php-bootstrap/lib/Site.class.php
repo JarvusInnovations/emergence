@@ -93,7 +93,7 @@ class Site
 
         // set useful transaction name and metadata for newrelic
         if (extension_loaded('newrelic')) {
-            newrelic_name_transaction(static::getConfig('handle') . '/' . implode('/', site::$requestPath));
+            newrelic_name_transaction(static::getConfig('handle').'/'.implode('/', site::$requestPath));
 
             if (isset($_SERVER['QUERY_STRING'])) {
                 newrelic_add_custom_parameter('request.query', $_SERVER['QUERY_STRING']);
@@ -167,7 +167,7 @@ class Site
         if (isset($_SERVER['HTTP_ORIGIN'])) {
             $hostname = strtolower(parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST));
             if ($hostname == strtolower(static::$hostname) || static::$permittedOrigins == '*' || in_array($hostname, static::$permittedOrigins)) {
-                header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+                header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
                 header('Access-Control-Allow-Credentials: true');
                 //header('Access-Control-Max-Age: 86400')
             } else {
@@ -177,10 +177,10 @@ class Site
         }
 
         if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS' && isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
-            header('Access-Control-Allow-Methods: ' . $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']);
+            header('Access-Control-Allow-Methods: '.$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']);
 
             if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
-                header('Access-Control-Allow-Headers: ' . $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']);
+                header('Access-Control-Allow-Headers: '.$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']);
             }
 
             exit();
@@ -317,7 +317,7 @@ class Site
 
             // if path component doesn't already end in .php, check for a .php match first
             if (substr($handle, -4) != '.php') {
-                array_push($searchPath, $handle . '.php');
+                array_push($searchPath, $handle.'.php');
                 $foundNode = static::resolvePath($searchPath);
                 // printf("\t\t%s\t%s\n", $foundNode ? 'matched' : 'missed', implode('/', $searchPath));
                 array_pop($searchPath);
@@ -456,7 +456,7 @@ class Site
             if ($lastNsPos = strrpos($className, '\\')) {
                 $namespace = substr($className, 0, $lastNsPos);
                 $className = substr($className, $lastNsPos + 1);
-                $fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+                $fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace).DIRECTORY_SEPARATOR;
             } else {
                 $fileName = '';
             }
@@ -497,7 +497,7 @@ class Site
 
     public static function loadConfig($className)
     {
-        $cacheKey = 'class-config:' . $className;
+        $cacheKey = 'class-config:'.$className;
 
 
         if (!$configFileIds = Cache::fetch($cacheKey)) {
@@ -508,7 +508,7 @@ class Site
             if ($lastNsPos = strrpos($className, '\\')) {
                 $namespace = substr($className, 0, $lastNsPos);
                 $className = substr($className, $lastNsPos + 1);
-                $path  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+                $path  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace).DIRECTORY_SEPARATOR;
             } else {
                 $path = '';
             }
@@ -716,18 +716,18 @@ class Site
         if (preg_match('/^https?:\/\//i', $path)) {
             $url = $path;
         } else {
-            $url = ($_SERVER['HTTPS'] ? 'https' : 'http') . '://' . static::$hostname . '/' . ltrim($path, '/');
+            $url = ($_SERVER['HTTPS'] ? 'https' : 'http').'://'.static::$hostname.'/'.ltrim($path, '/');
         }
 
         if ($get) {
-            $url .= '?' . (is_array($get) ? http_build_query($get) : $get);
+            $url .= '?'.(is_array($get) ? http_build_query($get) : $get);
         }
 
         if ($hash) {
-            $url .= '#' . $hash;
+            $url .= '#'.$hash;
         }
 
-        header('Location: ' . $url);
+        header('Location: '.$url);
         exit();
     }
 
@@ -780,12 +780,12 @@ class Site
 
         $fsPath = $path;
         array_unshift($fsPath, 'site-root');
-        $url = '/' . implode('/', $path);
+        $url = '/'.implode('/', $path);
 
         $Node = static::resolvePath($fsPath);
 
         if ($Node) {
-            return $url . '?_sha1=' . $Node->SHA1;
+            return $url.'?_sha1='.$Node->SHA1;
         } else {
             return $url;
         }

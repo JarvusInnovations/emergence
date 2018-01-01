@@ -47,7 +47,7 @@ class Cache
         return static::rawFetch(static::localizeKey($key));
     }
 
-    public static  function store($key, $value, $ttl = 0)
+    public static function store($key, $value, $ttl = 0)
     {
         return static::rawStore(static::localizeKey($key), $value, $ttl);
     }

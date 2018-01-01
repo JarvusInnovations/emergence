@@ -10,7 +10,7 @@ class Emergence_FS
         }
 
         // check if this tree has already been cached
-        $cacheKey = 'cacheTree:' . implode('/', $path);
+        $cacheKey = 'cacheTree:'.implode('/', $path);
         if (!Site::$autoPull || (!$force && Cache::fetch($cacheKey))) {
             return 0;
         }
@@ -51,7 +51,7 @@ class Emergence_FS
         if ($path) {
             $collections = static::getCollectionLayers($path, $localOnly);
 
-            if(empty($collections['local']) && empty($collections['remote'])) {
+            if (empty($collections['local']) && empty($collections['remote'])) {
                 return array();
             }
 
@@ -79,7 +79,7 @@ class Emergence_FS
             }
 
             // append to tree conditions
-            $conditions[] = '(' . join(') OR (', $positionConditions) . ')';
+            $conditions[] = '('.join(') OR (', $positionConditions).')';
         } elseif ($localOnly) {
             $conditions['Site'] = 'Local';
         }
@@ -115,7 +115,7 @@ class Emergence_FS
 
         // map conditions
         $mappedConditions = array();
-        foreach($conditions AS $key => $value) {
+        foreach ($conditions AS $key => $value) {
             if (is_string($key)) {
                 $mappedConditions[] = sprintf('`%s` = "%s"', $key, DB::escape($value));
             } else {
@@ -139,12 +139,13 @@ class Emergence_FS
         return $tree;
     }
 
-    public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array()) {
+    public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array())
+    {
         return static::getTreeFilesFromTree(static::getTree($path, $localOnly, false, $collectionConditions), $fileConditions);
     }
 
-    public static function getTreeFilesFromTree($tree, $conditions = array()) {
-
+    public static function getTreeFilesFromTree($tree, $conditions = array())
+    {
         $conditions['Status'] = 'Normal';
 
         // map conditions
@@ -163,7 +164,7 @@ class Emergence_FS
         $remoteCollections = array();
 
         foreach ($tree AS &$collectionInfo) {
-            if($collectionInfo['Site'] == 'Local') {
+            if ($collectionInfo['Site'] == 'Local') {
                 $localCollections[] = $collectionInfo['ID'];
             } else {
                 $remoteCollections[] = $collectionInfo['ID'];
@@ -305,9 +306,8 @@ class Emergence_FS
         $tree = static::getTree($sourcePath, $options['localOnly']);
 
         foreach ($tree AS $collectionID => &$node) {
-
             if ($node['ParentID'] && !empty($tree[$node['ParentID']])) {
-                $node['_path'] = $tree[$node['ParentID']]['_path'] . '/' . $node['Handle'];
+                $node['_path'] = $tree[$node['ParentID']]['_path'].'/'.$node['Handle'];
             } else {
                 $node['_path'] = $destinationPath;
             }
@@ -365,7 +365,7 @@ class Emergence_FS
                 }
 
                 if ($fileRow['Status'] == 'Normal' && $tree[$fileRow['CollectionID']]['Status'] != 'Deleted' && ($tree[$fileRow['CollectionID']]['Site'] == 'Local' || !in_array($dst, $filesWritten))) {
-                    copy(Site::$rootPath . '/' . SiteFile::$dataPath . '/' . $fileRow['ID'], $dst);
+                    copy(Site::$rootPath.'/'.SiteFile::$dataPath.'/'.$fileRow['ID'], $dst);
                     touch($dst, strtotime($fileRow['Timestamp']));
                     $filesWritten[] = $dst;
                 }
@@ -398,7 +398,7 @@ class Emergence_FS
         $sha1 = sha1_file($sourcePath);
 
         // skip if existing local or remote file matches hash
-        if(!$existingNode || $existingNode->SHA1 != $sha1) {
+        if (!$existingNode || $existingNode->SHA1 != $sha1) {
             // use lower level create methods to supply already-calculated hash
             $fileRecord = SiteFile::createFromPath($destinationPath, null, $existingNode ? $existingNode->ID : null);
             return SiteFile::saveRecordData($fileRecord, fopen($sourcePath, 'r'), $sha1);
@@ -464,7 +464,7 @@ class Emergence_FS
             }
 
             if ($collectionInfo['ParentID'] && isset($destinationCollectionsTree[$collectionInfo['ParentID']])) {
-                $collectionInfo['_path'] = $destinationCollectionsTree[$collectionInfo['ParentID']]['_path'] . '/' . $collectionInfo['Handle'];
+                $collectionInfo['_path'] = $destinationCollectionsTree[$collectionInfo['ParentID']]['_path'].'/'.$collectionInfo['Handle'];
                 $localDestinationCollectionsMap[$collectionInfo['_path']] = &$collectionInfo;
             } elseif (!$collectionInfo['ParentID']) {
                 $collectionInfo['_path'] = $collectionInfo['Handle'];
@@ -490,7 +490,7 @@ class Emergence_FS
         // iterate through all source files
         foreach ($iterator AS $tmpPath => $node) {
             $relPath = substr($tmpPath, $prefixLen);
-            $path = $destinationPath ? $destinationPath . $relPath : ltrim($relPath, '/');
+            $path = $destinationPath ? $destinationPath.$relPath : ltrim($relPath, '/');
 
             if ($options['debug']) {
                 Debug::dump(array('tmpPath' => $tmpPath, 'destPath' => $path), false, 'iterating node');
@@ -636,7 +636,7 @@ class Emergence_FS
         }
 
         while ($handle = array_shift($path)) {
-            if ($localCollection){
+            if ($localCollection) {
                 $localCollection = SiteCollection::getByHandle($handle, $localCollection->ID, false);
             }
 
@@ -662,7 +662,7 @@ class Emergence_FS
                     foreach (static::getCollectionLayers($scopeItem, $localOnly) AS $collection) {
                         $collections[] = $collection;
                     }
-                } elseif(is_a($scopeItem, 'SiteCollection')) {
+                } elseif (is_a($scopeItem, 'SiteCollection')) {
                     $collections[] = $scopeItem;
                 }
             }

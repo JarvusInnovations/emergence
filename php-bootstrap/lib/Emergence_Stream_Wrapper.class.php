@@ -46,7 +46,7 @@ class Emergence_Stream_Wrapper
         return $templateNode;
     }
 
-    public function stream_open(  $path ,  $mode ,  $options ,  &$opened_path )
+    public function stream_open($path ,  $mode ,  $options ,  &$opened_path)
     {
         $this->position = 0;
         $this->fp = false;
