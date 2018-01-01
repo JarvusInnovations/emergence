@@ -19,12 +19,12 @@ npm-install() {
 
 echo "    * Use 'kernel-debug' to run the kernel with remote debugging enabled"
 kernel-debug() {
-    node --inspect-brk=0.0.0.0:9229 kernel.js
+    DEBUG=1 node --inspect-brk=0.0.0.0:9229 kernel.js
 }
 
 echo "    * Use 'kernel-run' to run the kernel "
 kernel-run() {
-    node kernel.js
+    DEBUG=1 node kernel.js
 }
 
 
