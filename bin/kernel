@@ -12,7 +12,8 @@ if (fs.existsSync('/emergence/config.json')) {
     // try to smart-init a new kernel config
     var issueFile = "",
         platform = require('os').platform(),
-        distro = platform;
+        distro = platform,
+        user = 'nobody', group;
 
     // detect ubuntu
     // TODO: find better ways to determine default options than platform detection
@@ -33,9 +34,17 @@ if (fs.existsSync('/emergence/config.json')) {
         fs.mkdirSync('/emergence', '775');
     }
 
+    if (process.env.STUDIO_TYPE == 'default') {
+        user = 'hab';
+    } else if (distro == 'ubuntu') {
+        user = 'www-data';
+    }
+
+    console.log('Configuring services to run as user=%s, group=%s', user, group || user);
+
     CONFIG = {
-        user: distro=='ubuntu' ? 'www-data' : 'nobody',
-        group: distro=='ubuntu' ? 'www-data' : 'nobody',
+        user: user,
+        group: group || user,
 
         server: {
             host: "0.0.0.0"
@@ -44,6 +53,11 @@ if (fs.existsSync('/emergence/config.json')) {
             plugins: { }
         }
     };
+
+
+    // obtain binaries via habitat
+    // TODO: build library: hab.isInstalled()
+
 
 
     // detect nginx
