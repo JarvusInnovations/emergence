@@ -3,16 +3,28 @@
 echo "    * Use 'npm-install' to set up node_modules/"
 npm-install() {
     echo "    Installing dependencies"
-    hab pkg install -b core/node core/git core/python2 core/gcc
 
-    # use patched node: https://github.com/habitat-sh/core-plans/pull/1111
-    #echo "    Fixing interpretter in node-gyp"
-    #sed -e "s#\#\!.*bin/env#\#\!/hab/pkgs/core/coreutils/8.25/20170513213226/bin/env#" -i "$(hab pkg path core/node6)/lib/node_modules/npm/bin/node-gyp-bin/node-gyp"
+    # TODO: add core/node back to second line afte merged: https://github.com/habitat-sh/core-plans/pull/1111
+    hab pkg install -b results/core-node-8.9.1-20180101011703-x86_64-linux.hart
+    hab pkg install -b core/git core/python2 core/gcc
+
 
     echo "    Running: npm install"
     pushd /src > /dev/null
     npm install
     popd > /dev/null
+}
+
+
+
+echo "    * Use 'kernel-debug' to run the kernel with remote debugging enabled"
+kernel-debug() {
+    node --inspect-brk=0.0.0.0:9229 kernel.js
+}
+
+echo "    * Use 'kernel-run' to run the kernel "
+kernel-run() {
+    node kernel.js
 }
 
 
