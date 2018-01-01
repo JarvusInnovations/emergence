@@ -1,5 +1,10 @@
 #!/bin/bash
 
+
+export DEBUG=1
+export HAB_DEPOT_CHANNEL=unstable
+
+
 echo "    * Use 'npm-install' to set up node_modules/"
 npm-install() {
     echo "    Installing dependencies"
@@ -19,12 +24,12 @@ npm-install() {
 
 echo "    * Use 'kernel-debug' to run the kernel with remote debugging enabled"
 kernel-debug() {
-    DEBUG=1 node --inspect-brk=0.0.0.0:9229 kernel.js
+    node --inspect-brk=0.0.0.0:9229 kernel.js
 }
 
 echo "    * Use 'kernel-run' to run the kernel "
 kernel-run() {
-    DEBUG=1 node kernel.js
+    node kernel.js
 }
 
 
