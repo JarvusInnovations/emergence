@@ -1,5 +1,5 @@
 pkg_name=nginx
-pkg_origin=core
+pkg_origin=emergence
 pkg_version=1.11.10
 pkg_description="NGINX web server."
 pkg_maintainer="The Habitat Maintainers <humans@habitat.sh>"
