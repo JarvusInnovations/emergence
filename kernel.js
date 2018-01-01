@@ -17,14 +17,14 @@ const habitatRequired = '>=0.50';
 
     // check habitat version
     if (!await habitat.satisfiesVersion(habitatRequired)) {
-        throw new Error(`Habitat version must be ${habitatRequired}, reported version is ${await habitat.getVersion()}`);
+        throw `Habitat version must be ${habitatRequired}, reported version is ${await habitat.getVersion()}`;
     }
 
 
     // ensure supervisor is installed
-    await habitat.exec(['pkg', 'install', 'core/hab-sup'], { passthrough: true, wait: true });
+    await habitat('pkg', 'install', 'core/hab-sup', { passthrough: true, wait: true });
 
 
     // install services
-    await habitat.exec(['pkg', 'install', 'emergence/php5', 'emergence/nginx'], { passthrough: true, wait: true }); // , 'emergence/mysql'
+    await habitat('pkg', 'install', 'emergence/php5', 'emergence/nginx', 'emergence/mysql', { passthrough: true, wait: true });
 })();
