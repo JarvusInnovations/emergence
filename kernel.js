@@ -7,7 +7,7 @@ if (process.env.DEBUG) {
 }
 
 
-// load habitat
+// setup habitat
 const habitat = require('./lib/habitat.js');
 const habitatRequired = '>=0.50';
 
