@@ -30,12 +30,6 @@ async function start () {
     }
 
 
-    // get supervisor status via API
-    const services = await habitat.getServices();
-    logger.info(`Loaded ${services.length} service(s):`);
-    services.forEach(service => logger.info(`${service.process.state}:\t${service.pkg.ident}`));
-
-
     // install services
     await habitat('pkg', 'install', 'emergence/php5', 'emergence/nginx', 'emergence/mysql', { passthrough: true, wait: true });
 
@@ -44,4 +38,10 @@ async function start () {
     await habitat('svc', 'load', 'emergence/nginx', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
     await habitat('svc', 'load', 'emergence/php5', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
     await habitat('svc', 'load', 'emergence/mysql', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
+
+
+    // get services status via API
+    const services = await habitat.getServices();
+    logger.info(`Loaded ${services.length} service(s):`);
+    services.forEach(service => logger.info(`${service.process.state}:\t${service.pkg.ident}`));
 }
