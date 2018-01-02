@@ -25,10 +25,7 @@ async function start () {
 
 
     // ensure supervisor is available
-    try {
-        const result = await habitat('svc', 'status');
-        debugger;
-    } catch (err) {
+    if (!await habitat.getSupervisorStatus()) {
         throw new Error('Habitat supervisor must be running, start it as a daemon first');
     }
 
