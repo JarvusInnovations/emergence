@@ -8,6 +8,7 @@
     "npm": "^5.5.1"
   },
   "dependencies": {
+    "axios": "^0.17.1",
     "hostile": "^1.0.2",
     "http-auth": "1.2.7",
     "mysql2": "^1.5.1",
