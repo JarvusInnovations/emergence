@@ -2,7 +2,6 @@
 
 
 export DEBUG=1
-export HAB_DEPOT_CHANNEL=unstable
 
 
 echo "    * Use 'npm-install' to set up node_modules/"
