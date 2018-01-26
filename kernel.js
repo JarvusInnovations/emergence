@@ -12,6 +12,10 @@ const habitat = require('./lib/habitat.js');
 const habitatRequired = '>=0.50';
 
 
+// initialize redux store
+const store = require('redux').createStore(require('./reducers'));
+
+
 // start up in async context
 start().catch(err => logger.error('Failed to start kernel:', err.message));
 
@@ -31,21 +35,21 @@ async function start () {
 
 
     // load tables
-    const tables = await require('./lib/tables');
+    // const tables = await require('./lib/tables');
 
-    tables('*').on('change', event => {
-        logger.info(`${event.table} rows updated: ${event.affectedRowPKS.join(", ")}`);
-    });
+    // tables('*').on('change', event => {
+    //     logger.info(`${event.table} rows updated: ${event.affectedRowPKS.join(", ")}`);
+    // });
 
 
     // install services
-    await habitat('pkg', 'install', 'emergence/php5', 'emergence/nginx', 'emergence/mysql', { passthrough: true, wait: true });
+    // await habitat('pkg', 'install', 'emergence/php5', 'emergence/nginx', 'emergence/mysql', { passthrough: true, wait: true });
 
 
-    // load services
-    await habitat('svc', 'load', 'emergence/nginx', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
-    await habitat('svc', 'load', 'emergence/php5', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
-    await habitat('svc', 'load', 'emergence/mysql', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
+    // // load services
+    // await habitat('svc', 'load', 'emergence/nginx', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
+    // await habitat('svc', 'load', 'emergence/php5', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
+    // await habitat('svc', 'load', 'emergence/mysql', { force: true, group: 'emergence' }, { passthrough: true, wait: true });
 
 
     // get services status via API
@@ -55,18 +59,22 @@ async function start () {
 
 
     // load services into table
-    await tables().loadJS('services', services);
-
-    tables.services().on('change', event => {
-        debugger;
+    store.dispatch({
+        type: 'SERVICES_LOAD',
+        payload: services
     });
+    // await tables().loadJS('services', services);
 
-    const results1 = await tables.services().query('select').exec();
-    const results2 = await tables.services().query('upsert', {
-        service_group: 'mysql.emergence',
-        foo: 'boo'
-    }).exec();
-    const results3 = await tables.services().query('select').exec();
+    // tables.services().on('change', event => {
+    //     debugger;
+    // });
+
+    // const results1 = await tables.services().query('select').exec();
+    // const results2 = await tables.services().query('upsert', {
+    //     service_group: 'mysql.emergence',
+    //     foo: 'boo'
+    // }).exec();
+    // const results3 = await tables.services().query('select').exec();
 
     debugger;
 }
