@@ -44,7 +44,7 @@ class HttpProxy
         }
 
         if (!isset($options['interface'])) {
-            $options['interface'] = isset(static::$sourceInterface) ? static::$sourceInterface : $_SERVER['HTTP_HOST'];
+            $options['interface'] = isset(static::$sourceInterface) ? static::$sourceInterface : explode(':', $_SERVER['HTTP_HOST'])[0];
         }
 
         if (!isset($options['method'])) {
