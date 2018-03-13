@@ -716,7 +716,11 @@ class Site
         if (preg_match('/^https?:\/\//i', $path)) {
             $url = $path;
         } else {
-            $url = ($_SERVER['HTTPS'] ? 'https' : 'http').'://'.static::$hostname.'/'.ltrim($path, '/');
+            $host = explode(':', $_SERVER['HTTP_HOST']);
+            $host[0] = static::$hostname;
+            $host = implode(':', $host);
+
+            $url = ($_SERVER['HTTPS'] ? 'https' : 'http').'://'.$host.'/'.ltrim($path, '/');
         }
 
         if ($get) {

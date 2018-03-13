@@ -666,6 +666,10 @@ class Emergence_FS
                     $collections[] = $scopeItem;
                 }
             }
+
+            if(!count($collections)) {
+                return array();
+            }
         }
 
         DB::nonQuery('LOCK TABLES '.SiteFile::$tableName.' f1 READ, '.SiteFile::$tableName.' f2 READ, '.SiteCollection::$tableName.' collections READ');
