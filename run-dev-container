@@ -1,0 +1,11 @@
+#!/bin/bash
+
+docker run -d \
+    -it \
+    --name emergence \
+    -v /emergence:/emergence \
+    -p 127.0.0.10:80:80 \
+    -p 127.0.0.10:3306:3306 \
+    -p 127.0.0.10:9083:9083 \
+    jarvus/emergence \
+    tmux new -s emergence emergence-kernel
