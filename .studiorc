@@ -8,9 +8,7 @@ echo "    * Use 'npm-install' to set up node_modules/"
 npm-install() {
     echo "    Installing dependencies"
 
-    # TODO: add core/node back to second line afte merged: https://github.com/habitat-sh/core-plans/pull/1111
-    hab pkg install -b results/core-node-8.9.1-20180101011703-x86_64-linux.hart
-    hab pkg install -b core/git core/python2 core/gcc
+    hab pkg install -b core/git core/python2 core/gcc core/node
 
 
     echo "    Running: npm install"
