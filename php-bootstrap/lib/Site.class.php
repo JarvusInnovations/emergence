@@ -83,7 +83,7 @@ class Site
                 $path = substr($path, 0, $qPos);
             }
 
-            $path = urldecode($path);
+            $path = rawurldecode($path);
 
             static::$pathStack = static::$requestPath = static::splitPath($path);
         }
