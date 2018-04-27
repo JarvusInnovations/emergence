@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+
+require('yargs')
+    .command('$0 <site> <event> <context>', 'Fire event within site', yargs => {
+        yargs
+            .positional('site', {
+                describe: 'Handle of site to fire event within'
+            })
+            .positional('event', {
+                describe: 'Name of event to fire'
+            })
+            .positional('context', {
+                describe: 'Context path to fire event within'
+            })
+    }, argv => {
+        var path = require('path'),
+            documentRoot = path.resolve(__dirname, '../php-bootstrap'),
+            PHPFPM = require('node-phpfpm'),
+            phpClient = new PHPFPM({
+                sockFile: '/emergence/services/run/php-fpm/php-fpm.sock',
+                documentRoot: documentRoot + '/'
+            }),
+            payload = Object.assign({}, argv);
+
+        delete payload._;
+        delete payload.help;
+        delete payload.version;
+        delete payload.site;
+        delete payload.event;
+        delete payload.context;
+        delete payload['$0'];
+
+        // execute event via PHP-FPM interface
+        phpClient.run({
+            uri: 'event.php',
+            json: {
+                site: argv.site,
+                event: argv.event,
+                context: argv.context,
+                payload: payload
+            }
+        }, function (err, output, phpErrors) {
+            if (err == 99) console.error('PHPFPM server error');
+            console.log(output);
+            if (phpErrors) console.error(phpErrors);
+        });
+
+    })
+    .argv;
