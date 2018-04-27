@@ -17,7 +17,8 @@
     "underscore-cli": "^0.2.19",
     "node-phpfpm": "^1.0.1",
     "uuid": "~3.0.1",
-    "async": "~2.4.0"
+    "async": "~2.4.0",
+    "yargs": "^11.0.0"
   },
   "bin": {
     "emergence-kernel": "./bin/kernel",
