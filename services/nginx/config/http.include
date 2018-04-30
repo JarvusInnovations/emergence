@@ -1,11 +1,19 @@
-include        mime.types;
+access_log {{#if cfg.http.access_log}}{{cfg.http.access_log}}{{else}}/hab/svc/{{pkg.name}}/var/access.log{{/if}};
+
+client_body_temp_path {{#if cfg.http.client_body_temp_path}}{{cfg.http.client_body_temp_path}}{{else}}/hab/svc/{{pkg.name}}/var/client-body{{/if}};
+proxy_temp_path {{#if cfg.http.proxy_temp_path}}{{cfg.http.proxy_temp_path}}{{else}}/hab/svc/{{pkg.name}}/var/proxy{{/if}};
+fastcgi_temp_path {{#if cfg.http.fastcgi_temp_path}}{{cfg.http.fastcgi_temp_path}}{{else}}/hab/svc/{{pkg.name}}/var/fastcgi{{/if}};
+scgi_temp_path {{#if cfg.http.scgi_temp_path}}{{cfg.http.scgi_temp_path}}{{else}}/hab/svc/{{pkg.name}}/var/scgi{{/if}};
+uwsgi_temp_path {{#if cfg.http.uwsgi_temp_path}}{{cfg.http.uwsgi_temp_path}}{{else}}/hab/svc/{{pkg.name}}/var/uwsgi{{/if}};
+
+include        {{pkgPathFor "emergence/nginx"}}/config/mime.types;
 default_type   application/octet-stream;
 
-sendfile       {{cfg.http.sendfile}};
-tcp_nopush     {{cfg.http.tcp_nopush}};
-tcp_nodelay    {{cfg.http.tcp_nodelay}};
+sendfile       {{#if cfg.http.sendfile}}{{cfg.http.sendfile}}{{else}}on{{/if}};
+tcp_nopush     {{#if cfg.http.tcp_nopush}}{{cfg.http.tcp_nopush}}{{else}}on{{/if}};
+tcp_nodelay    {{#if cfg.http.tcp_nodelay}}{{cfg.http.tcp_nodelay}}{{else}}on{{/if}};
 
-keepalive_timeout  {{cfg.http.keepalive_timeout}};
+keepalive_timeout  {{#if cfg.http.keepalive_timeout}}{{cfg.http.keepalive_timeout}}{{else}}60{{/if}};
 
 gzip  on;
 gzip_vary on;

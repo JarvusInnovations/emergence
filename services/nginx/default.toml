@@ -13,7 +13,8 @@
 config_path = false
 
 # worker_processes: Number of NGINX processes. Default = 1
-worker_processes = 4
+worker_processes = "auto"
+worker_rlimit_nofile = 8192
 
 
 
