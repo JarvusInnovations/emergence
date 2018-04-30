@@ -1,12 +1,12 @@
 pkg_name=nginx
 pkg_origin=emergence
-pkg_version=1.11.10
+pkg_version=1.13.10
 pkg_description="NGINX web server."
 pkg_maintainer="The Habitat Maintainers <humans@habitat.sh>"
 pkg_license=('bsd')
 pkg_source=https://nginx.org/download/nginx-${pkg_version}.tar.gz
 pkg_upstream_url=https://nginx.org/
-pkg_shasum=778b3cabb07633f754cd9dee32fc8e22582bce22bfa407be76a806abd935533d
+pkg_shasum=336182104d90be3c40c874f7f06f87dbb357da1dc74ea573ad081a0f29a94885
 pkg_deps=(core/glibc core/libedit core/ncurses core/zlib core/bzip2 core/openssl core/pcre)
 pkg_build_deps=(core/gcc core/make core/coreutils)
 pkg_lib_dirs=(lib)
