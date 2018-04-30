@@ -65,8 +65,8 @@ do_build() {
   ./configure --prefix="$pkg_prefix" \
     --enable-exif \
     --enable-fpm \
-    --with-fpm-user=hab \
-    --with-fpm-group=hab \
+    --with-fpm-user="${pkg_svc_user}" \
+    --with-fpm-group="${pkg_svc_group}" \
     --with-readline="$(pkg_path_for readline)" \
     --with-gettext="$(pkg_path_for glibc)" \
     --enable-apcu \
