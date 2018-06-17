@@ -8,10 +8,10 @@
  # refer to: http://nginx.org/en/docs/http/ngx_http_core_module.html
 
 
-#### General Configuration
-# a config file to entirely replace the built-in nginx.conf template
-config_path = false
 
+#### General Configuration
+# redirector: If set, bypass normal config and just redirect http to https
+# redirector = true
 # worker_processes: Number of NGINX processes. Default = 1
 worker_processes = "auto"
 worker_rlimit_nofile = 8192
@@ -37,6 +37,9 @@ tcp_nodelay = "on"
 
 # http.keepalive_timeout: Timeout on client connection keepalive, in seconds. Default = 75
 keepalive_timeout = 60
+
+# optional access log
+access_log = ""
 
 [http.listen]
 port = 80
