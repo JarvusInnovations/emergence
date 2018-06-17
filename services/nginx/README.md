@@ -11,3 +11,6 @@ continuously merged in.
 - `worker_processes` config default changed to `"auto"`
 - `worker_rlimit_nofile` config added and defaulted to `8192`
 - `http.access_log` config added and defaulted to none
+- Removes `redirector` config
+- Adds optional `app` bind
+- Adds default static site to display when no app is bound

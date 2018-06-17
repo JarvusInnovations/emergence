@@ -18,6 +18,9 @@ pkg_exports=(
   [port]=http.listen.port
 )
 pkg_exposes=(port)
+pkg_binds_optional=(
+  [app]="port"
+)
 
 do_build() {
   ./configure --prefix="$pkg_prefix" \
@@ -64,4 +67,5 @@ do_install() {
   make install
   mkdir -p "$pkg_prefix/sbin"
   cp "$HAB_CACHE_SRC_PATH/$pkg_dirname/objs/nginx" "$pkg_prefix/sbin"
+  cp -rv "$PLAN_CONTEXT/www" "$pkg_prefix/"
 }
