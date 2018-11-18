@@ -2,6 +2,36 @@
 
 class Cache
 {
+    public static function rawFetch($key)
+    {
+        return function_exists('apcu_fetch') ? apcu_fetch($key) : apc_fetch($key);
+    }
+
+    public static function rawStore($key, $value, $ttl = 0)
+    {
+        return function_exists('apcu_store') ? apcu_store($key, $value, $ttl) : apc_store($key, $value, $ttl);
+    }
+
+    public static function rawDelete($key)
+    {
+        return function_exists('apcu_delete') ? apcu_delete($key) : apc_delete($key);
+    }
+
+    public static function rawExists($key)
+    {
+        return function_exists('apcu_exists') ? apcu_exists($key) : apc_exists($key);
+    }
+
+    public static function rawIncrease($key, $step = 1)
+    {
+        return function_exists('apcu_dec') ? apcu_dec($key) : apc_dec($key);
+    }
+
+    public static function rawDecrease($key, $step = 1)
+    {
+        return function_exists('apcu_dec') ? apcu_dec($key) : apc_dec($key);
+    }
+
     public static function getKeyPrefix()
     {
         return Site::getConfig('handle').':';
@@ -14,32 +44,32 @@ class Cache
 
     public static function fetch($key)
     {
-        return apc_fetch(static::localizeKey($key));
+        return static::rawFetch(static::localizeKey($key));
     }
 
-    public static  function store($key, $value, $ttl = 0)
+    public static function store($key, $value, $ttl = 0)
     {
-        return apc_store(static::localizeKey($key), $value, $ttl);
+        return static::rawStore(static::localizeKey($key), $value, $ttl);
     }
 
     public static function delete($key)
     {
-        return apc_delete(static::localizeKey($key));
+        return static::rawDelete(static::localizeKey($key));
     }
 
     public static function exists($key)
     {
-        return apc_exists(static::localizeKey($key));
+        return static::rawExists(static::localizeKey($key));
     }
 
     public static function increase($key, $step = 1)
     {
-        return apc_inc(static::localizeKey($key), $step);
+        return static::rawIncrease(static::localizeKey($key), $step);
     }
 
     public static function decrease($key, $step = 1)
     {
-        return apc_dec(static::localizeKey($key), $step);
+        return static::rawDecrease(static::localizeKey($key), $step);
     }
 
     public static function getIterator($pattern)
@@ -64,7 +94,7 @@ class Cache
     {
         $count = 0;
         foreach (static::getIterator($pattern) AS $cacheEntry) {
-            apc_delete($cacheEntry['key']);
+            static::rawDelete($cacheEntry['key']);
             $count++;
         }
 

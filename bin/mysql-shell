@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# determine location of this script
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+# determine path to underscore
+UNDERSCORE="$DIR/../node_modules/.bin/underscore"
+
+MYSQL_SOCKET=/emergence/services/run/mysqld/mysqld.sock
+MYSQL_USERNAME=root
+MYSQL_PASSWORD=$(sudo cat /emergence/config.json | $UNDERSCORE extract --outfmt text services.plugins.sql.managerPassword)
+MYSQL_DATABASE=${1?missing parameter: database}
+
+exec mysql -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" -S "${MYSQL_SOCKET}" "${@:2}" "${MYSQL_DATABASE}"

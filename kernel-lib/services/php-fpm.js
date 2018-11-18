@@ -2,19 +2,23 @@ var _ = require('underscore'),
     fs = require('fs'),
     path = require('path'),
     util = require('util'),
-    spawn = require('child_process').spawn;
+    spawn = require('child_process').spawn,
+    phpfpm = require('node-phpfpm');
 
-exports.createService = function(name, controller, options) {
-    return new exports.PhpFpmService(name, controller, options);
+
+exports.createService = function (name, controller, options) {
+    return new PhpFpmService(name, controller, options);
 };
 
-exports.PhpFpmService = function(name, controller, options) {
+
+function PhpFpmService (name, controller) {
     var me = this;
 
     // call parent constructor
-    exports.PhpFpmService.super_.apply(me, arguments);
+    PhpFpmService.super_.apply(me, arguments);
 
     // default options
+    me.options.bootstrapDir = me.options.bootstrapDir || path.resolve(__dirname, '../../php-bootstrap');
     me.options.configPath = me.options.configPath || controller.options.configDir + '/php-fpm.conf';
     me.options.execPath = me.options.execPath || '/usr/bin/php-fpm';
     me.options.statScripts = me.options.statScripts || false;
@@ -41,13 +45,15 @@ exports.PhpFpmService = function(name, controller, options) {
         console.log(me.name+': found existing PID: '+me.pid);
         me.status = 'online';
     }
+
+    // listen for site updated
+    controller.sites.on('siteUpdated', _.bind(me.onSiteUpdated, me));
 };
 
-util.inherits(exports.PhpFpmService, require('./abstract.js').AbstractService);
+util.inherits(PhpFpmService, require('./abstract.js'));
 
 
-
-exports.PhpFpmService.prototype.start = function() {
+PhpFpmService.prototype.start = function () {
     var me = this;
 
     console.log(me.name+': spawning daemon: '+me.options.execPath);
@@ -96,10 +102,10 @@ exports.PhpFpmService.prototype.start = function() {
 
     this.status = 'online';
     return true;
-}
+};
 
 
-exports.PhpFpmService.prototype.stop = function() {
+PhpFpmService.prototype.stop = function () {
     var me = this;
 
     if (!me.pid) {
@@ -119,7 +125,7 @@ exports.PhpFpmService.prototype.stop = function() {
 };
 
 
-exports.PhpFpmService.prototype.restart = function() {
+PhpFpmService.prototype.restart = function () {
     var me = this;
 
     if (!me.pid) {
@@ -141,11 +147,11 @@ exports.PhpFpmService.prototype.restart = function() {
 };
 
 
-exports.PhpFpmService.prototype.writeConfig = function() {
+PhpFpmService.prototype.writeConfig = function () {
     fs.writeFileSync(this.options.configPath, this.makeConfig());
 };
 
-exports.PhpFpmService.prototype.makeConfig = function() {
+PhpFpmService.prototype.makeConfig = function () {
     var me = this,
         config = [];
 
@@ -166,7 +172,7 @@ exports.PhpFpmService.prototype.makeConfig = function() {
         'pm                                             = dynamic',
         'pm.max_children                                = '+(me.options.maxClients||50),
         'pm.start_servers                               = '+(me.options.startServers||5),
-        'pm.min_spare_servers                           = '+(me.options.min_spare_servers||1),
+        'pm.min_spare_servers                           = '+(me.options.minSpareServers||1),
         'pm.max_spare_servers                           = '+Math.round((me.options.maxClients||50)/(me.options.startServers||5))
     );
 
@@ -176,6 +182,7 @@ exports.PhpFpmService.prototype.makeConfig = function() {
 
     config.push(
         'php_admin_flag[short_open_tag]                 = on',
+        'php_admin_value[always_populate_raw_post_data] = -1',
         'php_admin_value[apc.shm_size]                  = 512M',
         'php_admin_value[apc.shm_segments]              = 1',
         'php_admin_value[apc.slam_defense]              = 0',
@@ -189,4 +196,30 @@ exports.PhpFpmService.prototype.makeConfig = function() {
     );
 
     return config.join('\n');
+};
+
+PhpFpmService.prototype.onSiteUpdated = function (siteData) {
+    var me = this,
+        siteRoot = me.controller.sites.options.sitesDir + '/' + siteData.handle,
+        phpClient;
+
+    console.log(me.name+': clearing config cache for '+siteRoot);
+
+    // Connect to FPM worker pool
+    phpClient = new phpfpm({
+        sockFile: me.options.socketPath,
+        documentRoot: me.options.bootstrapDir + '/'
+    });
+
+    // Clear cached site.json
+    phpClient.run({
+        uri: 'cache.php',
+        json: [
+            { action: 'delete', key: siteRoot }
+        ]
+    }, function (err, output, phpErrors) {
+        if (err == 99) console.error('PHPFPM server error');
+        console.log(output);
+        if (phpErrors) console.error(phpErrors);
+    });
 };

@@ -1,19 +1,12 @@
 #!/usr/bin/env node
+var fs = require('fs'),
+    sitesLib = require('../kernel-lib/sites.js'),
 
-// requirements
-var _ = require('underscore'),
-    util = require('util'),
-    url = require('url'),
-    path = require('path'),
-    fs = require('fs'),
-    sitesLib = require('../kernel-lib/sites.js');
+    CONFIG;
 
-
-var CONFIG;
 
 if (fs.existsSync('/emergence/config.json')) {
     // try to load existing kernel config
-
     CONFIG = JSON.parse(fs.readFileSync('/emergence/config.json', 'ascii'));
 } else {
     // try to smart-init a new kernel config
@@ -51,8 +44,6 @@ if (fs.existsSync('/emergence/config.json')) {
             plugins: { }
         }
     };
-
-
 
 
     // detect nginx
@@ -100,7 +91,19 @@ if (fs.existsSync('/emergence/config.json')) {
     }
 
     // detect php-fpm
-    if (fs.existsSync('/usr/bin/php-fpm')) {
+    if (fs.existsSync('/usr/sbin/php-fpm5.6')) {
+        CONFIG.services.plugins.php = {
+            type: 'php-fpm',
+            autoStart: true,
+            execPath: '/usr/sbin/php-fpm5.6'
+        };
+    } else if (fs.existsSync('/usr/sbin/php-fpm7.0')) {
+        CONFIG.services.plugins.php = {
+            type: 'php-fpm',
+            autoStart: true,
+            execPath: '/usr/sbin/php-fpm7.0'
+        };
+    } else if (fs.existsSync('/usr/bin/php-fpm')) {
         CONFIG.services.plugins.php = {
             type: 'php-fpm',
             autoStart: true,
@@ -126,10 +129,12 @@ if (fs.existsSync('/emergence/config.json')) {
         };
     }
 
+
     fs.writeFileSync('/emergence/config.json', JSON.stringify(CONFIG, null, 4));
     fs.chmodSync('/emergence/config.json', '600');
     console.log('Generated and wrote initial config: /emergence/config.json');
 }
+
 
 // create default admin user
 if (!fs.existsSync('/emergence/admins.htpasswd')) {
@@ -142,6 +147,7 @@ if (!fs.existsSync('/emergence/admins.htpasswd')) {
 // load core modules
 var eSites = sitesLib.createSites(CONFIG);
 var eServices = require('../kernel-lib/services.js').createServices(eSites, CONFIG);
+
 
 // instantiate management server
 var eManagementServer = require('../kernel-lib/server.js').createServer({

@@ -1,14 +1,21 @@
 var http = require('http'),
+    https = require('https'),
     util = require('util'),
     fs = require('fs'),
     path = require('path'),
-    _ = require('underscore'),
     util = require('util'),
     url = require('url'),
     static = require('node-static'),
-    events = require('events');
+    events = require('events'),
+    nodeCleanup = require('node-cleanup');
 
-exports.Server = function(paths, config) {
+
+exports.createServer = function (paths, options) {
+    return new Server(paths, options);
+};
+
+
+function Server (paths, config) {
     var me = this,
         options = config.server;
 
@@ -23,89 +30,106 @@ exports.Server = function(paths, config) {
     me.options.sslKey = me.options.sslKey || null;
     me.options.sslCert = me.options.sslCert || null;
     me.options.staticDir = me.options.staticDir || path.resolve(__dirname, '../kernel-www');
+    me.options.socketPath = 'socketPath' in me.options ? me.options.socketPath : '/emergence/kernel.sock';
 
     // initialize state
+    nodeCleanup(this.close.bind(this));
 };
 
-util.inherits(exports.Server, events.EventEmitter);
+util.inherits(Server, events.EventEmitter);
 
 
-exports.Server.prototype.start = function() {
-    var me = this,
-        http_auth = require('http-auth')({
-            authRealm: 'Emergence Node Management',
-            authFile: '/emergence/admins.htpasswd'
-        }),
-        protocol;
+Server.prototype.start = function () {
+    // create authenticator
+    this.httpAuth = require('http-auth')({
+        authRealm: 'Emergence Node Management',
+        authFile: '/emergence/admins.htpasswd'
+    });
 
     // create static fileserver
-    me.fileServer = new static.Server(me.options.staticDir);
+    this.fileServer = new static.Server(this.options.staticDir);
 
-    // start control server
-    if (me.options.sslKey && me.options.sslCert) {
-        require('https').createServer({
-            key: fs.readFileSync(me.options.sslKey),
-            cert: fs.readFileSync(me.options.sslCert)
-        }, _handleRequest).listen(me.options.port, me.options.host);
+    // listen on web port
+    if (this.options.sslKey && this.options.sslCert) {
+        this.webServer = https.createServer({
+            key: fs.readFileSync(this.options.sslKey),
+            cert: fs.readFileSync(this.options.sslCert)
+        }, this.handleWebRequest.bind(this)).listen(this.options.port, this.options.host);
 
-        protocol = 'https';
+        this.webProtocol = 'https';
     } else {
-        require('http').createServer(_handleRequest).listen(me.options.port, me.options.host);
+        this.webServer = http.createServer(this.handleWebRequest.bind(this)).listen(this.options.port, this.options.host);
 
-        protocol = 'http';
+        this.webProtocol = 'http';
     }
 
-
-    function _handleRequest(request, response) {
-
-        http_auth.apply(request, response, function(username) {
-            request.content = '';
-
-            request.addListener('data', function(chunk) {
-                request.content += chunk;
-            });
-
-            request.addListener('end', function() {
-                request.urlInfo = url.parse(request.url)
-                request.path = request.urlInfo.pathname.substr(1).split('/');
-                console.log(request.method+' '+request.url);
-
-                if (request.path[0] == 'server-config') {
-                    response.writeHead(200, {'Content-Type':'application/json'});
-                    response.end(JSON.stringify(me.options));
-                    return;
-                }
-
-                if (request.path[0] == 'package-info') {
-                    response.writeHead(200, {'Content-Type':'application/json'});
-                    response.end(JSON.stringify(require('../package.json')));
-                    return;
-                }
-
-                if (me.paths.hasOwnProperty(request.path[0])) {
-                    var result = me.paths[request.path[0]].handleRequest(request, response, me);
-
-                    if (result===false)  {
-                        response.writeHead(404);
-                        response.end();
-                    } else if (result !== true) {
-                        response.writeHead(200, {'Content-Type':'application/json'});
-                        response.end(JSON.stringify(result));
-                    }
-                } else {
-                    me.fileServer.serve(request, response);
-                }
-            });
-
-        });
-
+    // listen on unix socket
+    if (this.options.socketPath) {
+        this.socketServer = http.createServer(this.handleRequest.bind(this)).listen(this.options.socketPath);
+        fs.chmodSync(this.options.socketPath, '400');
     }
 
-
-    console.log('Management server listening on '+protocol+'://'+me.options.host+':'+me.options.port);
-
+    console.log('Management server listening on '+this.webProtocol+'://'+this.options.host+':'+this.options.port);
 };
 
-exports.createServer = function(paths, options) {
-    return new exports.Server(paths, options);
+Server.prototype.handleWebRequest = function (request, response) {
+    var me = this;
+
+    me.httpAuth.apply(request, response, function () {
+        me.handleRequest(request, response);
+    });
+};
+
+Server.prototype.handleRequest = function (request, response) {
+    var me = this;
+
+    request.content = '';
+
+    request.addListener('data', function (chunk) {
+        request.content += chunk;
+    });
+
+    request.addListener('end', function () {
+        request.urlInfo = url.parse(request.url);
+        request.path = request.urlInfo.pathname.substr(1).split('/');
+        console.log(request.method+' '+request.url);
+
+        if (request.path[0] == 'server-config') {
+            response.writeHead(200, {'Content-Type':'application/json'});
+            response.end(JSON.stringify(me.options));
+            return;
+        }
+
+        if (request.path[0] == 'package-info') {
+            response.writeHead(200, {'Content-Type':'application/json'});
+            response.end(JSON.stringify(require('../package.json')));
+            return;
+        }
+
+        if (me.paths.hasOwnProperty(request.path[0])) {
+            var result = me.paths[request.path[0]].handleRequest(request, response, me);
+
+            if (result===false)  {
+                response.writeHead(404);
+                response.end();
+            } else if (result !== true) {
+                response.writeHead(200, {'Content-Type':'application/json'});
+                response.end(JSON.stringify(result));
+            }
+        } else {
+            me.fileServer.serve(request, response);
+        }
+    });
+};
+
+Server.prototype.close = function () {
+    console.log('Shutting down management server...');
+
+    if (this.webServer) {
+        this.webServer.close();
+    }
+
+    if (this.socketServer) {
+        this.socketServer.close();
+    }
 };

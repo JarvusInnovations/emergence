@@ -19,6 +19,8 @@ class SiteFile
         ,'scss' => 'text/x-scss'
         ,'tpl' => 'text/x-html-template'
         ,'svg' => 'image/svg+xml'
+        ,'yml' => 'application/x-yaml'
+        ,'yaml' => 'application/x-yaml'
     );
     public static $additionalHeaders = array(
         'static' => array('Cache-Control: max-age=3600, must-revalidate', 'Pragma: public')
@@ -104,7 +106,7 @@ class SiteFile
 
     public static function getByID($fileID)
     {
-        $cacheKey = 'efs:file:' . $fileID;
+        $cacheKey = 'efs:file:'.$fileID;
 
         if (false === ($record = Cache::fetch($cacheKey))) {
             $record = DB::oneRecord(
@@ -209,7 +211,7 @@ class SiteFile
 
     public static function getRealPathByID($ID)
     {
-        return Site::$rootPath . '/' . static::$dataPath . '/' . $ID;
+        return Site::$rootPath.'/'.static::$dataPath.'/'.$ID;
     }
 
     public function getName()
@@ -271,16 +273,22 @@ class SiteFile
         return $record;
     }
 
-    function put($data, $ancestorID = null)
+    public function put($data, $ancestorID = null)
     {
         $record = null;
+        $tempPath = tempnam(static::getRealPathByID(''), 'uploading');
+        file_put_contents($tempPath, $data);
+        $sha1 = sha1_file($tempPath);
+        $data = new SplFileInfo($tempPath);
 
         if ($this->Status == 'Phantom' && !empty($GLOBALS['Session']) && $this->AuthorID == $GLOBALS['Session']->PersonID) {
-            static::saveRecordData($this->_record, $data);
+            static::saveRecordData($this->_record, $data, $sha1);
             $record = $this->_record;
+        } elseif ($this->Status == 'Normal' && $this->SHA1 == $sha1) {
+            return $this->_record;
         } else {
             $record = static::createPhantom($this->CollectionID, $this->Handle, $ancestorID ? $ancestorID : $this->ID);
-            static::saveRecordData($record, $data);
+            static::saveRecordData($record, $data, $sha1);
         }
 
         // fire event
@@ -288,7 +296,7 @@ class SiteFile
             'record' => $record
         ));
 
-        return $result;
+        return $record;
     }
 
     public static function createPhantom($collectionID, $handle, $ancestorID = null)
@@ -319,7 +327,12 @@ class SiteFile
     {
         // save file
         $filePath = static::getRealPathByID($record['ID']);
-        file_put_contents($filePath, $data);
+
+        if ($data instanceof SplFileInfo) {
+            rename($data->getPathname(), $filePath);
+        } else {
+            file_put_contents($filePath, $data);
+        }
 
         // update in-memory record
         $record['SHA1'] = $sha1 ? $sha1 : sha1_file($filePath);
@@ -499,7 +512,7 @@ class SiteFile
         if (!empty($_GET['_sha1']) && $_GET['_sha1'] == $this->SHA1) {
             $expires = 60*60*24*365;
             header('Cache-Control: public, max-age='.$expires);
-            header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time()+$expires));
+            header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time()+$expires));
             header('Pragma: public');
         }
 
@@ -517,7 +530,7 @@ class SiteFile
         header('Last-Modified: '.gmdate('D, d M Y H:i:s \G\M\T', $this->Timestamp));
 
         if ($includeAuthor && $this->Author) {
-          header('Author: '.$this->Author->EmailRecipient);
+            header('Author: '.$this->Author->EmailRecipient);
         }
 
         readfile($this->RealPath);

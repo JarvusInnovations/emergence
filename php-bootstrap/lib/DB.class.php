@@ -1,8 +1,9 @@
 <?php
 
-class DuplicateKeyException extends Exception { }
-class TableNotFoundException extends Exception { }
-class QueryException extends Exception { }
+require_once('DuplicateKeyException.class.php');
+require_once('TableNotFoundException.class.php');
+require_once('QueryException.class.php');
+
 
 class DB
 {
@@ -35,6 +36,11 @@ class DB
 
     public static function foundRows()
     {
+        // table not found
+        if (self::getMysqli()->sqlstate == '42S02') {
+            return 0;
+        }
+
         return (int)self::oneValue('SELECT FOUND_ROWS()');
     }
 
@@ -373,7 +379,7 @@ class DB
 
     protected static function finishQueryLog(&$queryLog, $result = null)
     {
-        if ($queryLog == false) {
+        if ($queryLog == false || static::$suspendCount > 0) {
             return false;
         }
 
@@ -393,11 +399,11 @@ class DB
         $backtrace = debug_backtrace();
         while ($backtick = array_shift($backtrace)) {
             // skip the log routine itself
-            if ($backtick['function'] == __FUNCTION__) {
+            if (!empty($backtick['function']) && $backtick['function'] == __FUNCTION__) {
                 continue;
             }
 
-            if ($backtick['class'] != __CLASS__) {
+            if (empty($backtick['class']) || $backtick['class'] != __CLASS__) {
                 break;
             }
 
@@ -431,10 +437,7 @@ class DB
             }
 
             // set timezone to match PHP
-            self::nonQuery(
-                'SET time_zone = "%s"',
-                self::escape(date('P'))
-            );
+            self::syncTimezone();
         }
 
         return self::$_mysqli;
@@ -457,6 +460,41 @@ class DB
             throw new TableNotFoundException($message, static::$_mysqli->errno);
         } else {
             throw new QueryException($message, static::$_mysqli->errno);
+        }
+    }
+
+    /**
+     * Sets timezone for connection to match current PHP default
+     *
+     * @return void
+     */
+    public static function syncTimezone()
+    {
+        if (!isset(self::$_mysqli)) {
+            return;
+        }
+
+        self::nonQuery(
+            'SET time_zone = "%s"',
+            self::escape(date('P'))
+        );
+    }
+
+
+    // API to suspend/resume query logging
+    protected static $suspendCount = 0;
+
+    public static function suspendQueryLogging()
+    {
+        static::$suspendCount++;
+    }
+
+    public static function resumeQueryLogging()
+    {
+        static::$suspendCount--;
+
+        if (static::$suspendCount < 0) {
+            static::$suspendCount = 0;
         }
     }
 }

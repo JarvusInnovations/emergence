@@ -59,7 +59,7 @@ class Debug
         ));
     }
 
-    static protected function _detectSource()
+    protected static function _detectSource()
     {
         $backtrace = debug_backtrace();
 
@@ -81,7 +81,7 @@ class Debug
     public static function writeTrace($message, $data = array())
     {
         if (!static::$_traceHandle) {
-            $filePath = Site::$rootPath . '/site-data/trace-logs/';
+            $filePath = Site::$rootPath.'/site-data/trace-logs/';
             $dateStamp = date('Y-m-d-His');
             $increment = 1;
 
@@ -90,13 +90,13 @@ class Debug
             }
 
             do {
-                $fileName = $dateStamp . '.' . $increment . '.log';
+                $fileName = $dateStamp.'.'.$increment.'.log';
                 $increment++;
-            } while(file_exists($filePath . $fileName));
+            } while (file_exists($filePath.$fileName));
 
-            static::$_traceHandle = fopen($filePath . $fileName, 'w');
+            static::$_traceHandle = fopen($filePath.$fileName, 'w');
         }
 
-        fwrite(static::$_traceHandle, round(microtime(true)*1000) . "\t$message\t" . json_encode($data) . "\n");
+        fwrite(static::$_traceHandle, round(microtime(true)*1000)."\t$message\t".json_encode($data)."\n");
     }
 }

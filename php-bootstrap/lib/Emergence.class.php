@@ -24,6 +24,9 @@ class Emergence
             if (!empty($_REQUEST['exclude'])) {
                 $remoteParams['exclude'] = $_REQUEST['exclude'];
             }
+            if (!empty($_REQUEST['minId'])) {
+                $remoteParams['minId'] = $_REQUEST['minId'];
+            }
             HttpProxy::relayRequest(array(
                 'url' => static::buildUrl(Site::$pathStack, $remoteParams)
                 ,'autoAppend' => false
@@ -69,16 +72,20 @@ class Emergence
                     $excludedFiles[] = $node->ID;
                 }
             }
- 
+
             if (count($excludedCollections)) {
                 $collectionConditions['excludeTrees'] = $excludedCollections;
             }
-            
+
             if (count($excludedFiles)) {
                 $fileConditions[] = 'ID NOT IN ('.implode(',', $excludedFiles).')';
             }
         }
 
+        // set minimum id
+        if (!empty($_REQUEST['minId'])) {
+            $fileConditions[] = 'ID > '.intval($_REQUEST['minId']);
+        }
 
         // get files
         $files = Emergence_FS::getTreeFiles($rootPath, false, $fileConditions, $collectionConditions);
@@ -97,10 +104,42 @@ class Emergence
         $params['accessKey'] = Site::getConfig('parent_key');
 
         $url  = 'http://'.Site::getConfig('parent_hostname').'/emergence';
-        $url .= '/' . implode('/', $path);
-        $url .= '?' . http_build_query($params);
+        $url .= '/'.implode('/', $path);
+        $url .= '?'.http_build_query($params);
 
         return $url;
+    }
+
+    public static function executeRequest($url)
+    {
+        static $ch = null;
+
+        if (!$ch) {
+            $ch = curl_init();
+        }
+
+        $fp = fopen('php://memory', 'w+');
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+
+        if (curl_exec($ch) === false || curl_errno($ch)) {
+            throw new Exception('Failed to query parent site for file: '.curl_error($ch));
+        }
+
+        // read response
+        fseek($fp, 0);
+
+        // read and check status
+        list($protocol, $status, $message) = explode(' ', trim(fgetss($fp)));
+
+        return array(
+            'status' => (int)$status,
+            'protocol' => $protocol,
+            'message' => $message,
+            'type' => curl_getinfo($ch, CURLINFO_CONTENT_TYPE),
+            'resource' => $fp
+        );
     }
 
     public static function resolveFileFromParent($collection, $path, $forceRemote = false, $params = array())
@@ -129,34 +168,34 @@ class Emergence
 
             $remoteURL = static::buildUrl(array_merge($collection->getFullPath(null, false), $path), $params);
 
-            $cachedStatus = apc_fetch($remoteURL);
+            $cachedStatus = Cache::rawFetch($remoteURL);
             if ($cachedStatus) {
                 return false;
             }
 
-            $fp = fopen('php://memory', 'w+');
-            $ch = curl_init($remoteURL);
-            curl_setopt($ch, CURLOPT_FILE, $fp);
-            curl_setopt($ch, CURLOPT_HEADER, true);
+            $remoteResponse = static::executeRequest($remoteURL);
 
-            if (curl_exec($ch) === false || curl_errno($ch)) {
-                throw new Exception('Failed to query parent site for file: '.curl_error($ch));
+            // if 500, back off for a couple seconds and try once more
+            if ($remoteResponse['status'] == 500) {
+                usleep(mt_rand(1000000, 3000000));
+                $remoteResponse = static::executeRequest($remoteURL);
             }
 
-            // read response
-            fseek($fp, 0);
+            // a collection was found, cache it
+            if ($remoteResponse['status'] == 300) {
+                return SiteCollection::getOrCreatePath($path, $collection);
+            }
 
-            // read and check status
-            list($protocol, $status, $message) = explode(' ', trim(fgetss($fp)));
 
-            if ($status != '200') {
-                fclose($fp);
-                apc_store($remoteURL, (int)$status);
+            // any status but 300 or 200 is failure,remember and don't try again
+            if ($remoteResponse['status'] != 200) {
+                fclose($remoteResponse['resource']);
+                Cache::rawStore($remoteURL, $remoteResponse['status']);
                 return false;
             }
 
             // read headers until a blank line is found
-            while ($header = trim(fgetss($fp))) {
+            while ($header = trim(fgetss($remoteResponse['resource']))) {
                 if (!$header) {
                     break;
                 }
@@ -165,13 +204,13 @@ class Emergence
 
                 // if etag found, use it to skip write if existing file matches
                 if ($key == 'etag' && $fileNode && $fileNode->SHA1 == $value) {
-                    fclose($fp);
+                    fclose($remoteResponse['resource']);
                     return $fileNode;
                 }
             }
 
             // write remaining buffer to file
-            $fileRecord = $collection->createFile($path, $fp);
+            $fileRecord = $collection->createFile($path, $remoteResponse['resource']);
 
             $fileNode = new SiteFile($fileRecord['Handle'], $fileRecord);
         }
@@ -185,22 +224,18 @@ class Emergence
             return false;
         }
 
-        $fp = fopen('php://memory', 'w+');
-        $ch = curl_init(static::buildUrl($path));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, $fp);
+        $remoteResponse = static::executeRequest(static::buildUrl($path));
 
-        $responseText = curl_exec($ch);
-        $responseStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $responseType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-
-        if ($responseText === false || curl_errno($ch)) {
-            throw new Exception('Failed to query parent site for collection: '.curl_error($ch));
-        }
-
-        if ($responseStatus != 300 || $responseType != 'application/vnd.emergence.tree+json') {
+        if ($remoteResponse['status'] != 300 || $remoteResponse['type'] != 'application/vnd.emergence.tree+json') {
             return false;
         }
 
-        return json_decode($responseText, true);
+        while ($header = trim(fgetss($remoteResponse['resource']))) {
+            if (!$header) {
+                break;
+            }
+        }
+
+        return json_decode(stream_get_contents($remoteResponse['resource']), true);
     }
 }

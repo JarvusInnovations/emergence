@@ -10,7 +10,7 @@ class Emergence_FS
         }
 
         // check if this tree has already been cached
-        $cacheKey = 'cacheTree:' . implode('/', $path);
+        $cacheKey = 'cacheTree:'.implode('/', $path);
         if (!Site::$autoPull || (!$force && Cache::fetch($cacheKey))) {
             return 0;
         }
@@ -51,7 +51,7 @@ class Emergence_FS
         if ($path) {
             $collections = static::getCollectionLayers($path, $localOnly);
 
-            if(empty($collections['local']) && empty($collections['remote'])) {
+            if (empty($collections['local']) && empty($collections['remote'])) {
                 return array();
             }
 
@@ -79,7 +79,7 @@ class Emergence_FS
             }
 
             // append to tree conditions
-            $conditions[] = '(' . join(') OR (', $positionConditions) . ')';
+            $conditions[] = '('.join(') OR (', $positionConditions).')';
         } elseif ($localOnly) {
             $conditions['Site'] = 'Local';
         }
@@ -115,7 +115,7 @@ class Emergence_FS
 
         // map conditions
         $mappedConditions = array();
-        foreach($conditions AS $key => $value) {
+        foreach ($conditions AS $key => $value) {
             if (is_string($key)) {
                 $mappedConditions[] = sprintf('`%s` = "%s"', $key, DB::escape($value));
             } else {
@@ -139,12 +139,13 @@ class Emergence_FS
         return $tree;
     }
 
-    public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array()) {
+    public static function getTreeFiles($path = null, $localOnly = false, $fileConditions = array(), $collectionConditions = array())
+    {
         return static::getTreeFilesFromTree(static::getTree($path, $localOnly, false, $collectionConditions), $fileConditions);
     }
 
-    public static function getTreeFilesFromTree($tree, $conditions = array()) {
-
+    public static function getTreeFilesFromTree($tree, $conditions = array())
+    {
         $conditions['Status'] = 'Normal';
 
         // map conditions
@@ -163,7 +164,7 @@ class Emergence_FS
         $remoteCollections = array();
 
         foreach ($tree AS &$collectionInfo) {
-            if($collectionInfo['Site'] == 'Local') {
+            if ($collectionInfo['Site'] == 'Local') {
                 $localCollections[] = $collectionInfo['ID'];
             } else {
                 $remoteCollections[] = $collectionInfo['ID'];
@@ -234,36 +235,79 @@ class Emergence_FS
 
     public static function exportTree($sourcePath, $destinationPath, $options = array())
     {
+        // initialize result accumulators
+        $includedCollectionIDs = array();
+        $collectionsExcluded = 0;
+        $filesAnalyzed = 0;
+        $filesExcluded = 0;
+        $filesWritten = array();
+        $filesDeleted = array();
+
+
+        // prepare options
         $options = array_merge(array(
             'localOnly' => false
-            ,'dataPath' => $destinationPath . '/.emergence'
             ,'exclude' => array()
-            ,'transferDelete' => true
+            ,'delete' => true
         ), $options);
 
-        // check destination
-        if (!is_dir($destinationPath)) {
-            mkdir($destinationPath, 0777, true);
-        }
-
-        if (!is_writable($destinationPath)) {
-            throw new Exception("Destination \"$destinationPath\" is not writable");
+        if (isset($options['transferDelete'])) {
+            // transferDelete is a deprecated option
+            $options['delete'] = (bool)$options['transferDelete'];
+            unset($options['transferDelete']);
         }
 
         if (!empty($options['exclude']) && is_string($options['exclude'])) {
             $options['exclude'] = array($options['exclude']);
         }
 
-        $prefixLen = strlen($sourcePath);
-        $tree = static::getTree($sourcePath, $options['localOnly'], $options['transferDelete']);
-        $includedCollectionIDs = array();
-        $collectionsExcluded = 0;
+        // normalize input paths
+        if (!$sourcePath || $sourcePath == '/' || $sourcePath == '.' || $sourcePath == './') {
+            $sourcePath = null;
+        } else {
+            $sourcePath = trim($sourcePath, '/');
+        }
 
-        // build relative paths and create directories
+        if (!$destinationPath || $destinationPath == './') {
+            $destinationPath = '.';
+        } else {
+            $destinationPath = rtrim($destinationPath, '/');
+        }
+
+        // check and prepare destination
+        if (!is_dir($destinationPath)) {
+            mkdir($destinationPath, 0777, true);
+        } elseif ($options['delete']) {
+            // scrub destination before writing
+            $destinationIterator = new RecursiveDirectoryIterator($destinationPath, FilesystemIterator::SKIP_DOTS);
+            $destinationIterator = new RecursiveIteratorIterator($destinationIterator, RecursiveIteratorIterator::CHILD_FIRST);
+
+            foreach ($destinationIterator AS $file) {
+                if (preg_match('#(^|/)\\.git(/|$)#', $file)) {
+                    continue;
+                }
+
+                if ($file->isFile()) {
+                    unlink($file);
+                    $filesDeleted[] = (string)$file;
+                } else {
+                    rmdir($file);
+                }
+            }
+        }
+
+        if (!is_writable($destinationPath)) {
+            throw new Exception("Destination \"$destinationPath\" is not writable");
+        }
+
+
+        // build map of subtrees to be written and create directories
+        $prefixLen = strlen($destinationPath);
+        $tree = static::getTree($sourcePath, $options['localOnly']);
+
         foreach ($tree AS $collectionID => &$node) {
-
-            if ($node['ParentID'] && $tree[$node['ParentID']]) {
-                $node['_path'] = $tree[$node['ParentID']]['_path'] . '/' . $node['Handle'];
+            if ($node['ParentID'] && !empty($tree[$node['ParentID']])) {
+                $node['_path'] = $tree[$node['ParentID']]['_path'].'/'.$node['Handle'];
             } else {
                 $node['_path'] = $destinationPath;
             }
@@ -286,30 +330,27 @@ class Emergence_FS
             $includedCollectionIDs[] = $collectionID;
         }
 
-        // read file state from emergence data
-        $mark = 0;
 
-        if ($options['dataPath'] && is_dir($options['dataPath'])) {
-            $markFilePath = $options['dataPath'] . '/mark';
-
-            if (file_exists($markFilePath)) {
-                $mark = file_get_contents($markFilePath);
-            }
-        }
-
-        // get files
-        $filesAnalyzed = 0;
-        $filesExcluded = 0;
-        $filesWritten = array();
-        $filesDeleted = array();
-
+        // fetch and write files in included collections
         if (count($includedCollectionIDs)) {
+            $conditions = array();
+
+            if (!empty($options['minId'])) {
+                $conditions[] = sprintf('ID >= %u', $options['minId']);
+            }
+
+            if (!empty($options['maxId'])) {
+                $conditions[] = sprintf('ID <= %u', $options['maxId']);
+            }
+
+            $conditions[] = sprintf('CollectionID IN (%s)', join(',', $includedCollectionIDs));
+            $conditions[] = 'Status != "Phantom"';
+
             $fileResult = DB::query(
-                'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE ID > %2$u AND CollectionID IN (%3$s) AND Status != "Phantom" GROUP BY f1.CollectionID, f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 USING (ID)'
+                'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE (%2$s) GROUP BY f1.CollectionID, f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 USING (ID)'
                 ,array(
                     SiteFile::$tableName
-                    ,$mark
-                    ,join(',', $includedCollectionIDs)
+                    ,implode(') AND (', $conditions)
                 )
             );
 
@@ -324,29 +365,16 @@ class Emergence_FS
                 }
 
                 if ($fileRow['Status'] == 'Normal' && $tree[$fileRow['CollectionID']]['Status'] != 'Deleted' && ($tree[$fileRow['CollectionID']]['Site'] == 'Local' || !in_array($dst, $filesWritten))) {
-                    copy(Site::$rootPath . '/' . SiteFile::$dataPath . '/' . $fileRow['ID'], $dst);
+                    copy(Site::$rootPath.'/'.SiteFile::$dataPath.'/'.$fileRow['ID'], $dst);
                     touch($dst, strtotime($fileRow['Timestamp']));
                     $filesWritten[] = $dst;
-                } elseif ($fileRow['Status'] == 'Deleted') {
-                    if ($options['transferDelete'] && is_file($dst) && !in_array($dst, $filesWritten)) {
-                        unlink($dst);
-                        $filesDeleted[] = $dst;
-                    }
                 }
 
-                $mark = max($mark, $fileRow['ID']);
                 $filesAnalyzed++;
             }
-
-            // write emergence data
-            if ($options['dataPath']) {
-                if (!is_dir($options['dataPath'])) {
-                    mkdir($options['dataPath']);
-                }
-
-                file_put_contents($options['dataPath'] . '/mark', $mark);
-            }
         }
+
+        $filesDeleted = array_diff($filesDeleted, $filesWritten);
 
         return array(
             'collectionsExcluded' => $collectionsExcluded,
@@ -370,7 +398,7 @@ class Emergence_FS
         $sha1 = sha1_file($sourcePath);
 
         // skip if existing local or remote file matches hash
-        if(!$existingNode || $existingNode->SHA1 != $sha1) {
+        if (!$existingNode || $existingNode->SHA1 != $sha1) {
             // use lower level create methods to supply already-calculated hash
             $fileRecord = SiteFile::createFromPath($destinationPath, null, $existingNode ? $existingNode->ID : null);
             return SiteFile::saveRecordData($fileRecord, fopen($sourcePath, 'r'), $sha1);
@@ -382,11 +410,16 @@ class Emergence_FS
     public static function importTree($sourcePath, $destinationPath, $options = array())
     {
         $options = array_merge(array(
-            'dataPath' => $sourcePath . '/.emergence'
-            ,'exclude' => array()
-            ,'transferDelete' => true
+            'exclude' => array()
+            ,'delete' => true
             ,'debug' => false
         ), $options);
+
+        // backwords compatibility
+        if (isset($options['transferDelete'])) {
+            $options['delete'] = (bool)$options['transferDelete'];
+            unset($options['transferDelete']);
+        }
 
         // check source
         if (!is_readable($sourcePath)) {
@@ -397,15 +430,27 @@ class Emergence_FS
             $options['exclude'] = array($options['exclude']);
         }
 
+        // normalize input paths
+        if (!$sourcePath || $sourcePath == './') {
+            $sourcePath = '.';
+        } else {
+            $sourcePath = rtrim($sourcePath, '/');
+        }
+
+        if (!$destinationPath || $destinationPath == '/' || $destinationPath == '.' || $destinationPath == './') {
+            $destinationPath = null;
+        } else {
+            $destinationPath = trim($destinationPath, '/');
+        }
 
         // initialize state
         $prefixLen = strlen($sourcePath);
 
         $collectionsAnalyzed = 0;
-        $filesAnalyzed = 0;
-        $filesUpdated = 0;
-        $pathsExcluded = 0;
         $collectionsDeleted = 0;
+        $filesAnalyzed = 0;
+        $filesExcluded = 0;
+        $filesUpdated = 0;
         $filesDeleted = 0;
 
 
@@ -419,8 +464,10 @@ class Emergence_FS
             }
 
             if ($collectionInfo['ParentID'] && isset($destinationCollectionsTree[$collectionInfo['ParentID']])) {
-                $collectionInfo['_path'] = $destinationCollectionsTree[$collectionInfo['ParentID']]['_path'] . '/' . $collectionInfo['Handle'];
+                $collectionInfo['_path'] = $destinationCollectionsTree[$collectionInfo['ParentID']]['_path'].'/'.$collectionInfo['Handle'];
                 $localDestinationCollectionsMap[$collectionInfo['_path']] = &$collectionInfo;
+            } elseif (!$collectionInfo['ParentID']) {
+                $collectionInfo['_path'] = $collectionInfo['Handle'];
             } else {
                 $collectionInfo['_path'] = $destinationPath;
             }
@@ -443,19 +490,14 @@ class Emergence_FS
         // iterate through all source files
         foreach ($iterator AS $tmpPath => $node) {
             $relPath = substr($tmpPath, $prefixLen);
-            $path = $destinationPath . $relPath;
-
-            // skip .emergence data directory
-            if ($options['dataPath'] && 0 === strpos($path, $options['dataPath'])) {
-                continue;
-            }
+            $path = $destinationPath ? $destinationPath.$relPath : ltrim($relPath, '/');
 
             if ($options['debug']) {
                 Debug::dump(array('tmpPath' => $tmpPath, 'destPath' => $path), false, 'iterating node');
             }
 
             if (static::matchesExclude($relPath, $options['exclude'])) {
-                $pathsExcluded++;
+                $filesExcluded++;
                 continue;
             }
 
@@ -471,11 +513,6 @@ class Emergence_FS
                 continue;
             } else {
                 $filesAnalyzed++;
-            }
-
-            // skip .emergence data directory
-            if ($options['dataPath'] && 0 === strpos($node->getPath(), $options['dataPath'])) {
-                continue;
             }
 
             $existingNode = isset($destinationFilesMap[$path]) ? $destinationFilesMap[$path] : null;
@@ -505,13 +542,14 @@ class Emergence_FS
         }
 
 
-        if ($options['transferDelete']) {
+        if ($options['delete']) {
             // delete local collections
             foreach ($localDestinationCollectionsMap AS $path => $collectionInfo) {
                 $relPath = substr($path, strlen($destinationPath));
 
                 // skip excluded paths
                 if (static::matchesExclude($relPath, $options['exclude'])) {
+                    $filesExcluded++;
                     continue;
                 }
 
@@ -539,6 +577,7 @@ class Emergence_FS
 
                 // skip excluded paths
                 if (static::matchesExclude($relPath, $options['exclude'])) {
+                    $filesExcluded++;
                     continue;
                 }
 
@@ -548,7 +587,7 @@ class Emergence_FS
                         SiteFile::$tableName
                         ,$fileInfo['CollectionID']
                         ,basename($path)
-                        ,$GLOBALS['Session']->PersonID
+                        ,!empty($GLOBALS['Session']) ? $GLOBALS['Session']->PersonID : null
                         ,$fileInfo['ID']
                     )
                 );
@@ -562,10 +601,10 @@ class Emergence_FS
 
         return array(
             'collectionsAnalyzed' => $collectionsAnalyzed
-            ,'filesAnalyzed' => $filesAnalyzed
-            ,'filesUpdated' => $filesUpdated
-            ,'pathsExcluded' => $pathsExcluded
             ,'collectionsDeleted' => $collectionsDeleted
+            ,'filesAnalyzed' => $filesAnalyzed
+            ,'filesExcluded' => $filesExcluded
+            ,'filesUpdated' => $filesUpdated
             ,'filesDeleted' => $filesDeleted
         );
     }
@@ -592,10 +631,12 @@ class Emergence_FS
 
         if (!$localOnly) {
             $remoteCollection = SiteCollection::getByHandle($rootHandle, null, true);
+        } else {
+            $remoteCollection = null;
         }
 
         while ($handle = array_shift($path)) {
-            if ($localCollection){
+            if ($localCollection) {
                 $localCollection = SiteCollection::getByHandle($handle, $localCollection->ID, false);
             }
 
@@ -621,9 +662,13 @@ class Emergence_FS
                     foreach (static::getCollectionLayers($scopeItem, $localOnly) AS $collection) {
                         $collections[] = $collection;
                     }
-                } elseif(is_a($scopeItem, 'SiteCollection')) {
+                } elseif (is_a($scopeItem, 'SiteCollection')) {
                     $collections[] = $scopeItem;
                 }
+            }
+
+            if(!count($collections)) {
+                return array();
             }
         }
 

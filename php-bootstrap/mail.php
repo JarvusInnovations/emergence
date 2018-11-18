@@ -1,7 +1,7 @@
 <?php
 
 // read input
-@list ($scriptPath, $hostname, $recipient, $sender, $queueId) = $argv;
+@list($scriptPath, $hostname, $recipient, $sender, $queueId) = $argv;
 
 if (!$hostname || !$recipient || !$sender || !$queueId) {
     print("One or more required parameters missing\n");
@@ -15,27 +15,27 @@ if (is_readable($hostmapPath)) {
     $hostmap = require($hostmapPath);
 } else {
     $hostmap = [];
-    
+
     foreach (glob('/emergence/sites/*', GLOB_ONLYDIR) AS $sitePath) {
         $configPath = "$sitePath/site.json";
         if (!is_readable($configPath)) {
             continue;
         }
-    
+
         $config = @json_decode(file_get_contents($configPath), true);
-    
+
         if (!$config) {
             continue;
         }
-    
+
         $hostnames = array_unique(array_merge([$config['primary_hostname']], $config['hostnames']));
-        
+
         foreach ($hostnames AS $hostname) {
-            $hostmap['/^' . str_replace('\\*', '.*', preg_quote($hostname)) . '$/i'] = basename($sitePath);
+            $hostmap['/^'.str_replace('\\*', '.*', preg_quote($hostname)).'$/i'] = basename($sitePath);
         }
     }
 
-    file_put_contents($hostmapPath, "<?php\n\nreturn " . var_export($hostmap, true) . ";\n");
+    file_put_contents($hostmapPath, "<?php\n\nreturn ".var_export($hostmap, true).";\n");
 }
 
 

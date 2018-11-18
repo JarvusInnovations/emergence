@@ -1,0 +1,96 @@
+#cloud-config
+
+# Add custom apt repositories
+apt:
+  sources:
+    ondrej-php.list:
+      source: |
+        deb http://ppa.launchpad.net/ondrej/php/ubuntu $RELEASE main
+        deb-src http://ppa.launchpad.net/ondrej/php/ubuntu $RELEASE main
+      key: | # Source: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x4F4EA0AAE5267A6C
+        -----BEGIN PGP PUBLIC KEY BLOCK-----
+        Version: SKS 1.1.6
+        Comment: Hostname: keyserver.ubuntu.com
+
+        mI0ESX35nAEEALKDCUDVXvmW9n+T/+3G1DnTpoWh9/1xNaz/RrUH6fQKhHr568F8hfnZP/2C
+        GYVYkW9hxP9LVW9IDvzcmnhgIwK+ddeaPZqh3T/FM4OTA7Q78HSvR81mJpf2iMLm/Zvh89Zs
+        mP2sIgZuARiaHo8lxoTSLtmKXsM3FsJVlusyewHfABEBAAG0H0xhdW5jaHBhZCBQUEEgZm9y
+        IE9uZMWZZWogU3Vyw72ItgQTAQIAIAUCSX35nAIbAwYLCQgHAwIEFQIIAwQWAgMBAh4BAheA
+        AAoJEE9OoKrlJnpsQjYD/jW1NlIFAlT6EvF2xfVbkhERii9MapjaUsSso4XLCEmZdEGX54GQ
+        01svXnrivwnd/kmhKvyxCqiNLDY/dOaK8MK//bDI6mqdKmG8XbP2vsdsxhifNC+GH/OwaDPv
+        n1TyYB653kwyruCGFjEnCreZTcRUu2oBQyolORDl+BmF4DjL
+        =R5tk
+        -----END PGP PUBLIC KEY BLOCK-----
+
+packages: [
+  'git',
+  'python-software-properties',
+  'python',
+  'g++',
+  'make',
+  'ruby-dev',
+  'nodejs',
+  'nodejs-legacy',
+  'npm',
+  'nginx',
+  'php5.6-fpm',
+  'php5.6-cli',
+  'php5.6-mysql',
+  'php5.6-gd',
+  'php5.6-json',
+  'php5.6-curl',
+  'php5.6-intl',
+  'php5.6-mbstring',
+  'php5.6-imagick',
+  'php5.6-xml',
+  'mariadb-server',
+  'mariadb-client',
+  'gettext',
+  'imagemagick',
+  'postfix',
+  'ruby-compass'
+]
+
+# Equivilant to: apt-get update && apt-get upgrade -y
+package_update: true
+package_upgrade: true
+
+write_files:
+- path: /etc/apparmor.d/local/usr.sbin.mysqld
+  content: |
+    # Site-specific additions and overrides for usr.sbin.mysqld.
+    # For more details, please see /etc/apparmor.d/local/README.
+    /emergence/services/etc/my.cnf r,
+    /emergence/services/data/mysql/ r,
+    /emergence/services/data/mysql/** rwk,
+    /emergence/services/logs/mysql/ r,
+    /emergence/services/logs/mysql/** rwk,
+    /emergence/services/run/mysqld/mysqld.sock w,
+    /emergence/services/run/mysqld/mysqld.pid rw,
+    /emergence/services/run/mysqld/mysqld.sock.lock rw,
+- path: /etc/systemd/system/emergence-kernel.service
+  content: |
+    [Unit]
+    Description=Emergence kernel daemon
+    After=network-online.target
+    Wants=network-online.target
+
+    [Service]
+    User=root
+    ExecStart=/usr/bin/env emergence-kernel
+    StandardOutput=journal
+
+    [Install]
+    WantedBy=multi-user.target
+
+
+runcmd:
+  - apt-get --no-install-recommends install php-apcu
+  - service nginx stop && sudo update-rc.d -f nginx disable
+  - service php5.6-fpm stop && sudo update-rc.d -f php5.6-fpm disable
+  - service mysql stop && sudo update-rc.d -f mysql disable
+  - echo "apc.shm_size=128M" >> /etc/php/5.6/mods-available/apcu.ini
+  - npm install -g git+https://github.com/JarvusInnovations/Emergence
+  - systemctl enable emergence-kernel
+  - service emergence-kernel start
+  - npm install -g htpasswd
