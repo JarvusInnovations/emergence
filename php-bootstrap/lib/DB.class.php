@@ -9,7 +9,7 @@ class DB
 {
     // deprecated:
     public static $encoding = 'UTF-8';
-    public static $charset = 'utf8';
+    public static $defaultCharset = 'utf8';
 
     // protected properties
     protected static $_mysqli;
@@ -429,7 +429,7 @@ class DB
             // connect to mysql database
             self::$_mysqli = @new mysqli($config['host'], $config['username'], $config['password'], $config['database'], $config['port'], $config['socket']);
 
-            self::$_mysqli->set_charset('utf8');
+            self::$_mysqli->set_charset($config['characterSetServer'] || static::$defaultCharset);
 
             // check for failure or connection error
             if (mysqli_connect_error()) {
