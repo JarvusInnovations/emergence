@@ -73,7 +73,8 @@ RUN hab pkg install jarvus/sencha-cmd/5.1.3.61/20170606195324 jarvus/underscore 
 
 
 # install emergence
-RUN npm install -g emergence
+RUN npm install -g emergence \
+    && npm install -g htpasswd
 
 
 # setup and expose emergence
