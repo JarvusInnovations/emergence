@@ -7,7 +7,8 @@ var http = require('http'),
     url = require('url'),
     static = require('node-static'),
     events = require('events'),
-    nodeCleanup = require('node-cleanup');
+    nodeCleanup = require('node-cleanup'),
+    httpAuth = require('http-auth');
 
 
 exports.createServer = function (paths, options) {
@@ -41,9 +42,9 @@ util.inherits(Server, events.EventEmitter);
 
 Server.prototype.start = function () {
     // create authenticator
-    this.httpAuth = require('http-auth')({
-        authRealm: 'Emergence Node Management',
-        authFile: '/emergence/admins.htpasswd'
+    const basicAuth = httpAuth.basic({
+        realm: 'Emergence Node Management',
+        file: '/emergence/admins.htpasswd'
     });
 
     // create static fileserver
@@ -58,7 +59,7 @@ Server.prototype.start = function () {
 
         this.webProtocol = 'https';
     } else {
-        this.webServer = http.createServer(this.handleWebRequest.bind(this)).listen(this.options.port, this.options.host);
+        this.webServer = http.createServer(basicAuth, this.handleRequest.bind(this)).listen(this.options.port, this.options.host);
 
         this.webProtocol = 'http';
     }
@@ -70,14 +71,6 @@ Server.prototype.start = function () {
     }
 
     console.log('Management server listening on '+this.webProtocol+'://'+this.options.host+':'+this.options.port);
-};
-
-Server.prototype.handleWebRequest = function (request, response) {
-    var me = this;
-
-    me.httpAuth.apply(request, response, function () {
-        me.handleRequest(request, response);
-    });
 };
 
 Server.prototype.handleRequest = function (request, response) {

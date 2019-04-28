@@ -1,5 +1,6 @@
 FROM ubuntu:16.04
 
+
 # initialize .ssh directory
 RUN mkdir -p ~/.ssh \
     && chmod 700 ~/.ssh \
@@ -23,9 +24,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         mysql-client \
         mysql-server \
         nginx \
-        nodejs \
-        nodejs-legacy \
-        npm \
         openssh-server \
         postfix \
         python \
@@ -38,8 +36,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         tmux \
         vim \
     && add-apt-repository -y ppa:ondrej/php \
-    && apt-get update \
+    && curl -sL https://deb.nodesource.com/setup_10.x | bash \
+    # && apt-get update \ # above calls apt-get update
     && apt-get install -y --allow-unauthenticated --no-install-recommends \
+        nodejs \
         php-apcu \
         php5.6-cli \
         php5.6-curl \
@@ -66,15 +66,19 @@ RUN service nginx stop \
 
 
 # install Habitat client and packages for emergence
-RUN curl -s https://raw.githubusercontent.com/habitat-sh/habitat/master/components/hab/install.sh | sudo bash
+RUN curl -s https://raw.githubusercontent.com/habitat-sh/habitat/master/components/hab/install.sh | bash
 RUN hab pkg install jarvus/sencha-cmd/6.5.2.15 jarvus/underscore \
     && hab pkg binlink jarvus/sencha-cmd sencha \
     && hab pkg binlink jarvus/underscore underscore
 
 
+# install helpful administrative commands
+RUN npm install -g htpasswd
+
+
 # install emergence
-RUN npm install -g emergence \
-    && npm install -g htpasswd
+COPY . /src
+RUN npm install -g /src
 
 
 # setup and expose emergence

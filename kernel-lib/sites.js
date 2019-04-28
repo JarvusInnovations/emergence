@@ -4,8 +4,8 @@ var _ = require('underscore'),
     path = require('path'),
     util = require('util'),
     events = require('events'),
-    posix = require('posix'),
     spawn = require('child_process').spawn,
+    shell = require('shelljs'),
     hostile = require('hostile'),
     phpShellScript = path.resolve(__dirname, '../bin/shell');
 
@@ -26,8 +26,8 @@ function Sites (config) {
     me.options = options || {};
     me.options.sitesDir = me.options.sitesDir || '/emergence/sites';
     me.options.localhost = me.options.localhost || '127.0.0.1';
-    me.options.dataUID = me.options.dataUID || posix.getpwnam(config.user).uid;
-    me.options.dataGID = me.options.dataGID || posix.getgrnam(config.group).gid;
+    me.options.dataUID = parseInt(me.options.dataUID || shell.exec(`id -u ${config.user}`).stdout.trim(), 10);
+    me.options.dataGID = parseInt(me.options.dataGID || shell.exec(`getent group ${config.group}`).stdout.split(':')[2], 10);
     me.options.dataMode = me.options.dataMode || '775';
 
     // create required directories

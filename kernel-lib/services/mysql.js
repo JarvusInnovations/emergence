@@ -41,7 +41,7 @@ function MysqlService (name, controller) {
 
     // check binary version
     console.log(me.name+': detecting mysqld version...');
-    versionMatch = shell.exec(me.options.execPath+' --version').output.match(/mysqld\s+Ver\s+(\d+(\.\d+)*)(-MariaDB)?/);
+    versionMatch = shell.exec(me.options.execPath+' --version').stdout.match(/mysqld\s+Ver\s+(\d+(\.\d+)*)(-MariaDB)?/);
 
     if (!versionMatch) {
         throw 'Failed to detect mysql version';
