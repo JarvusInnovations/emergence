@@ -194,42 +194,11 @@ class Site
             return Emergence::handleRequest();
         }
 
-        // TEMPORARY: bypass routing for some scripts
-        // TODO: delete this
-        foreach (['develop', 'editor', 'app'] AS $bypassRoute) {
-            if (static::$pathStack[0] == $bypassRoute) {
-                static::$resolvedPath = [array_shift(static::$pathStack)];
-                return static::executeScript(static::resolvePath("site-root/$bypassRoute.php"));
-            }
-        }
-
-        // TODO: delete this too
-        if (static::$pathStack[0] == 'site-admin') {
-            if (count(static::$pathStack) > 1) {
-                static::$resolvedPath = [array_shift(static::$pathStack), array_shift(static::$pathStack)];
-                return static::executeScript(static::resolvePath("site-root/site-admin/".static::$resolvedPath[1].".php"));
-            } else {
-                static::$resolvedPath = [array_shift(static::$pathStack)];
-                return static::executeScript(static::resolvePath("site-root/site-admin/_index.php"));
-            }
-        }
-
-        // header('Content-Type: text/plain');
-
-        // printf("Getting result for pathStack: %s\n", implode('/', static::$pathStack));
-
         // resolve request path against site-root filesystem
         $pathResult = static::getRequestPathResult(static::$pathStack);
         static::$resolvedNode = $pathResult['resolvedNode'];
         static::$resolvedPath = $pathResult['resolvedPath'];
         static::$pathStack = $pathResult['pathStack'];
-
-        // print_r([
-        //     '$pathResult[resolvedNode]' => sprintf('%s:%s', $pathResult['resolvedNode']->Class, $pathResult['resolvedNode']->FullPath),
-        //     '$pathResult[resolvedPath]' => implode('/', $pathResult['resolvedPath']),
-        //     '$pathResult[pathStack]' => implode('/', $pathResult['pathStack']),
-        //     '$pathResult[searchPath]' => implode('/', $pathResult['searchPath'])
-        // ]);
 
         // bail now if no node found
         if (!static::$resolvedNode) {
@@ -296,32 +265,20 @@ class Site
             $path = static::splitPath($path);
         }
 
-        // header('Content-Type: text/plain');
-        // printf("getRequestPathResult(%s)\n", implode('/', $path));
-
         // rewrite empty path to default page
         if (empty($path[0]) && static::$defaultPage) {
             $path = array(static::$defaultPage);
         }
 
         // crawl down path stack until a handler is found
-        // printf("while (\$handle = array_shift(%s))\n", implode(',', $path));
         $searchPath = array('site-root');
         while ($handle = array_shift($path)) {
-
-            // printf(
-            //     "\n\t\$searchPath=%s\n\t\$handle=%s\n\t\$path=.../%s\n",
-            //     implode('/', $searchPath),
-            //     $handle, implode('/', $path)
-            // );
-
             $foundNode = null;
 
             // if path component doesn't already end in .php, check for a .php match first
             if (substr($handle, -4) != '.php') {
                 array_push($searchPath, $handle.'.php');
                 $foundNode = static::resolvePath($searchPath);
-                // printf("\t\t%s\t%s\n", $foundNode ? 'matched' : 'missed', implode('/', $searchPath));
                 array_pop($searchPath);
 
                 // don't match a collection as a script
@@ -334,7 +291,6 @@ class Site
             if (!$foundNode) {
                 array_push($searchPath, $handle);
                 $foundNode = static::resolvePath($searchPath);
-                // printf("\t\t%s\t%s\n", $foundNode ? 'matched' : 'missed', implode('/', $searchPath));
                 array_pop($searchPath);
             }
 
@@ -357,8 +313,6 @@ class Site
             // node is a collection, continue search
             $searchPath[] = $foundNode->Handle;
         }
-
-        // print("\nDone while.\n\n");
 
         return [
             'resolvedNode' => $resolvedNode,
