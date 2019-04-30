@@ -24,7 +24,8 @@
     "emergence-su": "./bin/su",
     "emergence-create-site": "./bin/create-site.sh",
     "emergence-mysql-shell": "./bin/mysql-shell",
-    "emergence-fire-event": "./bin/fire-event"
+    "emergence-fire-event": "./bin/fire-event",
+    "emergence-read-file": "./bin/read-file"
   },
   "repository": {
     "type": "git",
