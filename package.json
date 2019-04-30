@@ -27,6 +27,7 @@
     "emergence-fire-event": "./bin/fire-event",
     "emergence-read-file": "./bin/read-file",
     "emergence-write-file": "./bin/write-file",
+    "emergence-delete-file": "./bin/delete-file",
     "emergence-resolve-site": "./bin/resolve-site"
   },
   "repository": {
