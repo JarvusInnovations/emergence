@@ -1,0 +1,44 @@
+#!/bin/bash
+
+die () {
+    echo >&2 "$@"
+    exit 1
+}
+
+
+# check usage
+[ -n "$1" ] && [ -n "$2" ] || die "Usage: emergence-delete-file <site-handle> <site-file-path>"
+
+
+# determine location of this script
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+
+# execute php script
+cat <<'END_OF_PHP' | "${DIR}/shell" "$1" --stdin "$2"
+<?php
+
+$node = Site::resolvePath($argv[1]);
+
+if (!$node) {
+    error_log('emergence-delete-file: cannot remove \''.$argv[1].'\': No such file');
+    exit(1);
+}
+
+try {
+    $node->delete();
+    exit(0);
+} catch (Exception $e) {
+    error_log('emergence-delete-file: failed to delete file from VFS: '.$e->getMessage());
+    exit(1);
+}
+
+END_OF_PHP
+
+
