@@ -36,9 +36,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         tmux \
         vim \
     && add-apt-repository -y ppa:ondrej/php \
+    && add-apt-repository ppa:certbot/certbot \
     && curl -sL https://deb.nodesource.com/setup_10.x | bash \
     # && apt-get update \ # above calls apt-get update
     && apt-get install -y --allow-unauthenticated --no-install-recommends \
+        certbot \
         nodejs \
         php-apcu \
         php5.6-cli \
