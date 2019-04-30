@@ -40,7 +40,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && curl -sL https://deb.nodesource.com/setup_10.x | bash \
     # && apt-get update \ # above calls apt-get update
     && apt-get install -y --allow-unauthenticated --no-install-recommends \
-        certbot \
+        certbot python3-pyasn1 \
         nodejs \
         php-apcu \
         php5.6-cli \
