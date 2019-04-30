@@ -41,7 +41,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && add-apt-repository ppa:certbot/certbot \
     && apt-get update \
     && apt-get install -y --allow-unauthenticated --no-install-recommends \
-        certbot \
+        certbot python3-pyasn1 \
         php-apcu \
         php5.6-cli \
         php5.6-curl \
