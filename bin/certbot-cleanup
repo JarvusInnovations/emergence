@@ -12,9 +12,7 @@ die () {
 
 # check usage
 [ -n "${CERTBOT_DOMAIN}" ] || die "required environment variable missing: \$CERTBOT_DOMAIN"
-[ -n "${CERTBOT_VALIDATION}" ] || die "required environment variable missing: \$CERTBOT_VALIDATION"
 [ -n "${CERTBOT_TOKEN}" ] || die "required environment variable missing: \$CERTBOT_TOKEN"
-[ -n "${CERTBOT_AUTH_OUTPUT}" ] || die "required environment variable missing: \$CERTBOT_AUTH_OUTPUT"
 
 
 # determine location of this script
