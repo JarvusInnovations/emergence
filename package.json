@@ -27,7 +27,9 @@
     "emergence-read-file": "./bin/read-file",
     "emergence-write-file": "./bin/write-file",
     "emergence-delete-file": "./bin/delete-file",
-    "emergence-resolve-site": "./bin/resolve-site"
+    "emergence-resolve-site": "./bin/resolve-site",
+    "emergence-certbot-auth": "./bin/certbot-auth",
+    "emergence-certbot-cleanup": "./bin/certbot-cleanup"
   },
   "repository": {
     "type": "git",
