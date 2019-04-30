@@ -38,8 +38,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         tmux \
         vim \
     && add-apt-repository -y ppa:ondrej/php \
+    && add-apt-repository ppa:certbot/certbot \
     && apt-get update \
     && apt-get install -y --allow-unauthenticated --no-install-recommends \
+        certbot \
         php-apcu \
         php5.6-cli \
         php5.6-curl \
