@@ -7,7 +7,7 @@ die () {
 
 
 # check usage
-[ -n "$1" ] && [ -n "$2" ] || die "Usage: emergence-read-file <site-handle> <site-file-path> [host-file-path]"
+[ -n "$1" ] && [ -n "$2" ] || die "Usage: emergence-write-file <site-handle> <site-file-path> [host-file-path]"
 
 
 # determine location of this script
@@ -49,7 +49,7 @@ try {
     Emergence_FS::importFile($argv[2], $argv[1]);
     exit(0);
 } catch (Exception $e) {
-    error_log('Failed to import file into VFS: '.$e->getMessage());
+    error_log('emergence-write-file: failed to delete file from VFS: '.$e->getMessage());
     exit(1);
 }
 
