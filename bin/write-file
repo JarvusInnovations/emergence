@@ -1,0 +1,58 @@
+#!/bin/bash
+
+die () {
+    echo >&2 "$@"
+    exit 1
+}
+
+
+# check usage
+[ -n "$1" ] && [ -n "$2" ] || die "Usage: emergence-read-file <site-handle> <site-file-path> [host-file-path]"
+
+
+# determine location of this script
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+
+
+
+# read stdin to tmp
+if [ -z "${3}" ]; then
+    # determine path to underscore
+    UNDERSCORE="$DIR/../node_modules/.bin/underscore"
+
+    # read application group name
+    APP_GROUP="$(sudo cat /emergence/config.json | $UNDERSCORE extract --outfmt text group)"
+    INPUT_FILE="$(mktemp)"
+    chgrp "${APP_GROUP}" "${INPUT_FILE}"
+    chmod g+r "${INPUT_FILE}"
+
+    cat - > "${INPUT_FILE}"
+elif [ ! -f "${3}" ]; then
+    die "Input file ${3} not found"
+else
+    INPUT_FILE="${3}"
+fi
+
+
+# execute php script
+cat <<'END_OF_PHP' | exec "${DIR}/shell" "${1}" --stdin "${2}" "${INPUT_FILE}"
+<?php
+
+try {
+    Emergence_FS::importFile($argv[2], $argv[1]);
+    exit(0);
+} catch (Exception $e) {
+    error_log('Failed to import file into VFS: '.$e->getMessage());
+    exit(1);
+}
+
+END_OF_PHP
+
+
