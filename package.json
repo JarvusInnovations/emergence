@@ -25,7 +25,8 @@
     "emergence-mysql-shell": "./bin/mysql-shell",
     "emergence-fire-event": "./bin/fire-event",
     "emergence-read-file": "./bin/read-file",
-    "emergence-write-file": "./bin/write-file"
+    "emergence-write-file": "./bin/write-file",
+    "emergence-resolve-site": "./bin/resolve-site"
   },
   "repository": {
     "type": "git",
