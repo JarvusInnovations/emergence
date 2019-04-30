@@ -57,6 +57,10 @@ fi
 
 # execute interactive shell
 TERM=$TERM sudo -E -u www-data -g www-data php -d auto_prepend_file=$autoPrependScript -d apc.enable_cli=on -d memory_limit=-1 $INPUT_ARGS
+SCRIPT_STATUS=$?
 
 # clean up
 rm $autoPrependScript;
+
+# relay exit status of php script
+exit $SCRIPT_STATUS

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+die () {
+    echo >&2 "emergence-resolve-site: $@"
+    exit 1
+}
+
+
+# check usage
+[ -n "$1" ] || die "Usage: emergence-resolve-site <hostname>"
+[ -d "/emergence/sites" ] || die "/emergence/sites not found"
+
+
+# determine location of this script
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+
+# determine path to underscore
+UNDERSCORE="$DIR/../node_modules/.bin/underscore"
+
+
+# search sites
+pushd /emergence/sites > /dev/null
+for SITE_DIR in `find . -maxdepth 1 ! -path . -type d`; do
+    SITE_HANDLE="$(basename ${SITE_DIR})"
+    SITE_HOSTNAMES="$(sudo cat ${SITE_DIR}/site.json | $UNDERSCORE process '(data.hostnames||[]).concat([data.primary_hostname]).filter(x=>x)' --outfmt text)"
+
+    for SITE_HOSTNAME in $SITE_HOSTNAMES; do
+        if [[ "${1}" == $SITE_HOSTNAME ]]; then # NOT MATCHING WILDCARD
+            echo "${SITE_HANDLE}"
+            exit 0
+        fi
+    done
+done
+popd > /dev/null
+
+
+# return failure if no match found
+exit 1
