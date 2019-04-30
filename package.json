@@ -1,7 +1,7 @@
 {
   "name": "emergence",
   "preferGlobal": true,
-  "version": "1.0.7",
+  "version": "1.0.8",
   "license": "MIT",
   "dependencies": {
     "hostile": "^1.0.2",
@@ -24,7 +24,13 @@
     "emergence-su": "./bin/su",
     "emergence-create-site": "./bin/create-site.sh",
     "emergence-mysql-shell": "./bin/mysql-shell",
-    "emergence-fire-event": "./bin/fire-event"
+    "emergence-fire-event": "./bin/fire-event",
+    "emergence-read-file": "./bin/read-file",
+    "emergence-write-file": "./bin/write-file",
+    "emergence-delete-file": "./bin/delete-file",
+    "emergence-resolve-site": "./bin/resolve-site",
+    "emergence-certbot-auth": "./bin/certbot-auth",
+    "emergence-certbot-cleanup": "./bin/certbot-cleanup"
   },
   "repository": {
     "type": "git",

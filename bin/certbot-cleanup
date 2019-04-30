@@ -1,0 +1,35 @@
+#!/bin/bash
+
+log () {
+    echo "emergence-certbot-cleanup: $@"
+}
+
+die () {
+    echo >&2 "emergence-certbot-cleanup: $@"
+    exit 1
+}
+
+
+# check usage
+[ -n "${CERTBOT_DOMAIN}" ] || die "required environment variable missing: \$CERTBOT_DOMAIN"
+[ -n "${CERTBOT_TOKEN}" ] || die "required environment variable missing: \$CERTBOT_TOKEN"
+
+
+# determine location of this script
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+
+# resolve site handle for domain
+SITE_HANDLE="$(${DIR}/resolve-site ${CERTBOT_DOMAIN})"
+[ -n "${SITE_HANDLE}" ] || die "could not resolve domain '${CERTBOT_DOMAIN}' under /emergence/sites/*/site.json"
+
+
+# delete auth file
+log "deleting ${SITE_HANDLE}/${CERTBOT_TOKEN}"
+"${DIR}/delete-file" "${SITE_HANDLE}" "site-root/.well-known/acme-challenge/${CERTBOT_TOKEN}" || die "failed to delete token from VFS"

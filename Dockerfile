@@ -38,8 +38,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         tmux \
         vim \
     && add-apt-repository -y ppa:ondrej/php \
+    && add-apt-repository ppa:certbot/certbot \
     && apt-get update \
     && apt-get install -y --allow-unauthenticated --no-install-recommends \
+        certbot python3-pyasn1 \
         php-apcu \
         php5.6-cli \
         php5.6-curl \
@@ -67,13 +69,14 @@ RUN service nginx stop \
 
 # install Habitat client and packages for emergence
 RUN curl -s https://raw.githubusercontent.com/habitat-sh/habitat/master/components/hab/install.sh | sudo bash
-RUN hab pkg install jarvus/sencha-cmd/5.1.3.61/20170606195324 jarvus/underscore \
+RUN hab pkg install jarvus/sencha-cmd/6.5.2.15 jarvus/underscore \
     && hab pkg binlink jarvus/sencha-cmd sencha \
     && hab pkg binlink jarvus/underscore underscore
 
 
 # install emergence
-RUN npm install -g emergence
+RUN npm install -g emergence \
+    && npm install -g htpasswd
 
 
 # setup and expose emergence

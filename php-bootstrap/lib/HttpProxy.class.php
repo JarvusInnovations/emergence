@@ -62,7 +62,7 @@ class HttpProxy
         }
 
         // get cookies
-        if (!isset($options['cookies'])) {
+        if (!isset($options['cookies']) && !empty($_SERVER['HTTP_COOKIE'])) {
             $options['cookies'] = $_SERVER['HTTP_COOKIE'];
         }
 
