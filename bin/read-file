@@ -27,7 +27,8 @@ cat <<'END_OF_PHP' | "${DIR}/shell" "$1" --stdin "$2"
 $node = Site::resolvePath($argv[1]);
 
 if (!$node) {
-    exit(6);
+    error_log('emergence-read-file: cannot read \''.$argv[1].'\': No such file');
+    exit(1);
 }
 
 readfile($node->RealPath);
