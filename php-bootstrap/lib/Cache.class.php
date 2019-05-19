@@ -24,7 +24,7 @@ class Cache
 
     public static function rawIncrease($key, $step = 1)
     {
-        return function_exists('apcu_dec') ? apcu_dec($key) : apc_dec($key);
+        return function_exists('apcu_inc') ? apcu_inc($key) : apc_inc($key);
     }
 
     public static function rawDecrease($key, $step = 1)
