@@ -173,7 +173,7 @@ PhpFpmService.prototype.makeConfig = function () {
         'pm.max_children                                = '+(me.options.maxClients||50),
         'pm.start_servers                               = '+(me.options.startServers||5),
         'pm.min_spare_servers                           = '+(me.options.minSpareServers||1),
-        'pm.max_spare_servers                           = '+Math.round((me.options.maxClients||50)/(me.options.startServers||5))
+        'pm.max_spare_servers                           = '+(me.options.maxSpareServers||Math.round((me.options.maxClients||50)/(me.options.startServers||5)))
     );
 
     if (me.options.statusPath) {
