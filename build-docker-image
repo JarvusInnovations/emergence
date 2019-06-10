@@ -1,0 +1,10 @@
+#!/bin/bash
+
+PACKAGE_VERSION="$(./node_modules/.bin/underscore --in package.json --outfmt=text extract version)"
+PACKAGE_MINOR="${PACKAGE_VERSION%.*}"
+
+docker build \
+    -t "jarvus/emergence:${PACKAGE_VERSION}" \
+    -t "jarvus/emergence:${PACKAGE_MINOR}" \
+    -t "jarvus/emergence:latest" \
+    .

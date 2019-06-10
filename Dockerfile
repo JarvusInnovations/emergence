@@ -68,7 +68,7 @@ RUN service nginx stop \
 
 
 # install Habitat client and packages for emergence
-RUN curl -s https://raw.githubusercontent.com/habitat-sh/habitat/master/components/hab/install.sh | bash
+RUN curl -s https://raw.githubusercontent.com/habitat-sh/habitat/master/components/hab/install.sh | bash -s -- -v 0.79.0
 RUN hab pkg install jarvus/sencha-cmd/6.5.2.15 jarvus/underscore \
     && hab pkg binlink jarvus/sencha-cmd sencha \
     && hab pkg binlink jarvus/underscore underscore
@@ -87,4 +87,9 @@ RUN npm install -g /src
 RUN mkdir -p /emergence
 EXPOSE 22 80 3306 9083
 VOLUME ["/emergence"]
-CMD ["emergence-kernel"]
+
+
+# setup entrypoint
+RUN echo '#!/bin/bash\nrm /emergence/kernel.sock /emergence/services/run/*/*\nexec emergence-kernel' > /entrypoint.sh \
+    && chmod +x /entrypoint.sh
+CMD ["/entrypoint.sh"]

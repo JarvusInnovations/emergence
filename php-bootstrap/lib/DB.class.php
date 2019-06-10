@@ -193,7 +193,11 @@ class DB
     public static function allInstances($className, $query, $parameters = null)
     {
         // execute query
-        $result = self::query($query, $parameters);
+        try {
+            $result = self::query($query, $parameters);
+        } catch (TableNotFoundException $e) {
+            return [];
+        }
 
         $records = array();
         while ($record = $result->fetch_assoc()) {
@@ -211,7 +215,11 @@ class DB
         // MICS::dump(array('query' => $query, 'params' => $parameters), 'allRecords');
 
         // execute query
-        $result = self::query($query, $parameters);
+        try {
+            $result = self::query($query, $parameters);
+        } catch (TableNotFoundException $e) {
+            return [];
+        }
 
         $records = array();
         while ($record = $result->fetch_assoc()) {
@@ -227,7 +235,11 @@ class DB
     public static function allValues($valueKey, $query, $parameters = null)
     {
         // execute query
-        $result = self::query($query, $parameters);
+        try {
+            $result = self::query($query, $parameters);
+        } catch (TableNotFoundException $e) {
+            return [];
+        }
 
         $records = array();
         while ($record = $result->fetch_assoc()) {
@@ -262,7 +274,11 @@ class DB
         }
 
         // preprocess and execute query
-        $result = self::query($query, $parameters);
+        try {
+            $result = self::query($query, $parameters);
+        } catch (TableNotFoundException $e) {
+            return null;
+        }
 
         // handle query error
         if ($result === false) {
@@ -287,7 +303,11 @@ class DB
     public static function oneRecord($query, $parameters = null)
     {
         // preprocess and execute query
-        $result = self::query($query, $parameters);
+        try {
+            $result = self::query($query, $parameters);
+        } catch (TableNotFoundException $e) {
+            return null;
+        }
 
         // get record
         $record = $result->fetch_assoc();
