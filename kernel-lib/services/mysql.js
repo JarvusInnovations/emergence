@@ -208,6 +208,13 @@ MysqlService.prototype.makeConfig = function () {
         config = [];
 
     config.push(
+        '[client]',
+        'socket                             = '+me.options.socketPath,
+        'user                               = '+me.options.managerUser,
+        'password                           = '+me.options.managerPassword
+    );
+
+    config.push(
         '[mysqld]',
         'character-set-server               = utf8',
         'user                               = mysql',
