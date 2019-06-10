@@ -86,6 +86,7 @@ RUN npm install -g /src
 # setup and expose emergence
 RUN mkdir -p /emergence
 EXPOSE 22 80 3306 9083
+ENV MYSQL_HOME=/emergence/services/etc
 VOLUME ["/emergence"]
 
 
