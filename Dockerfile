@@ -87,4 +87,9 @@ RUN npm install -g /src
 RUN mkdir -p /emergence
 EXPOSE 22 80 3306 9083
 VOLUME ["/emergence"]
-CMD ["emergence-kernel"]
+
+
+# setup entrypoint
+RUN echo '#!/bin/bash\nrm /emergence/kernel.sock /emergence/services/run/*/*\nexec emergence-kernel' > /entrypoint.sh \
+    && chmod +x /entrypoint.sh
+CMD ["/entrypoint.sh"]
