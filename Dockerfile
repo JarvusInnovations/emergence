@@ -68,7 +68,7 @@ RUN service nginx stop \
 
 
 # install Habitat client and packages for emergence
-RUN curl -s https://raw.githubusercontent.com/habitat-sh/habitat/master/components/hab/install.sh | bash
+RUN curl -s https://raw.githubusercontent.com/habitat-sh/habitat/master/components/hab/install.sh | bash -s -- -v 0.79.0
 RUN hab pkg install jarvus/sencha-cmd/6.5.2.15 jarvus/underscore \
     && hab pkg binlink jarvus/sencha-cmd sencha \
     && hab pkg binlink jarvus/underscore underscore
