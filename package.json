@@ -1,0 +1,38 @@
+{
+  "name": "emergence",
+  "version": "2.0.0",
+  "description": "Emergence provides cloud runtime environments for everyone on the ground",
+  "repository": "https://github.com/JarvusInnovations/emergence",
+  "main": "bin/cli.js",
+  "preferGlobal": true,
+  "author": "Chris Alfano <chris@jarv.us>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "winston": "^2.4.3",
+    "yargs": "^11.0.0"
+  },
+  "bin": {
+    "emergence": "./bin/cli.js"
+  },
+  "engines": {
+    "node": ">=8.3.0"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "keywords": [
+    "emergence",
+    "ground"
+  ],
+  "devDependencies": {
+    "@types/jest": "^24.0.16",
+    "jest": "^24.8.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}

@@ -1,0 +1,14 @@
+**/results/
+**/.vscode/
+**/.git
+**/.gitmodules
+**/.studiorc
+**/plan.sh
+**/test/
+**/*.test.js
+/docs/
+.bldr.toml
+.eslintrc.json
+jsconfig.json
+*.md
+!README.md

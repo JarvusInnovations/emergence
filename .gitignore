@@ -1,0 +1,4 @@
+node_modules/
+results/
+npm-debug.log
+.npmrc
