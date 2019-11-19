@@ -5,3 +5,4 @@
 cloud-config.yaml
 Dockerfile
 run-dev-container
+build-docker-image
