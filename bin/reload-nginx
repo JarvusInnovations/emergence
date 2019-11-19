@@ -1,0 +1,3 @@
+#!/bin/bash -e
+
+/usr/sbin/nginx -c /emergence/services/etc/nginx.conf -s reload
