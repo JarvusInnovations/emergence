@@ -32,7 +32,7 @@ function MysqlService (name, controller) {
     me.options.errorLogPath = me.options.errorLogPath || me.options.logsDir + '/mysqld.err';
     me.options.managerUser = me.options.managerUser || 'emergence';
     me.options.managerPassword = me.options.managerPassword || '';
-
+    me.options.characterSetServer = me.options.characterSetServer || controller.options.characterSetServer || 'utf8';
 
     // verify binary
     if (!fs.existsSync(me.options.execPath)) {
@@ -216,7 +216,7 @@ MysqlService.prototype.makeConfig = function () {
 
     config.push(
         '[mysqld]',
-        'character-set-server               = utf8',
+        'character-set-server               = '+me.options.characterSetServer,
         'user                               = mysql',
         'port                               = 3306',
         'socket                             = '+me.options.socketPath,
