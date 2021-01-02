@@ -28,6 +28,8 @@ UNDERSCORE="$DIR/../node_modules/.bin/underscore"
 # search sites
 pushd /emergence/sites > /dev/null
 for SITE_DIR in `find . -maxdepth 1 ! -path . -type d`; do
+    [ -f "${SITE_DIR}/site.json" ] || continue
+
     SITE_HANDLE="$(basename ${SITE_DIR})"
     SITE_HOSTNAMES="$(sudo cat ${SITE_DIR}/site.json | $UNDERSCORE process '(data.hostnames||[]).concat([data.primary_hostname]).filter(x=>x)' --outfmt text)"
 
