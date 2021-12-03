@@ -494,9 +494,19 @@ class DB
             return;
         }
 
+        $timezoneTestResult = DB::oneValue('SELECT CONVERT_TZ("2007-03-11 3:00:00", "US/Eastern", "US/Central")');
+
+        if ($timezoneTestResult == '2007-03-11 01:00:00') {
+            // MySQL server support named timezones
+            $mysqlTimezone = date_default_timezone_get();
+        } else {
+            // use static timezone offset because MySQL doesn't have timezone tables loaded
+            $mysqlTimezone = date('P');
+        }
+
         self::nonQuery(
             'SET time_zone = "%s"',
-            self::escape(date('P'))
+            self::escape($mysqlTimezone)
         );
     }
 

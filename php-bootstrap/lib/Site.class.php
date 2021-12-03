@@ -325,12 +325,20 @@ class Site
     public static function executeScript(SiteFile $_SCRIPT_NODE, $_SCRIPT_EXIT = true)
     {
         // create session
-        if (
-            empty($GLOBALS['Session']) &&
-            static::$autoCreateSession &&
-            !in_array(implode('/', static::$resolvedPath), static::$skipSessionPaths)
-        ) {
-            $GLOBALS['Session'] = UserSession::getFromRequest();
+        if (empty($GLOBALS['Session']) && static::$autoCreateSession) {
+            $resolvedPath = implode('/', static::$resolvedPath) . '/';
+
+            $createSession = true;
+            foreach (static::$skipSessionPaths as $skipSessionPath) {
+                if (strpos($resolvedPath, $skipSessionPath) === 0) {
+                    $createSession = false;
+                    break;
+                }
+            }
+
+            if ($createSession) {
+                $GLOBALS['Session'] = UserSession::getFromRequest();
+            }
         }
 
         if (extension_loaded('newrelic')) {

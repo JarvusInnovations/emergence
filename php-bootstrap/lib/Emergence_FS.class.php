@@ -688,7 +688,7 @@ class Emergence_FS
         }
 
         $fileResults = DB::query(
-            'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (%2$s) AND Status != "Phantom" GROUP BY f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted" AND f2.Handle %3$s "%4$s"'
+            'SELECT f2.* FROM (SELECT MAX(f1.ID) AS ID FROM `%1$s` f1 WHERE CollectionID IN (%2$s) AND Status != "Phantom" GROUP BY f1.CollectionID, f1.Handle) AS lastestFiles LEFT JOIN `%1$s` f2 ON (f2.ID = lastestFiles.ID) WHERE f2.Status != "Deleted" AND f2.Handle %3$s "%4$s"'
             ,array(
                 SiteFile::$tableName
                 ,$collectionsQuery
