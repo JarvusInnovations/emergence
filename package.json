@@ -12,7 +12,7 @@
     "node-static": "^0.7.x",
     "semver": "^6.0.x",
     "shelljs": "^0.8.x",
-    "underscore": "^1.9.x",
+    "underscore": "^1.12.x",
     "underscore-cli": "^0.2.x",
     "yargs": "^13.2.x"
   },
