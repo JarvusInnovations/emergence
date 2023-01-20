@@ -1,0 +1,24 @@
+FROM jarvus/emergence:1.1.4
+
+# intsall Ubuntu packages
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && export LC_ALL=en_US.UTF-8 \
+    && apt-get update \
+    # fix Docker issue that blocks mysql upgrade script
+    && printf '#!/bin/sh\nexit 0' > /usr/sbin/policy-rc.d \
+    # temporarily re-enable mysql service so upgrade scripts work
+    && update-rc.d -f mysql enable \
+    && service mysql start \
+    # update existing packages
+    && apt-get dist-upgrade -y \
+    # re-disable mysql service
+    && service mysql stop \
+    && update-rc.d -f mysql disable \
+    # add new packages
+    && apt-get install -y --allow-unauthenticated \
+        postgresql-client \
+        postgresql-client-9.5 \
+        postgresql-client-common \
+        libpq5 \
+    # clear apt caches
+    && rm -rf /var/lib/apt/lists/*
