@@ -20,5 +20,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         postgresql-client-9.5 \
         postgresql-client-common \
         libpq5 \
+        bzip2 \
     # clear apt caches
     && rm -rf /var/lib/apt/lists/*
