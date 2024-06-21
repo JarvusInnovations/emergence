@@ -83,11 +83,16 @@ COPY . /src
 RUN npm install -g /src
 
 
+# link certbot renewal hook to reload nginx
+RUN mkdir -p /etc/letsencrypt/renewal-hooks/deploy \
+    && ln -s /src/bin/reload-nginx /etc/letsencrypt/renewal-hooks/deploy/01-reload-nginx
+
+
 # setup and expose emergence
 RUN mkdir -p /emergence
 EXPOSE 22 80 3306 9083
 ENV MYSQL_HOME=/emergence/services/etc
-VOLUME ["/emergence"]
+VOLUME ["/emergence", "/etc/letsencrypt"]
 
 
 # setup entrypoint
